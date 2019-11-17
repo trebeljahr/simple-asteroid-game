@@ -2,6 +2,7 @@ class Player {
     constructor(x, y) {
         this.pos = createVector(x,y)
         this.size = 60
+        this.life = 3
     }   
 
     draw() {
@@ -16,12 +17,24 @@ class Player {
         pop()
     }
     
+    damage() {
+        this.life--
+        if (this.life <= 0) {
+            console.log('You lost!')
+        }
+    }
+
+    showHealth() {
+        for(let i=0;i<this.life;i++){
+            image(heart, i*60, 0, 60, 60)
+        }    
+    }
     update() {
         if (!(this.pos.x < 0) && (keyIsDown(LEFT_ARROW) || keyIsDown(A_KEYCODE)))  {
             this.pos.x -= 5;
         }
 
-        if (!(this.pos.x > xEdge) && (keyIsDown(RIGHT_ARROW) || keyIsDown(D_KEYCODE))) {
+        if (!(this.pos.x > width) && (keyIsDown(RIGHT_ARROW) || keyIsDown(D_KEYCODE))) {
             this.pos.x += 5;
         }
 
@@ -36,7 +49,7 @@ class Player {
 
     shoot() {
         if (keyIsDown(SPACE_KEYCODE)) {
-            let pos = createVector(this.pos.x + this.size/2, this.pos.y)
+            let pos = createVector(this.pos.x + this.size, this.pos.y)
             let vel = createVector(BULLET_SPEED, 0)
             let r = 5
             bullets.push(new Bullet(pos, vel, r))
@@ -46,6 +59,7 @@ class Player {
     run() {
         this.draw()
         this.update()
+        this.showHealth()
         this.shoot()
     }
 }   
@@ -68,6 +82,10 @@ class Mover {
 
     setVel(newVel) {
         this.vel = newVel
+    }
+     
+    inScreen() {
+        return this.pos.x >= 0 && this.pos.y >= 0 && this.pos.x <= width && this.pos.y <= height
     }
 } 
 
@@ -108,9 +126,9 @@ function spawnNewEnemy(i) {
 }
 
 function createNewEnemy(i) {
-    let pos = createVector(random(xEdge, width), random(height))
-    let vel = createVector(-0.1, 0)
-    let r = random(60, 80)
+    let pos = createVector(width, random(height))
+    let vel = createVector(random(-2, -1), 0)
+    let r = random(60, 200)
     let hitpoints = r/4
     return new Enemy(pos, vel, r, hitpoints, i)
 }
@@ -118,10 +136,6 @@ function createNewEnemy(i) {
 class Bullet extends Mover {
     constructor(pos, vel, r,) {
         super(pos, vel, r,)
-    }
-
-    inScreen() {
-        return this.pos.x >= 0 && this.pos.y >= 0 && this.pos.x <= width && this.pos.y <= height
     }
 
     hitsEnemy(bulletIndex) {

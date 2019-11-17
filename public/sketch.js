@@ -2,7 +2,7 @@
 const SPEED = 8;
 const BULLET_SPEED = 10;
 let WHITE;
-let ship;
+let player;
 let game;
 let width;
 let height;
@@ -13,6 +13,7 @@ let xEdge;
 let rocket, asteroid1, asteroid2, asteroid3, asteroids, space;
 
 function preload() {
+  heart = loadImage('assets/heart.svg')
   space = loadImage('assets/background.jpg');
   rocket = loadImage('assets/rocket.svg');
   asteroid1 = loadImage('assets/asteroid1.svg');
@@ -29,15 +30,15 @@ function setup() {
   WHITE = color(255, 255, 255);
   createCanvas(width, height);
   enemies = [];
-  for (i=0;i<30;i++){ 
+  for (i=0;i<20;i++){ 
     enemies.push(createNewEnemy(i));
-  }
-  ship = new Player(0, 0)
+ }
+  player = new Player(0, 0)
 }
 
 function draw() {
   background(space);
-  ship.run();
+  player.run();
   for (i=bullets.length-1; i>0;i--) {
     bullet = bullets[i]
     bullet.draw()
@@ -49,9 +50,27 @@ function draw() {
   }
   enemies.forEach(enemy => {
     enemy.update();
+    if (!enemy.inScreen()){
+      spawnNewEnemy(enemy.i)
+    }
+    if (playerHitsEnemy(enemy, player)) {
+      console.log('Hits enemy')
+      player.damage()
+      spawnNewEnemy(enemy.i)
+    }
     enemy.draw()
   });
+}
 
+function distSquare(x1,y1,x2,y2) {
+  return (x2-x1)*(x2-x1)+(y2-y1)*(y2-y1)
+}
+
+function playerHitsEnemy(enemy, player) {
+  let distance = distSquare(enemy.pos.x, enemy.pos.y, player.pos.x, player.pos.y)
+  let radiusSum = enemy.size/2 + player.size/2
+
+  return distance <= radiusSum*radiusSum 
 }
 
 const SPACE_KEYCODE = 32
