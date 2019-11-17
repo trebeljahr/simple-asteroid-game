@@ -54,7 +54,6 @@ function draw() {
       spawnNewEnemy(enemy.i)
     }
     if (playerHitsEnemy(enemy, player)) {
-      console.log('Hits enemy')
       player.damage()
       spawnNewEnemy(enemy.i)
     }
@@ -69,7 +68,9 @@ function distSquare(x1,y1,x2,y2) {
 function playerHitsEnemy(enemy, player) {
   let distance = distSquare(enemy.pos.x, enemy.pos.y, player.pos.x, player.pos.y)
   let radiusSum = enemy.size/2 + player.size/2
-
+  if (player.life <= 0) {
+    return false
+  }
   return distance <= radiusSum*radiusSum 
 }
 
@@ -83,7 +84,6 @@ const P_KEYCODE = 80;
 function keyPressed() {
     switch(keyCode) {
         case P_KEYCODE:
-        console.log('S')
         game && game.start();
         break;
       }

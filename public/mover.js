@@ -8,7 +8,6 @@ class Player {
     draw() {
         fill(255)
         rectMode(CENTER)
-        //rect(this.pos.x, this.pos.y, this.size*2, this.size)
         push()
         imageMode(CENTER);
         translate(this.pos.x, this.pos.y)
@@ -19,9 +18,6 @@ class Player {
     
     damage() {
         this.life--
-        if (this.life <= 0) {
-            console.log('You lost!')
-        }
     }
 
     showHealth() {
@@ -29,6 +25,7 @@ class Player {
             image(heart, i*60, 0, 60, 60)
         }    
     }
+
     update() {
         if (!(this.pos.x < 0) && (keyIsDown(LEFT_ARROW) || keyIsDown(A_KEYCODE)))  {
             this.pos.x -= 5;
@@ -57,9 +54,12 @@ class Player {
     }
 
     run() {
+        if (this.life <= 0) {
+            return
+        }
         this.draw()
-        this.update()
         this.showHealth()
+        this.update()
         this.shoot()
     }
 }   
@@ -85,7 +85,7 @@ class Mover {
     }
      
     inScreen() {
-        return this.pos.x >= 0 && this.pos.y >= 0 && this.pos.x <= width && this.pos.y <= height
+        return this.pos.x >= -this.size && this.pos.y >= -this.size && this.pos.x <= width+this.size && this.pos.y <= height+this.size
     }
 } 
 
@@ -126,9 +126,9 @@ function spawnNewEnemy(i) {
 }
 
 function createNewEnemy(i) {
-    let pos = createVector(width, random(height))
-    let vel = createVector(random(-2, -1), 0)
     let r = random(60, 200)
+    let pos = createVector(width+r, random(height))
+    let vel = createVector(random(-2, -1), 0)
     let hitpoints = r/4
     return new Enemy(pos, vel, r, hitpoints, i)
 }
@@ -141,9 +141,6 @@ class Bullet extends Mover {
     hitsEnemy(bulletIndex) {
         for (let i=enemies.length-1;i>=0;i--){
             let enemy = enemies[i]
-            function distSquare(x1,y1,x2,y2) {
-                return (x2-x1)*(x2-x1)+(y2-y1)*(y2-y1)
-            }
             let distance = distSquare(enemy.pos.x, enemy.pos.y, this.pos.x, this.pos.y)
             let radiusSum = enemy.size/2 + this.size/2
         
