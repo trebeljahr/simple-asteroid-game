@@ -1,16 +1,8 @@
-
-const SPEED = 8;
 const BULLET_SPEED = 10;
-let WHITE;
-let player;
-let game;
-let width;
-let height;
+let player, game, width, height, xEdge, rocket, asteroid1, asteroid2, asteroid3, asteroids, space;
 let enemies = [];
 let bullets = [];
-let xEdge; 
-
-let rocket, asteroid1, asteroid2, asteroid3, asteroids, space;
+let menuIsOpen, button, div, gameOver = false;
 
 function preload() {
   heart = loadImage('assets/heart.svg')
@@ -23,42 +15,86 @@ function preload() {
 }
 
 function setup() {
-  game = new Game();
   width = windowWidth
   height = windowHeight
   xEdge = width / 3
-  WHITE = color(255, 255, 255);
   createCanvas(width, height);
-  enemies = [];
-  for (i=0;i<20;i++){ 
-    enemies.push(createNewEnemy(i));
- }
-  player = new Player(0, 0)
+  restart()
+}
+
+function toggleDeathScreen() {
+  toggleMenu('Game Over', 'Press T to Start Again')
+  gameOver = true
+}
+
+function pauseGame() {
+  toggleMenu('Pause', 'Press T to Continue');
+}
+
+function toggleMenu(buttonText, divText) {
+  if (gameOver) return
+  menuIsOpen = !menuIsOpen
+  if (button) {
+    button.remove();
+    button = false;
+    div.remove();
+    div = false;
+    return
+  }
+  button = createButton(buttonText);
+  button.class("resumeButton")
+  button.parent("menu")
+  button.mouseClicked(pauseGame);
+
+  div = createDiv(divText)
+  div.parent('menu')
 }
 
 function draw() {
-  background(space);
-  player.run();
-  for (i=bullets.length-1; i>0;i--) {
-    bullet = bullets[i]
-    bullet.draw()
-    bullet.hitsEnemy(i)
-    bullet.update()
-    if (!bullet.inScreen()) {
-      bullets.splice(i, 1)
-    }
+  if (menuIsOpen) {
+    background('rgba(0,0,0,0.1)')
+    return
   }
-  enemies.forEach(enemy => {
-    enemy.update();
-    if (!enemy.inScreen()){
-      spawnNewEnemy(enemy.i)
+  background(space);
+    player.run(); 
+    for(let i=enemies.length-1;i>=0;i--){
+      enemy=enemies[i]
+      enemy.update();
+      enemy.draw();
+
+      for (let j=bullets.length-1; j>0;j--) {
+        bullet = bullets[j]
+        bullet.update()
+        bullet.draw()
+        if (!bullet.inScreen()) {
+          bullets.splice(j, 1)
+        } 
+        let distance = distSquare(enemy.pos.x, enemy.pos.y, bullet.pos.x, bullet.pos.y)
+        let radiusSum = enemy.size/2 + bullet.size/2
+        if (distance <= radiusSum*radiusSum) {
+            enemy.hit()
+            if (enemy.hitPoints <= 0) {
+              enemies.splice(i, 1)
+            }
+            bullets.splice(j, 1)
+        }
+      }
+
+      if (!enemy.inScreen()){
+        enemies.splice(i, 1)
+      }
+
+      if (playerHitsEnemy(enemy, player)) {
+        player.damage()
+        enemies.splice(i, 1)
+      } 
+
+      if (frameCount % 30 === 0 && enemies.length-1 === i) {
+        enemies.push(createNewEnemy(i+1));
+      }
     }
-    if (playerHitsEnemy(enemy, player)) {
-      player.damage()
-      spawnNewEnemy(enemy.i)
-    }
-    enemy.draw()
-  });
+
+  
 }
 
 function distSquare(x1,y1,x2,y2) {
@@ -80,11 +116,28 @@ const W_KEYCODE = 87;
 const A_KEYCODE = 65;
 const D_KEYCODE = 68;
 const P_KEYCODE = 80;
+const T_KEYCODE = 84;
+
+function restart() {
+  player = new Player(100, height/2)
+  enemies = []
+  enemies.push(createNewEnemy());
+  enemies.push(createNewEnemy());
+  bullets = []
+  if (gameOver) {
+    gameOver = false
+    toggleMenu()
+  }
+}
 
 function keyPressed() {
     switch(keyCode) {
-        case P_KEYCODE:
-        game && game.start();
-        break;
+        case T_KEYCODE:
+          if (gameOver) {
+              restart()
+              return
+          }
+          pauseGame();
+          break;
       }
 }

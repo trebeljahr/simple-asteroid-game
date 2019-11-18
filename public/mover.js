@@ -18,11 +18,14 @@ class Player {
     
     damage() {
         this.life--
+        if (this.life <= 0 && !gameOver) {
+            toggleDeathScreen()
+        }
     }
 
     showHealth() {
         for(let i=0;i<this.life;i++){
-            image(heart, i*60, 0, 60, 60)
+            image(heart, i*60+20, 20, 60, 60)
         }    
     }
 
@@ -90,9 +93,8 @@ class Mover {
 } 
 
 class Enemy extends Mover {
-    constructor(pos, vel, r, hitPoints, i) {
+    constructor(pos, vel, r, hitPoints) {
         super(pos, vel, r)
-        this.i = i
         this.hitPoints = hitPoints
         this.img = random(asteroids)
         this.rotation = random(PI)
@@ -111,9 +113,6 @@ class Enemy extends Mover {
 
     hit() {
         this.hitPoints--
-        if (this.hitPoints <= 0) {
-            spawnNewEnemy(this.i)
-        }
     }
 }
 
@@ -121,33 +120,20 @@ function spawnNewEnemy(i) {
     if (enemies.length < 0) {
         return
     }
-    enemy = createNewEnemy(i)
+    enemy = createNewEnemy()
     enemies[i] = enemy
 }
 
-function createNewEnemy(i) {
+function createNewEnemy() {
     let r = random(60, 200)
     let pos = createVector(width+r, random(height))
     let vel = createVector(random(-2, -1), 0)
     let hitpoints = r/4
-    return new Enemy(pos, vel, r, hitpoints, i)
+    return new Enemy(pos, vel, r, hitpoints)
 }
 
 class Bullet extends Mover {
     constructor(pos, vel, r,) {
         super(pos, vel, r,)
-    }
-
-    hitsEnemy(bulletIndex) {
-        for (let i=enemies.length-1;i>=0;i--){
-            let enemy = enemies[i]
-            let distance = distSquare(enemy.pos.x, enemy.pos.y, this.pos.x, this.pos.y)
-            let radiusSum = enemy.size/2 + this.size/2
-        
-            if (distance <= radiusSum*radiusSum) {
-                enemy.hit()
-                bullets.splice(bulletIndex, 1)
-            }
-        }
     }
 }
