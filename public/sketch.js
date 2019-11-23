@@ -1,9 +1,10 @@
 const BULLET_SPEED = 10;
-let player, game, width, height, xEdge, rocket, asteroid1, asteroid2, asteroid3, asteroids, space;
+let player, game, width, height, xEdge, rocket, asteroid1, asteroid2, asteroid3, asteroids, space, board;
 let enemies = [];
 let bullets = [];
 let menuIsOpen, button, div, gameOver = false;
-
+let boardSizeX;
+let boardSizeY;
 function preload() {
   heart = loadImage('assets/heart.svg')
   space = loadImage('assets/background.jpg');
@@ -17,6 +18,8 @@ function preload() {
 function setup() {
   width = windowWidth
   height = windowHeight
+  boardSizeX = width*3;
+  boardSizeY = height*3;
   xEdge = width / 3
   createCanvas(width, height);
   restart()
@@ -50,14 +53,37 @@ function toggleMenu(buttonText, divText) {
   div.parent('menu')
 }
 
+class Board {
+  constructor() {
+    this.x = -boardSizeX;
+    this.y = -boardSizeY;
+    this.sizeX = 2*boardSizeX;
+    this.sizeY = 2*boardSizeY;
+  }
+
+  show() {
+    fill('rgba(0,0,0,0)');
+    stroke(255);
+    rect(this.x, this.y, this.sizeX, this.sizeY);
+  }
+}
+
 function draw() {
+
+
   if (menuIsOpen) {
     background('rgba(0,0,0,0.1)')
     return
   }
   background(space);
-    player.run(); 
-    for(let i=enemies.length-1;i>=0;i--){
+  push()
+  translate(-player.pos.x, -player.pos.y);
+  translate(width/2, height/2);
+
+  board.show();
+  player.run();
+
+  for(let i=enemies.length-1;i>=0;i--){
       enemy=enemies[i]
       enemy.update();
       enemy.draw();
@@ -80,9 +106,9 @@ function draw() {
         }
       }
 
-      if (!enemy.inScreen()){
-        enemies.splice(i, 1)
-      }
+      // if (!enemy.inScreen()){
+      //   enemies.splice(i, 1)
+      // }
 
       if (playerHitsEnemy(enemy, player)) {
         player.damage()
@@ -92,9 +118,9 @@ function draw() {
       if (frameCount % 30 === 0 && enemies.length-1 === i) {
         enemies.push(createNewEnemy(i+1));
       }
-    }
-
-  
+    } 
+    pop()
+    player.showHealth()
 }
 
 function distSquare(x1,y1,x2,y2) {
@@ -119,10 +145,12 @@ const P_KEYCODE = 80;
 const T_KEYCODE = 84;
 
 function restart() {
+  board = new Board()
   player = new Player(100, height/2)
   enemies = []
-  enemies.push(createNewEnemy());
-  enemies.push(createNewEnemy());
+  for(let i = 0; i<500;i++){
+    enemies.push(createNewEnemy());
+  }
   bullets = []
   if (gameOver) {
     gameOver = false
