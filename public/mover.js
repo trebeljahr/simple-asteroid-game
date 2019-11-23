@@ -6,7 +6,6 @@ class Mover {
     }   
 
     draw() {
-        fill(255, 0, 0)
         ellipse(this.pos.x, this.pos.y, this.size, this.size)
     }
 

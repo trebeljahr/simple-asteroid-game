@@ -86,7 +86,7 @@ function draw() {
   player.run();
   thruster.updatePos(p5.Vector.add(player.pos, p5.Vector.fromAngle(player.rotation-PI, player.size)), player.rotation-PI)
   if (keyIsDown(UP_ARROW)) {
-    thruster.spawnNewParticles(5)
+    thruster.spawnNewParticles(10)
   }
   thruster.run()
  
@@ -150,8 +150,7 @@ const T_KEYCODE = 84;
 
 function restart() {
   board = new Board()
-  thruster = new ParticleSystem(createVector(width/2,height), 0)
-  thruster.spawnNewParticles(1000);
+  thruster = new ThrusterExhaustSystem(createVector(width/2,height), 0)
   player = new Player(100, height/2)
   enemies = []
   for(let i = 0; i<500;i++){
