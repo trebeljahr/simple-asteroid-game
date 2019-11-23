@@ -18,7 +18,7 @@ class Mover {
     }
      
     inScreen() {
-        return this.pos.x >= -this.size && this.pos.y >= -this.size && this.pos.x <= width+this.size && this.pos.y <= height+this.size
+        return this.pos.x >= -this.size-boardSizeX && this.pos.y >= -this.size-boardSizeY && this.pos.x <= boardSizeX+this.size && this.pos.y <= boardSizeY+this.size
     }
 } 
 

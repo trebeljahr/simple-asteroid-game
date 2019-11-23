@@ -68,12 +68,10 @@ class Player {
     }
 
     shoot() {
-        if (keyIsDown(SPACE_KEYCODE)) {
-            let pos = createVector(this.pos.x + this.size, this.pos.y)
-            let vel = createVector(this.vel.x, this.vel.y)
-            vel.mag(5)
+        if (keyIsDown(SPACE_KEYCODE) && frameCount % 2 === 0 ) {
+            let pos = createVector(this.pos.x, this.pos.y).add(p5.Vector.fromAngle(this.rotation, this.size))
             let r = 5
-            bullets.push(new Bullet(pos, vel, r))
+            bullets.push(new Bullet(pos, p5.Vector.fromAngle(this.rotation, 20), r))
         }
     }
 

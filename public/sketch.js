@@ -10,27 +10,23 @@ function draw() {
   border.show();
   noStroke()
   player.run();
+  for (let j=bullets.length-1; j>0;j--) {
+    let bullet = bullets[j]
+    fill(255)
+    stroke(255, 0, 0)
+    bullet.draw()
+    bullet.update()
+    if (!bullet.inScreen()) {
+      console.log('Leave screen')
+      bullets.splice(j, 1)
+    } 
+  }
+
   for(let i=asteroids.length-1;i>=0;i--){
-      asteroid=asteroids[i]
+      let asteroid=asteroids[i]
       asteroid.update();
       asteroid.draw();
-      for (let j=bullets.length-1; j>0;j--) {
-        bullet = bullets[j]
-        bullet.update()
-        bullet.draw()
-        if (!bullet.inScreen()) {
-          bullets.splice(j, 1)
-        } 
-        let distance = distSquare(asteroid.pos.x, asteroid.pos.y, bullet.pos.x, bullet.pos.y)
-        let radiusSum = asteroid.size/2 + bullet.size/2
-        if (distance <= radiusSum*radiusSum) {
-            asteroid.hit()
-            if (asteroid.hitPoints <= 0) {
-              asteroids.splice(i, 1)
-            }
-            bullets.splice(j, 1)
-        }
-      }
+      
 
       if (playerHitsAsteroid(asteroid, player)) {
         player.damage()
@@ -41,6 +37,22 @@ function draw() {
         asteroids.push(createNewAsteroid());
       }
     } 
+
+    for(let i=asteroids.length-1;i>=0;i--){
+      let asteroid=asteroids[i]
+      for (let j=bullets.length-1; j>0;j--) {
+        let bullet = bullets[j]
+        let distance = distSquare(asteroid.pos.x, asteroid.pos.y, bullet.pos.x, bullet.pos.y)
+        let radiusSum = asteroid.size/2 + bullet.size/2
+        if (distance <= radiusSum*radiusSum) {
+          asteroid.hit()
+          if (asteroid.hitPoints <= 0) {
+            asteroids.splice(i, 1)        
+          }
+            bullets.splice(j, 1)
+        } 
+      }
+  }
     pop()
     player.showHealth()
 }
