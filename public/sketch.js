@@ -47,7 +47,7 @@ function draw() {
         if (distance <= radiusSum*radiusSum) {
           asteroid.hit()
           if (asteroid.hitPoints <= 0) {
-            asteroids.splice(i, 1)        
+            spawnNewAsteroid(i)        
           }
             bullets.splice(j, 1)
         } 

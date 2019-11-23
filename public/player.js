@@ -68,10 +68,12 @@ class Player {
     }
 
     shoot() {
-        if (keyIsDown(SPACE_KEYCODE) && frameCount % 2 === 0 ) {
-            let pos = createVector(this.pos.x, this.pos.y).add(p5.Vector.fromAngle(this.rotation, this.size))
-            let r = 5
-            bullets.push(new Bullet(pos, p5.Vector.fromAngle(this.rotation, 20), r))
+        if (keyIsDown(SPACE_KEYCODE)) {
+            for(let i=0;i<2;i++){
+                let pos = createVector(this.pos.x, this.pos.y).add(p5.Vector.fromAngle(this.rotation, this.size))
+                let r = 5
+                bullets.push(new Bullet(pos, p5.Vector.fromAngle(this.rotation+random(-PI/20, PI/20), 20), r))
+            }
         }
     }
 
