@@ -6,9 +6,15 @@ class Player {
         this.rotation = 0
         this.vel = createVector(0,0)
         this.acc = createVector(0, 0)
+        this.thruster = new ThrusterExhaustSystem(createVector(width/2,height), 0)
     }   
 
     draw() {
+        this.thruster.updatePos(p5.Vector.add(this.pos, p5.Vector.fromAngle(this.rotation-PI, this.size)), this.rotation-PI)
+        if (keyIsDown(UP_ARROW)) {
+          this.thruster.fire(10)
+        }
+        this.thruster.run()
         push()
         translate(this.pos.x, this.pos.y)
         rectMode(CENTER)
@@ -46,14 +52,6 @@ class Player {
     }
 
     update() {
-
-        // if (!(this.pos.x < 0) && (keyIsDown(LEFT_ARROW) || keyIsDown(A_KEYCODE)))  {
-        //     this.pos.x -= 5;
-        // }
-
-        // if (!(this.pos.x > width) && (keyIsDown(RIGHT_ARROW) || keyIsDown(D_KEYCODE))) {
-        //     this.pos.x += 5;
-        // }
         const newX = this.pos.x + this.vel.x;
         const newY = this.pos.y + this.vel.y;
         if (newX >= boardSizeX || newX <= -boardSizeX) {
@@ -67,11 +65,6 @@ class Player {
             this.vel.add(this.acc)
             this.vel.limit(5)
         }
-        
-        
-        // if (!(this.pos.y > height) && (keyIsDown(DOWN_ARROW) || keyIsDown(S_KEYCODE))) {
-        //     this.pos.y += 5;
-        // }
     }
 
     shoot() {

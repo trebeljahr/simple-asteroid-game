@@ -6,7 +6,7 @@ class ThrusterExhaustSystem {
         this.particles = [];
     }
 
-    spawnNewParticles(number) {
+    fire(number) {
         for(let i=0;i<number;i++){
             this.particles.push(new ExhaustParticle(this.pos, p5.Vector.fromAngle(this.rotation + random(-PI/10, PI/10), random(5, 10)), 10))
         }

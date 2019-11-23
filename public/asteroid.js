@@ -1,8 +1,8 @@
-class Enemy extends Mover {
+class Asteroid extends Mover {
     constructor(pos, vel, r, hitPoints) {
         super(pos, vel, r)
         this.hitPoints = hitPoints
-        this.img = random(asteroids)
+        this.img = random(asteroidAssets)
         this.rotation = random(PI)
         this.angularVelocity = random(-0.005, 0.005)
     }
@@ -22,18 +22,18 @@ class Enemy extends Mover {
     }
 }
 
-function spawnNewEnemy(i) {
-    if (enemies.length < 0) {
+function spawnNewAsteroid(i) {
+    if (asteroids.length < 0) {
         return
     }
-    enemy = createNewEnemy()
-    enemies[i] = enemy
+    let asteroid = createNewAsteroid()
+    asteroids[i] = asteroid
 }
 
-function createNewEnemy() {
+function createNewAsteroid() {
     let r = random(60, 200)
     let pos = createVector(random(-boardSizeX, boardSizeX), random(-boardSizeY, boardSizeY))
     let vel = createVector(0, 0)
     let hitpoints = r/4
-    return new Enemy(pos, vel, r, hitpoints)
+    return new Asteroid(pos, vel, r, hitpoints)
 }
