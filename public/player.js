@@ -6,12 +6,13 @@ class Player {
         this.rotation = 0
         this.vel = createVector(0,0)
         this.acc = createVector(0, 0)
+        this.ammunition = 1000
         this.thruster = new ThrusterExhaustSystem(createVector(width/2,height), 0)
     }   
 
     draw() {
         this.thruster.updatePos(p5.Vector.add(this.pos, p5.Vector.fromAngle(this.rotation-PI, this.size)), this.rotation-PI)
-        if (keyIsDown(UP_ARROW)) {
+        if (keyIsDown(UP_ARROW) || keyIsDown(W_KEYCODE)) {
           this.thruster.fire(10)
         }
         this.thruster.run()
@@ -34,8 +35,12 @@ class Player {
     }
 
     showHealth() {
+        fill(255)
+        let heartSize = 60
+        let offSet = 20
+        text(this.ammunition, offSet+(this.life+1)*heartSize, offSet+heartSize/2)
         for(let i=0;i<this.life;i++){
-            image(heart, i*60+20, 20, 60, 60)
+            image(heart, i*heartSize+heartSize, offSet, heartSize, heartSize)
         }    
     }
 
@@ -68,10 +73,11 @@ class Player {
     }
 
     shoot() {
-        if (keyIsDown(SPACE_KEYCODE)) {
+        if (keyIsDown(SPACE_KEYCODE) && this.ammunition > 0) {
             for(let i=0;i<2;i++){
                 let pos = createVector(this.pos.x, this.pos.y).add(p5.Vector.fromAngle(this.rotation, this.size))
                 let r = 5
+                this.ammunition--
                 bullets.push(new Bullet(pos, p5.Vector.fromAngle(this.rotation+random(-PI/20, PI/20), 20), r))
             }
         }

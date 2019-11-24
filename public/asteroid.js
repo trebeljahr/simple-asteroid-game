@@ -34,6 +34,6 @@ function createNewAsteroid() {
     let r = random(60, 200)
     let pos = createVector(random(-boardSizeX, boardSizeX), random(-boardSizeY, boardSizeY))
     let vel = createVector(0, 0)
-    let hitpoints = r/4
+    let hitpoints = r*10
     return new Asteroid(pos, vel, r, hitpoints)
 }

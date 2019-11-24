@@ -10,12 +10,14 @@ function draw() {
   border.show();
   noStroke()
   player.run();
+  ammunition.run();
+  hearts.run();
+  explosionSystem.run();
   for (let j=bullets.length-1; j>0;j--) {
     let bullet = bullets[j]
     fill(255)
     stroke(255, 0, 0)
-    bullet.draw()
-    bullet.update()
+    bullet.run()
     if (!bullet.inScreen()) {
       console.log('Leave screen')
       bullets.splice(j, 1)
@@ -30,6 +32,7 @@ function draw() {
 
       if (playerHitsAsteroid(asteroid, player)) {
         player.damage()
+        explosionSystem.createExplosion(asteroid.pos);
         asteroids.splice(i, 1)
       } 
 
@@ -53,6 +56,23 @@ function draw() {
         } 
       }
   }
+
+    for(let i=ammunition.packets.length-1;i>0;i--){
+      let packet = ammunition.packets[i]
+      if (playerHitsCollectible(packet, player)) {
+        player.ammunition += packet.amount
+        ammunition.packets.splice(i, 1)
+      }
+    }
+
+    for(let i=hearts.hearts.length-1;i>0;i--){
+      let heart = hearts.hearts[i]
+      if (playerHitsCollectible(heart, player)) {
+        player.life++
+        hearts.hearts.splice(i, 1)
+      }
+    }
+ 
     pop()
     player.showHealth()
 }

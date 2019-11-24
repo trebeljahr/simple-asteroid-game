@@ -2,6 +2,7 @@ const BULLET_SPEED = 10;
 let player, game, width, height, xEdge, rocket, asteroid1, asteroid2, asteroid3, asteroidAssets, asteroids, space, border;
 let enemies = [];
 let bullets = [];
+let ammunition, ammoAsset, explosionSystem; 
 
 function preload() {
   heart = loadImage('assets/heart.svg')
@@ -11,11 +12,15 @@ function preload() {
   asteroid2 = loadImage('assets/asteroid2.svg');
   asteroid3 = loadImage('assets/asteroid3.svg');
   asteroidAssets = [asteroid1, asteroid2, asteroid3]
+  ammoAsset = loadImage('assets/bullets.svg');
 }
 
 function restart() {
     border = new Border()
     player = new Player(100, height/2)
+    ammunition = new AmmunitionPackages()
+    hearts = new Hearts()
+    explosionSystem = new ExplosionSystem()
     asteroids = []
     for(let i = 0; i<500;i++){
       asteroids.push(createNewAsteroid());
@@ -40,10 +45,18 @@ function setup() {
 function distSquare(x1,y1,x2,y2) {
     return (x2-x1)*(x2-x1)+(y2-y1)*(y2-y1)
   }
-  
+
 function playerHitsAsteroid(asteroid, player) {
-    let distance = distSquare(asteroid.pos.x, asteroid.pos.y, player.pos.x, player.pos.y)
-    let radiusSum = asteroid.size/2 + player.size/2
+  return playerHitsCircularTarget(asteroid, player)
+}
+
+function playerHitsCollectible(ammo, player) {
+  return playerHitsCircularTarget(ammo, player)
+}
+
+function playerHitsCircularTarget(target, player) {
+    let distance = distSquare(target.pos.x, target.pos.y, player.pos.x, player.pos.y)
+    let radiusSum = target.size/2 + player.size/2
     if (player.life <= 0) {
       return false
     }
