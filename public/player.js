@@ -30,7 +30,8 @@ class Player {
     damage() {
         this.life--
         if (this.life <= 0 && !gameOver) {
-            toggleDeathScreen()
+            explosionSystem.createExplosion(this.pos);
+            this.deathCountDown = 255
         }
     }
 
@@ -85,6 +86,10 @@ class Player {
 
     run() {
         if (this.life <= 0) {
+            if (this.deathCountDown < 0) {
+                toggleDeathScreen()
+            }
+            this.deathCountDown -= 15
             return
         }
         this.draw()
