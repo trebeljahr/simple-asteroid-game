@@ -32,7 +32,16 @@ function spawnNewAsteroid(i) {
 
 function createNewAsteroid() {
     let r = random(60, 200)
-    let pos = createVector(random(-boardSizeX, boardSizeX), random(-boardSizeY, boardSizeY))
+    let pos = randomSpawnPoint()
+    let vel = createVector(0, 0)
+    let hitpoints = r*10
+    return new Asteroid(pos, vel, r, hitpoints)
+}
+
+
+function createInitAsteroid() {
+    let r = random(60, 200)
+    let pos = randomPositionNotHittingPlayer(r)
     let vel = createVector(0, 0)
     let hitpoints = r*10
     return new Asteroid(pos, vel, r, hitpoints)

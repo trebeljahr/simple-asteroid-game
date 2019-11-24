@@ -19,7 +19,6 @@ function draw() {
     stroke(255, 0, 0)
     bullet.run()
     if (!bullet.inScreen()) {
-      console.log('Leave screen')
       bullets.splice(j, 1)
     } 
   }
@@ -37,7 +36,9 @@ function draw() {
       } 
 
       if (frameCount % 30 === 0 && asteroids.length-1 === i) {
-        asteroids.push(createNewAsteroid());
+        if (asteroids.length < 1000) {
+          asteroids.push(createNewAsteroid());
+        }
       }
     } 
 

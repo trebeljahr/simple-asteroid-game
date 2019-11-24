@@ -23,7 +23,7 @@ function restart() {
     explosionSystem = new ExplosionSystem()
     asteroids = []
     for(let i = 0; i<500;i++){
-      asteroids.push(createNewAsteroid());
+      asteroids.push(createInitAsteroid());
     }
     bullets = []
     if (gameOver) {

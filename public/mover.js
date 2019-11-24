@@ -26,6 +26,7 @@ class Bullet extends Mover {
     constructor(pos, vel, r,) {
         super(pos, vel, r,)
     }
+
     run() {
         this.draw()
         this.update()
@@ -36,6 +37,23 @@ function randomPosition() {
     return createVector(random(-boardSizeX, boardSizeX), random(-boardSizeY, boardSizeY))
 }
 
+function randomPositionNotHittingPlayer(size) {
+    let pos = randomPosition()
+    let target = { pos, size}
+    while (playerHitsCircularTarget(target, player)) {
+        pos = randomPosition()
+        target = { pos, size}
+    }
+    return pos}
+
+function randomSpawnPoint() {
+    let pos = randomPosition()
+    while (distSquare(pos.x, pos.y,player.pos.x, player.pos.y) < width/2*width/2) {
+        pos = randomPosition()
+    }
+    return pos
+}
+
 class AmmunitionPackages {
     constructor() {
         this.packets = []
@@ -44,7 +62,7 @@ class AmmunitionPackages {
 
     spawnAmmo(number) {
         for(let i=0;i<number;i++) {
-            this.packets.push(new Ammunition(randomPosition(), Math.floor((Math.random()+1)*10)*10))
+            this.packets.push(new Ammunition(randomSpawnPoint(), Math.floor((Math.random()+1)*10)*10))
         }
     }
 
@@ -85,7 +103,7 @@ class Hearts {
     spawnHearts(number) {
         for(let i=0;i<number;i++) {
             let possibleSizes = [100,100,100,100,100,200,200,400]
-            this.hearts.push(new Heart(randomPosition(), random(possibleSizes)))
+            this.hearts.push(new Heart(randomSpawnPoint(), random(possibleSizes)))
         }
     }
 
