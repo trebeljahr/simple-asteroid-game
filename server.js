@@ -7,14 +7,20 @@ app.use(express.static("public"));
 
 io.on("connection", function(socket) {
   console.log("New user with id: " + socket.id);
-  socket.on("setPlayerName", playerName => {
+
+  socket.on("newPlayer", data => {
+    socket.broadcast.emit('generateNewPlayer', {...data, id: socket.id});
+  })
+
+  socket.on("playerUpdate", data => {
+    socket.broadcast.emit('otherPlayerMoved', {...data, id: socket.id});
+  })
+
+  socket.on("disconnect", ()=>{
+    console.log("Player with id: " + socket.id + " disconnected")
+    socket.broadcast.emit('playerLeft', {id: socket.id})
   });
 
-  socket.on("updateState", data => {
-  });
-
-  socket.on("disconnect", function() {
-  });
 });
 
 http.listen(3000, function() {

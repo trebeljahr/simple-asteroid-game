@@ -4,6 +4,7 @@ let enemies = [];
 let bullets = [];
 let ammunition, ammoAsset, explosionSystem; 
 let socket;
+let enemyPlayers = {};
 
 function preload() {
   heart = loadImage('assets/heart.svg')
@@ -18,29 +19,67 @@ function preload() {
 
 function restart() {
     socket = io.connect();
-    socket.on("updateState", data => {});
-
     border = new Border()
-    player = new Player(100, height/2)
-    ammunition = new AmmunitionPackages()
-    hearts = new Hearts()
-    explosionSystem = new ExplosionSystem()
-    asteroids = []
-    for(let i = 0; i<500;i++){
-      asteroids.push(createInitAsteroid());
-    }
-    bullets = []
+    let newPos = randomPosition()
+    console.log(newPos)
+    player = new Player(newPos.x, newPos.y)
+    socket.emit('newPlayer', { name: 'SomeUsername', pos: {x: player.pos.x, y: player.pos.y}})
+    // ammunition = new AmmunitionPackages()
+    // hearts = new Hearts()
+    // explosionSystem = new ExplosionSystem()
+    // asteroids = []
+    // for(let i = 0; i<500;i++){
+    //   asteroids.push(createInitAsteroid());
+    // }
+    // bullets = []
     if (gameOver) {
       gameOver = false
       toggleMenu()
     }
+
+    socket.on("generateNewPlayer", generateNewPlayer)
+
+    socket.on("playerLeft", deletePlayer)
+
+    socket.on("otherPlayerMoved", (data)=>{
+      if (!enemyPlayers[data.id]) {
+        generateNewPlayer(data)
+        return
+      }
+      let enemy = enemyPlayers[data.id];
+      enemy.pos.x = data.pos.x
+      enemy.pos.y = data.pos.y
+      enemy.rotation = data.rotation
+      enemy.thrusterON = data.thrusterON
+      enemy.vel.x = data.vel.x
+      enemy.vel.y = data.vel.y
+    })
+}
+
+function deleteFromObject(keyPart, obj){
+  for (var k in obj){          // Loop through the object
+      if(~k.indexOf(keyPart)){ // If the current key contains the string we're looking for
+          delete obj[k];       // Delete obj[key];
+      }
+  }
+}
+
+
+function deletePlayer(data) {
+  console.log(data)
+  deleteFromObject(data.id, enemyPlayers)
+}
+
+function generateNewPlayer(data) {
+      let enemyPos = createVector(data.pos.x, data.pos.y)
+      enemyPlayers[data.id] = new Enemy(enemyPos)
 }
 
 function setup() {
     width = windowWidth
     height = windowHeight
-    boardSizeX = width*3;
-    boardSizeY = height*3;
+    boardSizeX = 300// width*3;
+    boardSizeY = 300// height*3;
     xEdge = width / 3
     createCanvas(width, height);
     restart()
