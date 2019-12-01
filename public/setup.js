@@ -3,6 +3,7 @@ let player, game, width, height, xEdge, rocket, asteroid1, asteroid2, asteroid3,
 let enemies = [];
 let bullets = [];
 let ammunition, ammoAsset, explosionSystem; 
+let socket;
 
 function preload() {
   heart = loadImage('assets/heart.svg')
@@ -16,6 +17,9 @@ function preload() {
 }
 
 function restart() {
+    socket = io.connect();
+    socket.on("updateState", data => {});
+
     border = new Border()
     player = new Player(100, height/2)
     ammunition = new AmmunitionPackages()
