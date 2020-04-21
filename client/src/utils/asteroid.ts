@@ -1,36 +1,19 @@
 import p5, { Vector, Image } from "p5";
-
-export const asteroidAssets = (p: p5) => {
-  let instance: Image[];
-
-  const createInstance = () => {
-    const asteroid1 = p.loadImage("assets/asteroid1.svg");
-    const asteroid2 = p.loadImage("assets/asteroid2.svg");
-    const asteroid3 = p.loadImage("assets/asteroid3.svg");
-    return [asteroid1, asteroid2, asteroid3];
-  };
-
-  return {
-    getInstance: () => {
-      if (!instance) {
-        instance = createInstance();
-      }
-      return instance;
-    },
-  };
-};
+import { assets } from "./assets";
+import { randomSpawnPoint, randomPositionNotHittingPlayer } from ".";
+import { Mover } from "./mover";
 
 export class Asteroid extends Mover {
   hitPoints: number;
-  img: any;
+  img: Image;
   rotation: number;
   angularVelocity: number;
   p: p5;
   constructor(p: p5, pos: Vector, vel: Vector, r: number, hitPoints: number) {
-    super(pos, vel, r);
+    super(p, pos, vel, r);
     this.p = p;
     this.hitPoints = hitPoints;
-    this.img = p.random(asteroidAssets(p).getInstance());
+    this.img = p.random(assets(p).getInstance().asteroids);
     this.rotation = p.random(p.PI);
     this.angularVelocity = p.random(-0.005, 0.005);
   }
@@ -66,7 +49,7 @@ export function spawnNewAsteroid(
 
 export function createNewAsteroid(p: p5) {
   const r = p.random(60, 200);
-  const pos = randomSpawnPoint();
+  const pos = randomSpawnPoint(p);
   const vel = p.createVector(0, 0);
   const hitpoints = r * 10;
   return new Asteroid(p, pos, vel, r, hitpoints);
@@ -74,7 +57,7 @@ export function createNewAsteroid(p: p5) {
 
 export function createInitAsteroid(p: p5) {
   let r = p.random(60, 200);
-  let pos = randomPositionNotHittingPlayer(r);
+  let pos = randomPositionNotHittingPlayer(p, r);
   let vel = p.createVector(0, 0);
   let hitpoints = r * 10;
   return new Asteroid(p, pos, vel, r, hitpoints);

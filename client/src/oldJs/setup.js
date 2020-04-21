@@ -15,13 +15,7 @@ let ammunition, ammoAsset, explosionSystem;
 let socket;
 let enemyPlayers = {};
 
-function preload() {
-  heart = loadImage("assets/heart.svg");
-  space = loadImage("assets/background.jpg");
-  rocket = loadImage("assets/rocket.svg");
-
-  ammoAsset = loadImage("assets/bullets.svg");
-}
+function preload() {}
 
 function restart() {
   socket = io.connect();
@@ -100,11 +94,3 @@ function playerHitsAsteroid(asteroid, player) {
 function playerHitsCollectible(ammo, player) {
   return playerHitsCircularTarget(ammo, player);
 }
-
-const SPACE_KEYCODE = 32;
-const S_KEYCODE = 83;
-const W_KEYCODE = 87;
-const A_KEYCODE = 65;
-const D_KEYCODE = 68;
-const P_KEYCODE = 80;
-const T_KEYCODE = 84;
