@@ -1,9 +1,11 @@
-let express = require("express");
-let app = require("express")();
-let http = require("http").createServer(app);
-let io = require("socket.io")(http);
+import express from "express";
+import httpPack from "http";
+import socketOver from "socket.io";
 
+const app = express();
+const http = httpPack.createServer(app);
 app.use(express.static("public"));
+const io = socketOver(http);
 
 let enemies = [];
 let bullets = [];
