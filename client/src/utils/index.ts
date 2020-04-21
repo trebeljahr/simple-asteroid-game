@@ -1,11 +1,12 @@
 import p5, { Vector } from "p5";
 import { playerSingleton } from "./player";
+import { player } from "../components/P5Component";
 
 export const BULLET_SPEED = 10;
-export const boardSizeX = 500;
-export const boardSizeY = 500;
-export const width = 500;
-export const height = 500;
+export const width = window.innerWidth;
+export const height = window.innerHeight;
+export const boardSizeX = width * 3;
+export const boardSizeY = height * 3;
 export const SPACE_KEYCODE = 32;
 export const S_KEYCODE = 83;
 export const W_KEYCODE = 87;
@@ -45,7 +46,7 @@ export const playerHitsCircularTarget = (
 export const randomPositionNotHittingPlayer = (p: p5, size: number) => {
   let pos = randomPosition(p);
   let target = { pos, size };
-  while (playerHitsCircularTarget(target, playerSingleton(p).getInstance())) {
+  while (playerHitsCircularTarget(target, player)) {
     pos = randomPosition(p);
     target = { pos, size };
   }
@@ -55,12 +56,7 @@ export const randomPositionNotHittingPlayer = (p: p5, size: number) => {
 export const randomSpawnPoint = (p: p5) => {
   let pos = randomPosition(p);
   while (
-    distSquare(
-      pos.x,
-      pos.y,
-      playerSingleton(p).getInstance().pos.x,
-      playerSingleton(p).getInstance().pos.y
-    ) <
+    distSquare(pos.x, pos.y, player.pos.x, player.pos.y) <
     ((width / 2) * width) / 2
   ) {
     pos = randomPosition(p);

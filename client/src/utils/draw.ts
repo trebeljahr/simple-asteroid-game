@@ -1,25 +1,28 @@
 import p5 from "p5";
 import { menuIsOpen } from "./menu";
 import { width, height } from ".";
-// const player = playerSingleton(p).getInstance();
+import { playerSingleton } from "./player";
+import { borderSystem } from "./border";
+import { player } from "../components/P5Component";
+
 export const draw = (p: p5) => {
   if (menuIsOpen) {
     p.background("rgba(0,0,0,0.1)");
     return;
   }
-  //   p.push();
-  //   p.translate(-player.pos.x, -player.pos.y);
-  //   p.translate(width / 2, height / 2);
-  //   borderSystem(p).getInstance().show();
-  //   p.noStroke();
-  //   player.run();
-  //   gameLogic();
-  //   Object.keys(enemyPlayers).forEach((id) => {
-  //     fill(255);
-  //     enemyPlayers[id].draw();
-  //   });
-  //   p.pop();
-  //   player.showHealth();
+  p.push();
+  p.translate(-player.pos.x, -player.pos.y);
+  p.translate(width / 2, height / 2);
+  borderSystem(p).getInstance().show();
+  p.noStroke();
+  player.run();
+  // gameLogic();
+  // Object.keys(enemyPlayers).forEach((id) => {
+  //   fill(255);
+  //   enemyPlayers[id].draw();
+  // });
+  p.pop();
+  player.showHealth();
   //   socket.emit("playerUpdate", {
   //     pos: { x: player.pos.x, y: player.pos.y },
   //     vel: { x: player.vel.x, y: player.vel.y },

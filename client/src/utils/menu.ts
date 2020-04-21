@@ -1,11 +1,12 @@
 import p5, { Element } from "p5";
-import { T_KEYCODE } from ".";
+import { T_KEYCODE, width, height } from ".";
 import { explosionSystem } from "./explosionSystem";
 import { asteroidSystem } from "./asteroidSystem";
-import { playerSingleton } from "./player";
+import { playerSingleton, Player } from "./player";
 import { bulletSystem } from "./bulletSystem";
 import { ammunitionSystem } from "./ammunitionSystem";
 import { heartSystem } from "./heartSystem";
+import { player, resetPlayer } from "../components/P5Component";
 
 export let menuIsOpen: boolean = false,
   button: null | Element = null,
@@ -55,7 +56,7 @@ export const keyPressed = (p: p5) => {
 
 export const restart = (p: p5) => {
   // socket = io.connect();
-  playerSingleton(p).reset();
+  resetPlayer(p);
   // socket.emit("newPlayer", {
   //   name: "SomeUsername",
   //   pos: { x: player.pos.x, y: player.pos.y },
