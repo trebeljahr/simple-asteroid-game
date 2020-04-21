@@ -1,13 +1,13 @@
 import p5, { Vector, Image } from "p5";
 import { assets } from "./assets";
-import { randomSpawnPoint, randomPositionNotHittingPlayer } from ".";
+import { randomPositionNotHittingPlayer } from ".";
 import { Mover } from "./mover";
 
 export const asteroidSystem = (p: p5) => {
-  let instance: AsteroidSystem;
+  let instance: Asteroids;
 
   const createInstance = () => {
-    return new AsteroidSystem(p);
+    return new Asteroids(p);
   };
 
   return {
@@ -24,7 +24,7 @@ export const asteroidSystem = (p: p5) => {
   };
 };
 
-class AsteroidSystem {
+class Asteroids {
   asteroids: Asteroid[];
   p: p5;
   constructor(p: p5) {
