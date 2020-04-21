@@ -1,21 +1,16 @@
 import React, { useRef, useState, useEffect } from "react";
 import p5 from "p5";
-import { Asteroid, asteroidSystem } from "../utils/asteroidSystem";
+import { restart } from "../utils/menu";
+import { asteroidSystem } from "../utils/asteroidSystem";
+import { width, height } from "../utils";
 
-export const P5_Component = () => {
+export const P5Component = () => {
   const [_, setMyP5] = useState<p5>();
   const myRef = useRef(null);
   const Sketch = (p: p5) => {
     p.setup = () => {
-      //   width = windowWidth;
-      //   height = windowHeight;
-      //   boardSizeX = 300; // width*3;
-      //   boardSizeY = 300; // height*3;
-      //   xEdge = width / 3;
-      p.createCanvas(500, 500);
-      //   restart();
-      p.background("black");
-      asteroidSystem(p).getInstance().addAsteroid();
+      p.createCanvas(width, height);
+      restart(p);
     };
 
     p.draw = () => {

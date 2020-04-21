@@ -1,6 +1,7 @@
 import p5, { Vector } from "p5";
 import { playerSingleton } from "./player";
 
+export const BULLET_SPEED = 10;
 export const boardSizeX = 500;
 export const boardSizeY = 500;
 export const width = 500;
@@ -71,3 +72,21 @@ export const rgba = (r: number, g: number, b: number, alpha: number) => {
   const rgbaString = `rgba(${r}, ${g}, ${b}, ${alpha})`;
   return rgbaString;
 };
+
+// export const deleteFromObject = (keyPart, obj) => {
+//   for (var k in obj) {
+//     if (~k.indexOf(keyPart)) {
+//       delete obj[k];
+//     }
+//   }
+// }
+
+// export const deletePlayer = (data) => {
+//   console.log(data);
+//   deleteFromObject(data.id, enemyPlayers);
+// }
+
+// export const generateNewPlayer = (data) => {
+//   let enemyPos = createVector(data.pos.x, data.pos.y);
+//   enemyPlayers[data.id] = new Enemy(enemyPos);
+// }

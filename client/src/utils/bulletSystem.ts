@@ -1,5 +1,4 @@
-import p5, { Vector, Image } from "p5";
-import { assets } from "./assets";
+import p5, { Vector } from "p5";
 import { Mover } from "./mover";
 
 export const bulletSystem = (p: p5) => {
@@ -57,10 +56,6 @@ class BulletSystem {
 }
 
 export class Bullet extends Mover {
-  constructor(p: p5, pos: Vector, vel: Vector, r: number) {
-    super(p, pos, vel, r);
-  }
-
   run() {
     this.draw();
     this.update();

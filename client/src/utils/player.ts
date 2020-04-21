@@ -8,12 +8,15 @@ import {
   D_KEYCODE,
   W_KEYCODE,
   SPACE_KEYCODE,
+  playerHitsCircularTarget,
 } from ".";
 import { assets } from "./assets";
 import { toggleDeathScreen, gameOver } from "./menu";
 import { explosionSystem } from "./explosionSystem";
 import { ThrusterExhaustSystem } from "./thruster";
 import { bulletSystem } from "./bulletSystem";
+import { Asteroid } from "./asteroidSystem";
+import { Ammunition } from "./ammunitionSystem";
 
 export const playerSingleton = (p: p5) => {
   let instance: Player;
@@ -152,12 +155,11 @@ export class Player {
   shoot() {
     if (this.p.keyIsDown(SPACE_KEYCODE) && this.ammunition > 0) {
       for (let i = 0; i < 2; i++) {
-        let pos = this.p
+        const newPos = this.p
           .createVector(this.pos.x, this.pos.y)
           .add(p5.Vector.fromAngle(this.rotation, this.size));
-        let r = 5;
         this.ammunition--;
-        bulletSystem(this.p).getInstance().addBullet(this.pos, this.rotation);
+        bulletSystem(this.p).getInstance().addBullet(newPos, this.rotation);
       }
     }
   }
@@ -176,3 +178,11 @@ export class Player {
     this.shoot();
   }
 }
+
+export const playerHitsAsteroid = (asteroid: Asteroid, player: Player) => {
+  return playerHitsCircularTarget(asteroid, player);
+};
+
+export const playerHitsCollectible = (ammo: Ammunition, player: Player) => {
+  return playerHitsCircularTarget(ammo, player);
+};

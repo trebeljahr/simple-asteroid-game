@@ -1,12 +1,13 @@
 import p5, { Element } from "p5";
-import { T_KEYCODE, randomPosition } from ".";
+import { T_KEYCODE } from ".";
 import { explosionSystem } from "./explosionSystem";
 import { asteroidSystem } from "./asteroidSystem";
-import { borderSystem } from "./border";
 import { playerSingleton } from "./player";
 import { bulletSystem } from "./bulletSystem";
+import { ammunitionSystem } from "./ammunitionSystem";
+import { heartSystem } from "./heartSystem";
 
-let menuIsOpen: boolean = false,
+export let menuIsOpen: boolean = false,
   button: null | Element = null,
   div: null | Element = null;
 
@@ -54,13 +55,12 @@ export const keyPressed = (p: p5) => {
 
 export const restart = (p: p5) => {
   // socket = io.connect();
-  const border = borderSystem(p).reset();
   playerSingleton(p).reset();
   // socket.emit("newPlayer", {
   //   name: "SomeUsername",
   //   pos: { x: player.pos.x, y: player.pos.y },
   // });
-  ammunition = new AmmunitionPackages();
+  ammunitionSystem(p).reset();
   heartSystem(p).reset();
   explosionSystem(p).reset();
   asteroidSystem(p).reset();
