@@ -17,48 +17,6 @@ let enemyPlayers = {};
 
 function preload() {}
 
-function restart() {
-  socket = io.connect();
-  border = new Border();
-  let newPos = randomPosition();
-  console.log(newPos);
-  player = new Player(newPos.x, newPos.y);
-  socket.emit("newPlayer", {
-    name: "SomeUsername",
-    pos: { x: player.pos.x, y: player.pos.y },
-  });
-  ammunition = new AmmunitionPackages();
-  hearts = new Hearts();
-  explosionSystem = new ExplosionSystem();
-  asteroids = [];
-  for (let i = 0; i < 500; i++) {
-    asteroids.push(createInitAsteroid());
-  }
-  bullets = [];
-  if (gameOver) {
-    gameOver = false;
-    toggleMenu();
-  }
-
-  socket.on("generateNewPlayer", generateNewPlayer);
-
-  socket.on("playerLeft", deletePlayer);
-
-  socket.on("otherPlayerMoved", (data) => {
-    if (!enemyPlayers[data.id]) {
-      generateNewPlayer(data);
-      return;
-    }
-    let enemy = enemyPlayers[data.id];
-    enemy.pos.x = data.pos.x;
-    enemy.pos.y = data.pos.y;
-    enemy.rotation = data.rotation;
-    enemy.thrusterON = data.thrusterON;
-    enemy.vel.x = data.vel.x;
-    enemy.vel.y = data.vel.y;
-  });
-}
-
 function deleteFromObject(keyPart, obj) {
   for (var k in obj) {
     if (~k.indexOf(keyPart)) {

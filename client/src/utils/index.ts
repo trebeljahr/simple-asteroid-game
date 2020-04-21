@@ -60,3 +60,8 @@ export const randomSpawnPoint = (p: p5) => {
   }
   return pos;
 };
+
+export const rgba = (r: number, g: number, b: number, alpha: number) => {
+  const rgbaString = `rgba(${r}, ${g}, ${b}, ${alpha})`;
+  return rgbaString;
+};

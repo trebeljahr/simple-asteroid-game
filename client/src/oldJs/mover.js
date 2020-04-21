@@ -1,14 +1,3 @@
-class Bullet extends Mover {
-  constructor(pos, vel, r) {
-    super(pos, vel, r);
-  }
-
-  run() {
-    this.draw();
-    this.update();
-  }
-}
-
 class AmmunitionPackages {
   constructor() {
     this.packets = [];

@@ -10,6 +10,9 @@ import {
   SPACE_KEYCODE,
 } from ".";
 import { assets } from "./assets";
+import { toggleDeathScreen, gameOver } from "./menu";
+import { Bullet } from "./bullet";
+import { explosionSystem } from "./explosionSystem";
 
 export class Player {
   p: p5;
@@ -70,7 +73,7 @@ export class Player {
   damage() {
     this.life--;
     if (this.life <= 0 && !gameOver) {
-      explosionSystem.createExplosion(this.pos);
+      explosionSystem(this.p).getInstance().createExplosion(this.pos);
       this.deathCountDown = 255;
     }
   }
@@ -133,6 +136,7 @@ export class Player {
         this.ammunition--;
         bullets.push(
           new Bullet(
+            this.p,
             pos,
             p5.Vector.fromAngle(
               this.rotation + this.p.random(-this.p.PI / 20, this.p.PI / 20),
@@ -148,7 +152,7 @@ export class Player {
   run() {
     if (this.life <= 0) {
       if (this.deathCountDown < 0) {
-        toggleDeathScreen();
+        toggleDeathScreen(this.p);
       }
       this.deathCountDown -= 15;
       return;
