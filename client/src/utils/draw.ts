@@ -1,37 +1,34 @@
 import p5 from "p5";
 import { menuIsOpen } from "./menu";
-import { borderSystem } from "./border";
-import { playerSingleton } from "./player";
 import { width, height } from ".";
-import { assets } from "./assets";
-
-function draw(p: p5) {
-  const player = playerSingleton(p).getInstance();
+import { assets, Assets } from "./assets";
+// const player = playerSingleton(p).getInstance();
+export const draw = (p: p5, assets: Assets) => {
   if (menuIsOpen) {
     p.background("rgba(0,0,0,0.1)");
     return;
   }
-  p.background(assets(p).getInstance().space);
-  p.push();
-  p.translate(-player.pos.x, -player.pos.y);
-  p.translate(width / 2, height / 2);
-  borderSystem(p).getInstance().show();
-  p.noStroke();
-  player.run();
+  p.background(assets.space);
+  //   p.push();
+  //   p.translate(-player.pos.x, -player.pos.y);
+  //   p.translate(width / 2, height / 2);
+  //   borderSystem(p).getInstance().show();
+  //   p.noStroke();
+  //   player.run();
   //   gameLogic();
   //   Object.keys(enemyPlayers).forEach((id) => {
   //     fill(255);
   //     enemyPlayers[id].draw();
   //   });
-  p.pop();
-  player.showHealth();
+  //   p.pop();
+  //   player.showHealth();
   //   socket.emit("playerUpdate", {
   //     pos: { x: player.pos.x, y: player.pos.y },
   //     vel: { x: player.vel.x, y: player.vel.y },
   //     rotation: player.rotation,
   //     thrusterON: keyIsDown(UP_ARROW) || keyIsDown(W_KEYCODE),
   //   });
-}
+};
 
 // function gameLogic() {
 //   ammunition.run();
