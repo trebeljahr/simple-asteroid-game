@@ -1,5 +1,15 @@
 import p5, { Vector } from "p5";
-import { width, height, boardSizeX, boardSizeY } from ".";
+import {
+  width,
+  height,
+  boardSizeX,
+  boardSizeY,
+  A_KEYCODE,
+  D_KEYCODE,
+  W_KEYCODE,
+  SPACE_KEYCODE,
+} from ".";
+import { assets } from "./assets";
 
 export class Player {
   p: p5;
@@ -11,8 +21,10 @@ export class Player {
   acc: Vector;
   ammunition: number;
   thruster: Thruster;
+  deathCountDown: number;
   constructor(p: p5, x: number, y: number) {
     this.p = p;
+    this.deathCountDown = 0;
     this.pos = this.p.createVector(x, y);
     this.size = 60;
     this.life = 3;
@@ -34,7 +46,7 @@ export class Player {
       ),
       this.rotation - this.p.PI
     );
-    if (this.p.keyIsDown(UP_ARROW) || this.p.keyIsDown(W_KEYCODE)) {
+    if (this.p.keyIsDown(this.p.UP_ARROW) || this.p.keyIsDown(W_KEYCODE)) {
       this.thruster.fire(10);
     }
     this.thruster.run();
@@ -45,7 +57,13 @@ export class Player {
     this.p.fill(255);
     this.p.imageMode(this.p.CENTER);
     this.p.rotate(this.p.PI / 2);
-    this.p.image(rocket, 0, 0, this.size, this.size * 2);
+    this.p.image(
+      assets(this.p).getInstance().rocket,
+      0,
+      0,
+      this.size,
+      this.size * 2
+    );
     this.p.pop();
   }
 
@@ -68,7 +86,7 @@ export class Player {
     );
     for (let i = 0; i < this.life; i++) {
       this.p.image(
-        heart,
+        assets(this.p).getInstance().heart,
         i * heartSize + heartSize,
         offSet,
         heartSize,
@@ -99,7 +117,7 @@ export class Player {
       this.vel.y = 0;
     }
     this.pos.add(this.vel);
-    if (this.p.keyIsDown(UP_ARROW) || this.p.keyIsDown(W_KEYCODE)) {
+    if (this.p.keyIsDown(this.p.UP_ARROW) || this.p.keyIsDown(W_KEYCODE)) {
       this.vel.add(this.acc);
       this.vel.limit(5);
     }
