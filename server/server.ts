@@ -7,10 +7,6 @@ const http = httpPack.createServer(app);
 app.use(express.static("public"));
 const io = socketOver(http);
 
-let enemies = [];
-let bullets = [];
-let asteroids = [];
-
 io.on("connection", function (socket) {
   console.log("New user with id: " + socket.id);
 

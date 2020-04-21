@@ -1,11 +1,9 @@
 {
-  "name": "server",
+  "name": "asteroid-game-server",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
+  "description": "This is the server for asteroid game",
+  "main": "server.js",
+  "scripts": {},
   "author": "",
   "license": "ISC",
   "dependencies": {

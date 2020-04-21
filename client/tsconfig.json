@@ -15,6 +15,6 @@
     "noEmit": true,
     "jsx": "react"
   },
-  "include": ["src", "asteroid-game/oldJs"],
-  "exclude": ["src/oldJs"]
+  "include": ["src"],
+  "exclude": ["src/oldStuff"]
 }
