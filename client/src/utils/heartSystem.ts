@@ -2,7 +2,7 @@ import p5, { Vector } from "p5";
 import { randomSpawnPoint } from ".";
 import { assets } from "./assets";
 
-export const asteroidSystem = (p: p5) => {
+export const heartSystem = (p: p5) => {
   let instance: Hearts;
 
   const createInstance = () => {

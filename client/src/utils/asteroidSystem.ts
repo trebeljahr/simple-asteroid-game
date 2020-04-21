@@ -30,13 +30,18 @@ class Asteroids {
   constructor(p: p5) {
     this.p = p;
     this.asteroids = [];
+    for (let i = 0; i < 500; i++) {
+      this.addAsteroid();
+    }
   }
+
   run = () => {
     this.asteroids.forEach((asteroid) => {
       asteroid.update();
       asteroid.draw();
     });
   };
+
   addAsteroid = () => {
     this.asteroids = [...this.asteroids, this.createNewAsteroid()];
   };
