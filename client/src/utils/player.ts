@@ -10,13 +10,13 @@ import {
   SPACE_KEYCODE,
   playerHitsCircularTarget,
 } from ".";
-import { assets } from "./assets";
 import { toggleDeathScreen, gameOver } from "./menu";
 import { explosionSystem } from "./explosionSystem";
 import { ThrusterExhaustSystem } from "./thruster";
 import { bulletSystem } from "./bulletSystem";
 import { Asteroid } from "./asteroidSystem";
 import { Ammunition } from "./ammunitionSystem";
+import { assets } from "../components/P5Component";
 
 export const playerSingleton = (p: p5) => {
   let instance: Player;
@@ -86,13 +86,7 @@ export class Player {
     this.p.fill(255);
     this.p.imageMode(this.p.CENTER);
     this.p.rotate(this.p.PI / 2);
-    this.p.image(
-      assets(this.p).getInstance().rocket,
-      0,
-      0,
-      this.size,
-      this.size * 2
-    );
+    this.p.image(assets.rocket, 0, 0, this.size, this.size * 2);
     this.p.pop();
   }
 
@@ -115,7 +109,7 @@ export class Player {
     );
     for (let i = 0; i < this.life; i++) {
       this.p.image(
-        assets(this.p).getInstance().heart,
+        assets.heart,
         i * heartSize + heartSize,
         offSet,
         heartSize,

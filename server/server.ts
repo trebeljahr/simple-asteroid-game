@@ -1,20 +1,24 @@
-import express from "express";
-import httpPack from "http";
-import socketOver from "socket.io";
+let express = require("express");
+let app = require("express")();
+let cors = require("cors");
+let http = require("http").createServer(app);
+let io = require("socket.io")(http);
 
-const app = express();
-const http = httpPack.createServer(app);
+app.use(cors());
 app.use(express.static("public"));
-const io = socketOver(http);
 
-io.on("connection", function (socket) {
+let enemies = [];
+let bullets = [];
+let asteroids = [];
+
+io.on("connection", function (socket: any) {
   console.log("New user with id: " + socket.id);
 
-  socket.on("newPlayer", (data) => {
+  socket.on("newPlayer", (data: any) => {
     socket.broadcast.emit("generateNewPlayer", { ...data, id: socket.id });
   });
 
-  socket.on("playerUpdate", (data) => {
+  socket.on("playerUpdate", (data: any) => {
     socket.broadcast.emit("otherPlayerMoved", { ...data, id: socket.id });
   });
 
@@ -24,6 +28,6 @@ io.on("connection", function (socket) {
   });
 });
 
-http.listen(3000, function () {
-  console.log("listening on *:3000");
+http.listen(4000, function () {
+  console.log("listening on http://localhost:4000");
 });

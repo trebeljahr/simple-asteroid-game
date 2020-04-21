@@ -1,6 +1,6 @@
 import p5, { Vector } from "p5";
 import { randomSpawnPoint } from ".";
-import { assets } from "./assets";
+import { assets } from "../components/P5Component";
 
 export const ammunitionSystem = (p: p5) => {
   let instance: AmmunitionPackages;
@@ -34,7 +34,7 @@ class AmmunitionPackages {
 
   addAmmunitionPackages(amount: number) {
     for (let i = 0; i < amount; i++) {
-      let possibleSizes = [100, 100, 100, 100, 100, 200, 200, 400];
+      const possibleSizes = [100, 100, 100, 100, 100, 200, 200, 400];
       this.ammunitionPackages.push(
         new Ammunition(
           this.p,
@@ -50,7 +50,7 @@ class AmmunitionPackages {
       this.addAmmunitionPackages(1);
     }
     for (let i = this.ammunitionPackages.length - 1; i > 0; i--) {
-      let heart = this.ammunitionPackages[i];
+      const heart = this.ammunitionPackages[i];
       heart.draw();
     }
   }
@@ -72,7 +72,7 @@ export class Ammunition {
     this.p.imageMode(this.p.CENTER);
     this.p.ellipse(this.pos.x, this.pos.y, this.size, this.size);
     this.p.image(
-      assets(this.p).getInstance().ammoAsset,
+      assets.ammoAsset,
       this.pos.x,
       this.pos.y,
       this.size / 1.5,

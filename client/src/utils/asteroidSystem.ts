@@ -1,7 +1,7 @@
 import p5, { Vector, Image } from "p5";
-import { assets } from "./assets";
 import { randomPositionNotHittingPlayer } from ".";
 import { Mover } from "./mover";
+import { assets } from "../components/P5Component";
 
 export const asteroidSystem = (p: p5) => {
   let instance: Asteroids;
@@ -75,7 +75,7 @@ export class Asteroid extends Mover {
     super(p, pos, vel, r);
     this.p = p;
     this.hitPoints = hitPoints;
-    this.img = p.random(assets(p).getInstance().asteroids);
+    this.img = p.random(assets.asteroids);
     this.rotation = p.random(p.PI);
     this.angularVelocity = p.random(-0.005, 0.005);
   }

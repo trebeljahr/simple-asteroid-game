@@ -1,6 +1,6 @@
 import p5, { Vector } from "p5";
 import { randomSpawnPoint } from ".";
-import { assets } from "./assets";
+import { assets } from "../components/P5Component";
 
 export const heartSystem = (p: p5) => {
   let instance: Hearts;
@@ -72,7 +72,7 @@ class Heart {
     this.p.imageMode(this.p.CENTER);
     this.p.ellipse(this.pos.x, this.pos.y, this.size, this.size);
     this.p.image(
-      assets(this.p).getInstance().heart,
+      assets.heart,
       this.pos.x,
       this.pos.y,
       this.size / 1.5,

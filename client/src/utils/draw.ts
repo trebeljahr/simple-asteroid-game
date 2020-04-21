@@ -1,14 +1,12 @@
 import p5 from "p5";
 import { menuIsOpen } from "./menu";
 import { width, height } from ".";
-import { assets, Assets } from "./assets";
 // const player = playerSingleton(p).getInstance();
-export const draw = (p: p5, assets: Assets) => {
+export const draw = (p: p5) => {
   if (menuIsOpen) {
     p.background("rgba(0,0,0,0.1)");
     return;
   }
-  p.background(assets.space);
   //   p.push();
   //   p.translate(-player.pos.x, -player.pos.y);
   //   p.translate(width / 2, height / 2);
