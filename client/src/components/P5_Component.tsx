@@ -1,10 +1,9 @@
 import React, { useRef, useState, useEffect } from "react";
 import p5 from "p5";
-import { Asteroid, createNewAsteroid } from "../utils/asteroid";
+import { Asteroid, asteroidSystem } from "../utils/asteroidSystem";
 
 export const P5_Component = () => {
   const [_, setMyP5] = useState<p5>();
-  const [asteroid, setAsteroid] = useState<Asteroid>();
   const myRef = useRef(null);
   const Sketch = (p: p5) => {
     p.setup = () => {
@@ -16,11 +15,11 @@ export const P5_Component = () => {
       p.createCanvas(500, 500);
       //   restart();
       p.background("black");
-      setAsteroid(createNewAsteroid(p));
+      asteroidSystem(p).getInstance().addAsteroid();
     };
 
     p.draw = () => {
-      asteroid?.draw();
+      asteroidSystem(p).getInstance().run();
     };
   };
 

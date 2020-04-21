@@ -11,8 +11,30 @@ import {
 } from ".";
 import { assets } from "./assets";
 import { toggleDeathScreen, gameOver } from "./menu";
-import { Bullet } from "./bullet";
 import { explosionSystem } from "./explosionSystem";
+import { ThrusterExhaustSystem } from "./thruster";
+import { bulletSystem } from "./bulletSystem";
+
+export const playerSingleton = (p: p5) => {
+  let instance: Player;
+
+  const createInstance = () => {
+    return new Player(p, p.random(width), p.random(height));
+  };
+
+  return {
+    getInstance: () => {
+      if (!instance) {
+        instance = createInstance();
+      }
+      return instance;
+    },
+    reset: () => {
+      instance = createInstance();
+      return instance;
+    },
+  };
+};
 
 export class Player {
   p: p5;
@@ -23,7 +45,7 @@ export class Player {
   vel: Vector;
   acc: Vector;
   ammunition: number;
-  thruster: Thruster;
+  thruster: ThrusterExhaustSystem;
   deathCountDown: number;
   constructor(p: p5, x: number, y: number) {
     this.p = p;
@@ -36,6 +58,7 @@ export class Player {
     this.acc = this.p.createVector(0, 0);
     this.ammunition = 1000;
     this.thruster = new ThrusterExhaustSystem(
+      p,
       this.p.createVector(width / 2, height),
       0
     );
@@ -134,17 +157,7 @@ export class Player {
           .add(p5.Vector.fromAngle(this.rotation, this.size));
         let r = 5;
         this.ammunition--;
-        bullets.push(
-          new Bullet(
-            this.p,
-            pos,
-            p5.Vector.fromAngle(
-              this.rotation + this.p.random(-this.p.PI / 20, this.p.PI / 20),
-              20
-            ),
-            r
-          )
-        );
+        bulletSystem(this.p).getInstance().addBullet(this.pos, this.rotation);
       }
     }
   }

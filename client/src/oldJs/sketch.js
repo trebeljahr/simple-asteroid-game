@@ -28,16 +28,7 @@ function draw() {
 function gameLogic() {
   ammunition.run();
   hearts.run();
-  // explosionSystem.run();
-  for (let j = bullets.length - 1; j > 0; j--) {
-    let bullet = bullets[j];
-    fill(255);
-    stroke(255, 0, 0);
-    bullet.run();
-    if (!bullet.inScreen()) {
-      bullets.splice(j, 1);
-    }
-  }
+  explosionSystem.run();
 
   for (let i = asteroids.length - 1; i >= 0; i--) {
     let asteroid = asteroids[i];

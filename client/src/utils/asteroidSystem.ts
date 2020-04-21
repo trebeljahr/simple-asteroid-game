@@ -31,6 +31,12 @@ class Asteroids {
     this.p = p;
     this.asteroids = [];
   }
+  run = () => {
+    this.asteroids.forEach((asteroid) => {
+      asteroid.update();
+      asteroid.draw();
+    });
+  };
   addAsteroid = () => {
     this.asteroids = [...this.asteroids, this.createNewAsteroid()];
   };

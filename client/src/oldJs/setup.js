@@ -15,8 +15,6 @@ let ammunition, ammoAsset, explosionSystem;
 let socket;
 let enemyPlayers = {};
 
-function preload() {}
-
 function deleteFromObject(keyPart, obj) {
   for (var k in obj) {
     if (~k.indexOf(keyPart)) {

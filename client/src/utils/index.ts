@@ -1,4 +1,5 @@
 import p5, { Vector } from "p5";
+import { playerSingleton } from "./player";
 
 export const boardSizeX = 500;
 export const boardSizeY = 500;
@@ -43,7 +44,7 @@ export const playerHitsCircularTarget = (
 export const randomPositionNotHittingPlayer = (p: p5, size: number) => {
   let pos = randomPosition(p);
   let target = { pos, size };
-  while (playerHitsCircularTarget(target, player)) {
+  while (playerHitsCircularTarget(target, playerSingleton(p).getInstance())) {
     pos = randomPosition(p);
     target = { pos, size };
   }
@@ -53,7 +54,12 @@ export const randomPositionNotHittingPlayer = (p: p5, size: number) => {
 export const randomSpawnPoint = (p: p5) => {
   let pos = randomPosition(p);
   while (
-    distSquare(pos.x, pos.y, player.pos.x, player.pos.y) <
+    distSquare(
+      pos.x,
+      pos.y,
+      playerSingleton(p).getInstance().pos.x,
+      playerSingleton(p).getInstance().pos.y
+    ) <
     ((width / 2) * width) / 2
   ) {
     pos = randomPosition(p);

@@ -1,18 +1,28 @@
-class ThrusterExhaustSystem {
-  constructor(pos, rotation) {
+import p5, { Vector } from "p5";
+import { width, height, rgba } from ".";
+import { Mover } from "./mover";
+
+export class ThrusterExhaustSystem {
+  p: p5;
+  pos: Vector;
+  rotation: number;
+  particles: ExhaustParticle[];
+  constructor(p: p5, pos: Vector, rotation: number) {
+    this.p = p;
     this.pos = pos.copy();
     this.rotation = rotation;
     this.particles = [];
   }
 
-  fire(number) {
-    for (let i = 0; i < number; i++) {
+  fire(amount: number) {
+    for (let i = 0; i < amount; i++) {
       this.particles.push(
         new ExhaustParticle(
+          this.p,
           this.pos,
           p5.Vector.fromAngle(
-            this.rotation + random(-PI / 10, PI / 10),
-            random(5, 10)
+            this.rotation + this.p.random(-this.p.PI / 10, this.p.PI / 10),
+            this.p.random(5, 10)
           ),
           10
         )
@@ -20,7 +30,7 @@ class ThrusterExhaustSystem {
     }
   }
 
-  updatePos(pos, rotation) {
+  updatePos(pos: Vector, rotation: number) {
     this.pos = pos.copy();
     this.rotation = rotation;
   }
@@ -37,18 +47,27 @@ class ThrusterExhaustSystem {
 }
 
 class ExhaustParticle extends Mover {
-  constructor(pos, vel, r) {
-    super(pos, vel, r);
+  p: p5;
+  lifespan: number;
+  redValue: number;
+  greenValue: number;
+  blueValue: number;
+  greenCap: number;
+  constructor(p: p5, pos: Vector, vel: Vector, r: number) {
+    super(p, pos, vel, r);
+    this.p = p;
     this.lifespan = 255;
     this.redValue = 100;
     this.greenValue = 200;
     this.blueValue = 255;
-    this.greenCap = random(100, 255);
+    this.greenCap = this.p.random(100, 255);
   }
 
   run() {
     this.update();
-    fill(rgba(this.redValue, this.greenValue, this.blueValue, this.lifespan));
+    this.p.fill(
+      rgba(this.redValue, this.greenValue, this.blueValue, this.lifespan)
+    );
     this.draw();
     this.decay();
   }
