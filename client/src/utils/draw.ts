@@ -1,22 +1,28 @@
 import p5 from "p5";
 import { menuIsOpen } from "./menu";
-import { width, height } from ".";
-import { playerSingleton } from "./player";
+import { width, height, distSquare } from ".";
 import { borderSystem } from "./border";
-import { player } from "../components/P5Component";
+import { assets } from "../components/P5Component";
+import { player, playerHitsCollectible } from "./player";
+import { explosions } from "./explosions";
+import { ammunition } from "./ammunition";
+import { hearts } from "./hearts";
+import { asteroids } from "./asteroids";
+import { bullets } from "./bullets";
 
 export const draw = (p: p5) => {
   if (menuIsOpen) {
     p.background("rgba(0,0,0,0.1)");
     return;
   }
+  assets && p.background(assets.space);
   p.push();
   p.translate(-player.pos.x, -player.pos.y);
   p.translate(width / 2, height / 2);
   borderSystem(p).getInstance().show();
   p.noStroke();
   player.run();
-  // gameLogic();
+  gameLogic();
   // Object.keys(enemyPlayers).forEach((id) => {
   //   fill(255);
   //   enemyPlayers[id].draw();
@@ -31,63 +37,46 @@ export const draw = (p: p5) => {
   //   });
 };
 
-// function gameLogic() {
-//   ammunition.run();
-//   hearts.run();
-//   explosionSystem.run();
+function gameLogic() {
+  ammunition.run();
+  hearts.run();
+  explosions.run();
+  asteroids.run();
 
-//   for (let i = asteroids.length - 1; i >= 0; i--) {
-//     let asteroid = asteroids[i];
-//     asteroid.update();
-//     asteroid.draw();
+  for (let i = asteroids.asteroids.length - 1; i >= 0; i--) {
+    let asteroid = asteroids.asteroids[i];
+    for (let j = bullets.bullets.length - 1; j > 0; j--) {
+      let bullet = bullets.bullets[j];
+      let distance = distSquare(
+        asteroid.pos.x,
+        asteroid.pos.y,
+        bullet.pos.x,
+        bullet.pos.y
+      );
+      let radiusSum = asteroid.size / 2 + bullet.size / 2;
+      if (distance <= radiusSum * radiusSum) {
+        asteroid.hit();
+        if (asteroid.hitPoints <= 0) {
+          asteroids.spawnNewAsteroid(i);
+        }
+        bullets.bullets.splice(j, 1);
+      }
+    }
+  }
 
-//     if (playerHitsAsteroid(asteroid, player)) {
-//       player.damage();
-//       explosionSystem.createExplosion(asteroid.pos);
-//       asteroids.splice(i, 1);
-//     }
+  for (let i = ammunition.ammunitionPackages.length - 1; i > 0; i--) {
+    let packet = ammunition.ammunitionPackages[i];
+    if (playerHitsCollectible(packet, player)) {
+      player.ammunition += packet.amount;
+      ammunition.ammunitionPackages.splice(i, 1);
+    }
+  }
 
-//     if (frameCount % 30 === 0 && asteroids.length - 1 === i) {
-//       if (asteroids.length < 1000) {
-//         asteroids.push(createNewAsteroid());
-//       }
-//     }
-//   }
-
-//   for (let i = asteroids.length - 1; i >= 0; i--) {
-//     let asteroid = asteroids[i];
-//     for (let j = bullets.length - 1; j > 0; j--) {
-//       let bullet = bullets[j];
-//       let distance = distSquare(
-//         asteroid.pos.x,
-//         asteroid.pos.y,
-//         bullet.pos.x,
-//         bullet.pos.y
-//       );
-//       let radiusSum = asteroid.size / 2 + bullet.size / 2;
-//       if (distance <= radiusSum * radiusSum) {
-//         asteroid.hit();
-//         if (asteroid.hitPoints <= 0) {
-//           spawnNewAsteroid(i);
-//         }
-//         bullets.splice(j, 1);
-//       }
-//     }
-//   }
-
-//   for (let i = ammunition.packets.length - 1; i > 0; i--) {
-//     let packet = ammunition.packets[i];
-//     if (playerHitsCollectible(packet, player)) {
-//       player.ammunition += packet.amount;
-//       ammunition.packets.splice(i, 1);
-//     }
-//   }
-
-//   for (let i = hearts.hearts.length - 1; i > 0; i--) {
-//     let heart = hearts.hearts[i];
-//     if (playerHitsCollectible(heart, player)) {
-//       player.life++;
-//       hearts.hearts.splice(i, 1);
-//     }
-//   }
-// }
+  for (let i = hearts.hearts.length - 1; i > 0; i--) {
+    let heart = hearts.hearts[i];
+    if (playerHitsCollectible(heart, player)) {
+      player.life++;
+      hearts.hearts.splice(i, 1);
+    }
+  }
+}

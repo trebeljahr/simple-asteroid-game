@@ -1,6 +1,5 @@
 import p5, { Vector } from "p5";
-import { playerSingleton } from "./player";
-import { player } from "../components/P5Component";
+import { player } from "./player";
 
 export const BULLET_SPEED = 10;
 export const width = window.innerWidth;

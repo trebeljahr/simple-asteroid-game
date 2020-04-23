@@ -2,26 +2,12 @@ import p5, { Vector, Image } from "p5";
 import { randomPositionNotHittingPlayer } from ".";
 import { Mover } from "./mover";
 import { assets } from "../components/P5Component";
+import { playerHitsAsteroid, player } from "./player";
+import { explosions } from "./explosions";
 
-export const asteroidSystem = (p: p5) => {
-  let instance: Asteroids;
-
-  const createInstance = () => {
-    return new Asteroids(p);
-  };
-
-  return {
-    getInstance: () => {
-      if (!instance) {
-        instance = createInstance();
-      }
-      return instance;
-    },
-    reset: () => {
-      instance = createInstance();
-      return instance;
-    },
-  };
+export let asteroids = {} as Asteroids;
+export const resetAsteroids = (p: p5) => {
+  asteroids = new Asteroids(p);
 };
 
 class Asteroids {
@@ -36,10 +22,20 @@ class Asteroids {
   }
 
   run = () => {
-    this.asteroids.forEach((asteroid) => {
+    this.asteroids = this.asteroids.reduce((agg, asteroid) => {
       asteroid.update();
       asteroid.draw();
-    });
+      if (playerHitsAsteroid(asteroid, player)) {
+        player.damage();
+        explosions.createExplosion(asteroid.pos);
+        return agg;
+      }
+      return [...agg, asteroid];
+    }, [] as Asteroid[]);
+
+    if (this.asteroids.length < 1000) {
+      this.asteroids = [...this.asteroids, this.createNewAsteroid()];
+    }
   };
 
   addAsteroid = () => {

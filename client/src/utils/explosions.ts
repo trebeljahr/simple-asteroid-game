@@ -2,25 +2,10 @@ import p5, { Vector } from "p5";
 import { Mover } from "./mover";
 import { rgba } from ".";
 
-export const explosionSystem = (p: p5) => {
-  let instance: ExplosionSystem;
+export let explosions = {} as ExplosionSystem;
 
-  const createInstance = () => {
-    return new ExplosionSystem(p);
-  };
-
-  return {
-    getInstance: () => {
-      if (!instance) {
-        instance = createInstance();
-      }
-      return instance;
-    },
-    reset: () => {
-      instance = createInstance();
-      return instance;
-    },
-  };
+export const resetExplosions = (p: p5) => {
+  explosions = new ExplosionSystem(p);
 };
 
 class ExplosionSystem {

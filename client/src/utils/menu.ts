@@ -1,12 +1,11 @@
 import p5, { Element } from "p5";
 import { T_KEYCODE, width, height } from ".";
-import { explosionSystem } from "./explosionSystem";
-import { asteroidSystem } from "./asteroidSystem";
-import { playerSingleton, Player } from "./player";
-import { bulletSystem } from "./bulletSystem";
-import { ammunitionSystem } from "./ammunitionSystem";
-import { heartSystem } from "./heartSystem";
-import { player, resetPlayer } from "../components/P5Component";
+import { resetPlayer } from "./player";
+import { resetExplosions } from "./explosions";
+import { resetAmmunition } from "./ammunition";
+import { resetbullets } from "./bullets";
+import { resetHearts } from "./hearts";
+import { resetAsteroids } from "./asteroids";
 
 export let menuIsOpen: boolean = false,
   button: null | Element = null,
@@ -57,15 +56,16 @@ export const keyPressed = (p: p5) => {
 export const restart = (p: p5) => {
   // socket = io.connect();
   resetPlayer(p);
-  // socket.emit("newPlayer", {
+  resetExplosions(p);
+  resetAmmunition(p);
+  resetbullets(p);
+  resetHearts(p);
+  resetAsteroids(p);
+
+  // socket.emit ("newPlayer", {
   //   name: "SomeUsername",
   //   pos: { x: player.pos.x, y: player.pos.y },
   // });
-  ammunitionSystem(p).reset();
-  heartSystem(p).reset();
-  explosionSystem(p).reset();
-  asteroidSystem(p).reset();
-  bulletSystem(p).reset();
 
   if (gameOver) {
     gameOver = false;

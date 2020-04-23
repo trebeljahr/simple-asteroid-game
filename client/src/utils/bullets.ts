@@ -1,25 +1,9 @@
 import p5, { Vector } from "p5";
 import { Mover } from "./mover";
 
-export const bulletSystem = (p: p5) => {
-  let instance: BulletSystem;
-
-  const createInstance = () => {
-    return new BulletSystem(p);
-  };
-
-  return {
-    getInstance: () => {
-      if (!instance) {
-        instance = createInstance();
-      }
-      return instance;
-    },
-    reset: () => {
-      instance = createInstance();
-      return instance;
-    },
-  };
+export let bullets = {} as BulletSystem;
+export const resetbullets = (p: p5) => {
+  bullets = new BulletSystem(p);
 };
 
 class BulletSystem {

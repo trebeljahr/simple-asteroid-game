@@ -2,25 +2,9 @@ import p5, { Vector } from "p5";
 import { randomSpawnPoint } from ".";
 import { assets } from "../components/P5Component";
 
-export const heartSystem = (p: p5) => {
-  let instance: Hearts;
-
-  const createInstance = () => {
-    return new Hearts(p);
-  };
-
-  return {
-    getInstance: () => {
-      if (!instance) {
-        instance = createInstance();
-      }
-      return instance;
-    },
-    reset: () => {
-      instance = createInstance();
-      return instance;
-    },
-  };
+export let hearts = {} as Hearts;
+export const resetHearts = (p: p5) => {
+  hearts = new Hearts(p);
 };
 
 class Hearts {

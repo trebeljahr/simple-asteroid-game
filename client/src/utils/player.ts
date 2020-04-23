@@ -11,32 +11,16 @@ import {
   playerHitsCircularTarget,
 } from ".";
 import { toggleDeathScreen, gameOver } from "./menu";
-import { explosionSystem } from "./explosionSystem";
+import { explosions } from "./explosions";
 import { ThrusterExhaustSystem } from "./thruster";
-import { bulletSystem } from "./bulletSystem";
-import { Asteroid } from "./asteroidSystem";
-import { Ammunition } from "./ammunitionSystem";
+import { Asteroid } from "./asteroids";
 import { assets } from "../components/P5Component";
+import { bullets } from "./bullets";
 
-export const playerSingleton = (p: p5) => {
-  let instance: Player;
+export let player = {} as Player;
 
-  const createInstance = () => {
-    return new Player(p, p.random(width), p.random(height));
-  };
-
-  return {
-    getInstance: () => {
-      if (!instance) {
-        instance = createInstance();
-      }
-      return instance;
-    },
-    reset: () => {
-      instance = createInstance();
-      return instance;
-    },
-  };
+export const resetPlayer = (p: p5) => {
+  player = new Player(p, p.random(width), p.random(height));
 };
 
 export class Player {
@@ -93,7 +77,7 @@ export class Player {
   damage() {
     this.life--;
     if (this.life <= 0 && !gameOver) {
-      explosionSystem(this.p).getInstance().createExplosion(this.pos);
+      explosions.createExplosion(this.pos);
       this.deathCountDown = 255;
     }
   }
@@ -153,7 +137,7 @@ export class Player {
           .createVector(this.pos.x, this.pos.y)
           .add(p5.Vector.fromAngle(this.rotation, this.size));
         this.ammunition--;
-        bulletSystem(this.p).getInstance().addBullet(newPos, this.rotation);
+        bullets.addBullet(newPos, this.rotation);
       }
     }
   }
@@ -177,6 +161,9 @@ export const playerHitsAsteroid = (asteroid: Asteroid, player: Player) => {
   return playerHitsCircularTarget(asteroid, player);
 };
 
-export const playerHitsCollectible = (ammo: Ammunition, player: Player) => {
+export const playerHitsCollectible = (
+  ammo: { pos: Vector; size: number },
+  player: Player
+) => {
   return playerHitsCircularTarget(ammo, player);
 };

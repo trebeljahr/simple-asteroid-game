@@ -2,25 +2,9 @@ import p5, { Vector } from "p5";
 import { randomSpawnPoint } from ".";
 import { assets } from "../components/P5Component";
 
-export const ammunitionSystem = (p: p5) => {
-  let instance: AmmunitionPackages;
-
-  const createInstance = () => {
-    return new AmmunitionPackages(p);
-  };
-
-  return {
-    getInstance: () => {
-      if (!instance) {
-        instance = createInstance();
-      }
-      return instance;
-    },
-    reset: () => {
-      instance = createInstance();
-      return instance;
-    },
-  };
+export let ammunition = {} as AmmunitionPackages;
+export const resetAmmunition = (p: p5) => {
+  ammunition = new AmmunitionPackages(p);
 };
 
 class AmmunitionPackages {
@@ -60,10 +44,12 @@ export class Ammunition {
   p: p5;
   pos: Vector;
   size: number;
+  amount: number;
   constructor(p: p5, pos: Vector, size: number) {
     this.pos = pos.copy();
     this.size = size;
     this.p = p;
+    this.amount = this.p.map(size, 0, 60, 0, 100);
   }
 
   draw() {
