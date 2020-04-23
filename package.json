@@ -1,16 +1,18 @@
 {
   "name": "asteroid-game",
   "version": "1.0.0",
-  "description": "This is a small asteroid game for multiplayer using react, sockets, p5 canvas.",
-  "scripts": {},
+  "description": "This is a small asteroid game for multiplayer using typescript, sockets and p5 canvas.",
+  "scripts": {
+    "build:client": "cd client && npm run build",
+    "dev:server": "cd server && npm run dev",
+    "start": "concurrently \"npm run build:client\" \"npm run dev:server\""
+  },
   "repository": {
-    "type": "git",
-    "url": "git+https://github.com/Nrin3141/simple-asteroid-game.git"
+    "type": "git"
   },
   "author": "Rico Trebeljahr",
   "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/Nrin3141/simple-asteroid-game/issues"
-  },
-  "homepage": "https://github.com/Nrin3141/simple-asteroid-game#readme"
+  "devDependencies": {
+    "concurrently": "^5.1.0"
+  }
 }
