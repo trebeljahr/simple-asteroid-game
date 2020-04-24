@@ -29,12 +29,11 @@ io.on("connection", function (socket: any) {
   });
 });
 
-const port = 9777; // "xprs" in T9
+const port = 9777;
 
 http.listen(port, listening);
 
 function listening() {
-  console.log(`Demo server available on http://localhost:${port}`);
   browserSync({
     files: ["../public/**/*.{html,js,css}"],
     online: false,

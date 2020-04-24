@@ -49,7 +49,7 @@ export class Ammunition {
     this.pos = pos.copy();
     this.size = size / 3;
     this.p = p;
-    this.amount = Math.floor(this.p.map(size, 0, 60, 0, 100));
+    this.amount = size;
   }
 
   draw() {

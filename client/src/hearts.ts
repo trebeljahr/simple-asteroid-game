@@ -18,14 +18,7 @@ class Hearts {
 
   spawnHearts(amount: number) {
     for (let i = 0; i < amount; i++) {
-      let possibleSizes = [150, 150, 150, 150, 150, 200, 200, 250];
-      this.hearts.push(
-        new Heart(
-          this.p,
-          randomSpawnPoint(this.p),
-          this.p.random(possibleSizes)
-        )
-      );
+      this.hearts.push(new Heart(this.p, randomSpawnPoint(this.p), 200));
     }
   }
 

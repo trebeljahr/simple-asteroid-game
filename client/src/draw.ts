@@ -9,12 +9,20 @@ import { bullets } from "./bullets";
 import { assets } from "./sketch";
 import { menuIsOpen } from "./menu";
 import { distSquare, width, height } from "./utils";
+import Quadtree from "quadtree-lib";
+
+export const quadtree = new Quadtree({
+  width: width * 2,
+  height: height * 2,
+  maxElements: 1,
+});
 
 export const draw = (p: p5) => {
   if (menuIsOpen) {
     p.background("rgba(100, 0, 100, 0.1)");
     return;
   }
+
   assets && p.background(assets.space);
   p.push();
   p.translate(-player.pos.x, -player.pos.y);
@@ -41,7 +49,7 @@ function gameLogic() {
   ammunition.run();
   hearts.run();
   explosions.run();
-  // asteroids.run();
+  asteroids.run();
 
   for (let i = asteroids.asteroids.length - 1; i >= 0; i--) {
     let asteroid = asteroids.asteroids[i];
@@ -79,4 +87,5 @@ function gameLogic() {
       hearts.hearts.splice(i, 1);
     }
   }
+  quadtree.clear();
 }
