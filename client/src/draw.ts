@@ -9,13 +9,6 @@ import { bullets } from "./bullets";
 import { assets } from "./sketch";
 import { menuIsOpen } from "./menu";
 import { distSquare, width, height } from "./utils";
-import Quadtree from "quadtree-lib";
-
-export const quadtree = new Quadtree({
-  width: width * 2,
-  height: height * 2,
-  maxElements: 1,
-});
 
 export const draw = (p: p5) => {
   if (menuIsOpen) {
@@ -25,7 +18,7 @@ export const draw = (p: p5) => {
 
   assets && p.background(assets.space);
   p.push();
-  p.translate(-player.pos.x, -player.pos.y);
+  p.translate(-player.enginePlayer.position.x, -player.enginePlayer.position.y);
   p.translate(width / 2, height / 2);
   borderSystem(p).getInstance().show();
   p.noStroke();
@@ -87,5 +80,4 @@ function gameLogic() {
       hearts.hearts.splice(i, 1);
     }
   }
-  quadtree.clear();
 }

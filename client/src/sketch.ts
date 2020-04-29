@@ -1,7 +1,18 @@
 import { restart, gameOver, pauseGame } from "./menu";
 import { draw } from "./draw";
-import { width, height, T_KEYCODE } from "./utils";
+import { width, height, T_KEYCODE, boardSizeX, boardSizeY } from "./utils";
 import p5, { Image } from "p5";
+import {
+  Engine,
+  Render,
+  World,
+  Bodies,
+  Composite,
+  Body,
+  Vector,
+} from "matter-js";
+import { player } from "./player";
+import { engine } from "./engine";
 
 const sketch = (p: p5) => {
   p.keyPressed = () => {
@@ -33,11 +44,19 @@ const sketch = (p: p5) => {
     };
   };
   p.setup = () => {
+    p.noCanvas();
     p.createCanvas(width, height);
     restart(p);
+    engine.world.gravity.y = 0;
+    engine.world.bounds.min.x = -boardSizeX;
+    engine.world.bounds.min.x = -boardSizeY;
+    engine.world.bounds.max.x = boardSizeX;
+    engine.world.bounds.max.x = boardSizeY;
   };
   p.draw = () => {
     draw(p);
+    Engine.update(engine, 1000 / 60);
+    // console.log(enginePlayer.position);
   };
 };
 
