@@ -9,11 +9,8 @@ import { Mover } from "./mover";
 import { playerHitsAsteroid, player } from "./player";
 import { explosions } from "./explosions";
 import { assets } from "./sketch";
-// import { quadtree } from "./draw";
-import { QuadTree, Rectangle, Point } from "./quadtree";
 import { v4 } from "uuid";
 
-let quadtree: QuadTree;
 export let asteroids = {} as Asteroids;
 export const resetAsteroids = (p: p5) => {
   asteroids = new Asteroids(p);
@@ -39,112 +36,21 @@ class Asteroids {
     if (this.asteroids.length < maxAsteroids) {
       this.asteroids = [...this.asteroids, this.createNewAsteroid()];
     }
-
-    quadtree = new QuadTree(
-      new Rectangle(-boardSizeX, -boardSizeY, 2 * boardSizeX, 2 * boardSizeY),
-      4
-    );
-    this.asteroids.forEach((asteroid) => {
+    this.asteroids = this.asteroids.reduce((agg, asteroid) => {
       asteroid.update();
       asteroid.draw();
-      const {
-        pos: { x, y },
-        id,
-      } = asteroid;
-      const point = new Point(x, y, { id });
-      quadtree.insert(point);
-    });
-
-    invocations.amount = 0;
-    const {
-      pos: { x, y },
-      size,
-    } = player;
-    const collidingPoints: Array<Point> = quadtree.query(
-      new Rectangle(x, y, size, size),
-      []
-    );
-    const collidingAsteroids = collidingPoints
-      .filter(({ data }) => {
-        const id = data.id as string;
-        return playerHitsAsteroid(this.findById(id), player);
-      })
-      .map(({ data }) => {
-        const id = data.id as string;
-        return this.findById(id);
-      });
-    console.log(collidingPoints);
-
-    collidingAsteroids.forEach((asteroid) => {
-      explosions.createExplosion(asteroid.pos);
-    });
-
-    const collidingIds = collidingAsteroids.map(({ id }) => {
-      return id;
-    });
-    this.asteroids = this.asteroids.reduce((agg, value) => {
-      if (collidingIds.includes(value.id)) {
-        return [...agg];
+      if (playerHitsAsteroid(asteroid, player)) {
+        // player.damage();
+        explosions.createExplosion(asteroid.pos);
+        return agg;
       }
-      return [...agg, value];
-    }, []);
+      return [...agg, asteroid];
+    }, [] as Asteroid[]);
 
-    quadtree = new QuadTree(
-      new Rectangle(0, 0, window.innerWidth, window.innerHeight),
-      0
-    );
-
-    console.log("Shiffman Quad: ", invocations);
-    // DifferentQuadTree
-    // invocations = 0;
-    // const {
-    //   pos: { x, y },
-    // } = player;
-    // const collidingAsteroids: Array<Asteroid> = quadtree
-    //   .colliding(
-    //     {
-    //       x,
-    //       y,
-    //       width: player.size,
-    //       height: player.size * 2,
-    //       rotation: player.rotation,
-    //     },
-    //     (_, { asteroid }) => {
-    //       const hit = playerHitsCircularTarget(asteroid, player);
-    //       return hit;
-    //     }
-    //   )
-    //   .map(({ asteroid }) => asteroid);
-    // this.asteroids = this.asteroids.filter(
-    //   (asteroid) => !collidingAsteroids.includes(asteroid)
-    // );
-    // collidingAsteroids.forEach((asteroid) => {
-    //   explosions.createExplosion(asteroid.pos);
-    // });
-    // quadtree.clear();
-    // console.log("Quad: ", invocations);
+    if (this.asteroids.length < maxAsteroids) {
+      this.asteroids = [...this.asteroids, this.createNewAsteroid()];
+    }
   };
-
-  // Lower Performance collision detection without quad tree.
-  // run = () => {
-  //   let invocations = 0;
-  //   this.asteroids = this.asteroids.reduce((agg, asteroid) => {
-  //     asteroid.update();
-  //     asteroid.draw();
-  //     invocations++;
-  //     if (playerHitsAsteroid(asteroid, player)) {
-  //       player.damage();
-  //       explosions.createExplosion(asteroid.pos);
-  //       return agg;
-  //     }
-  //     return [...agg, asteroid];
-  //   }, [] as Asteroid[]);
-
-  //   if (this.asteroids.length < maxAsteroids) {
-  //     this.asteroids = [...this.asteroids, this.createNewAsteroid()];
-  //   }
-  //   console.log("Normal: ", invocations);
-  // };
 
   addAsteroid = () => {
     this.asteroids = [...this.asteroids, this.createNewAsteroid()];

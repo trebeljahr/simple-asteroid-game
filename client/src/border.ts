@@ -1,5 +1,6 @@
 import p5 from "p5";
 import { boardSizeX, boardSizeY } from "./utils";
+import { Bodies } from "matter-js";
 
 export const borderSystem = (p: p5) => {
   let instance: Border;
@@ -37,8 +38,9 @@ class Border {
   }
 
   show() {
-    this.p.fill("rgba(0,0,0,0)");
-    this.p.stroke(255);
-    this.p.rect(this.x, this.y, this.sizeX, this.sizeY);
+    // create two boxes and a ground
+    // this.p.fill("rgba(0,0,0,0)");
+    // this.p.stroke(255);
+    // this.p.rect(this.x, this.y, this.sizeX, this.sizeY);
   }
 }

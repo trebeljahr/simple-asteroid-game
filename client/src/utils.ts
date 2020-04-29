@@ -1,5 +1,7 @@
-import p5, { Vector } from "p5";
-import { player } from "./player";
+import p5 from "p5";
+import { player, Player } from "./player";
+import { Vector } from "matter-js";
+import { Mover } from "./mover";
 
 export const BULLET_SPEED = 10;
 export const width = window.innerWidth;
@@ -25,15 +27,12 @@ export const distSquare = (x1: number, y1: number, x2: number, y2: number) => {
   return (x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1);
 };
 
-export const playerHitsCircularTarget = (
-  target: { pos: Vector; size: number },
-  player: { pos: Vector; size: number; life: number }
-) => {
+export const playerHitsCircularTarget = (target: any, player: Player) => {
   const distance = distSquare(
     target.pos.x,
     target.pos.y,
-    player.pos.x,
-    player.pos.y
+    player.enginePlayer.position.x,
+    player.enginePlayer.position.y
   );
   const radiusSum = target.size / 2 + player.size / 2;
   if (player.life <= 0) {
@@ -55,7 +54,12 @@ export const randomPositionNotHittingPlayer = (p: p5, size: number) => {
 export const randomSpawnPoint = (p: p5) => {
   let pos = randomPosition(p);
   while (
-    distSquare(pos.x, pos.y, player.pos.x, player.pos.y) <
+    distSquare(
+      pos.x,
+      pos.y,
+      player.enginePlayer.position.x,
+      player.enginePlayer.position.y
+    ) <
     ((width / 2) * width) / 2
   ) {
     pos = randomPosition(p);
