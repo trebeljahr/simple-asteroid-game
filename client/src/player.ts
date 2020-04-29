@@ -13,7 +13,7 @@ import {
 import { toggleDeathScreen, gameOver } from "./menu";
 import { explosions } from "./explosions";
 import { ThrusterExhaustSystem } from "./thruster";
-import { Asteroid } from "./asteroids";
+import { Asteroid, invocations } from "./asteroids";
 import { bullets } from "./bullets";
 import { assets } from "./sketch";
 
@@ -158,6 +158,7 @@ export class Player {
 }
 
 export const playerHitsAsteroid = (asteroid: Asteroid, player: Player) => {
+  invocations.amount = invocations.amount + 1;
   return playerHitsCircularTarget(asteroid, player);
 };
 
