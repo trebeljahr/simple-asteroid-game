@@ -15,7 +15,5 @@
   "devDependencies": {
     "concurrently": "^5.1.0"
   },
-  "dependencies": {
-    "matter-js": "^0.14.2"
-  }
+  "dependencies": {}
 }
