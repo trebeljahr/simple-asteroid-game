@@ -1,4 +1,4 @@
-import p5, { Vector } from "p5";
+import p5 from "p5";
 import {
   width,
   height,
@@ -16,6 +16,8 @@ import { ThrusterExhaustSystem } from "./thruster";
 import { Asteroid, invocations } from "./asteroids";
 import { bullets } from "./bullets";
 import { assets } from "./sketch";
+import { World, Body, Bodies, Vector } from "matter-js";
+import { engine } from "./engine";
 
 export let player = {} as Player;
 
@@ -25,48 +27,69 @@ export const resetPlayer = (p: p5) => {
 
 export class Player {
   p: p5;
-  pos: Vector;
+  // pos: Vector;
   size: number;
   life: number;
-  rotation: number;
-  vel: Vector;
-  acc: Vector;
+  // rotation: number;
+  // vel: Vector;
+  // acc: Vector;
   ammunition: number;
   thruster: ThrusterExhaustSystem;
   deathCountDown: number;
+  enginePlayer: Body;
   constructor(p: p5, x: number, y: number) {
     this.p = p;
     this.deathCountDown = 0;
-    this.pos = this.p.createVector(x, y);
+    // this.pos = this.p.createVector(x, y);
     this.size = 60;
     this.life = 3;
-    this.rotation = 0;
-    this.vel = this.p.createVector(0, 0);
-    this.acc = this.p.createVector(0, 0);
+    // this.rotation = 0;
+    // this.vel = this.p.createVector(0, 0);
+    // this.acc = this.p.createVector(0, 0);
     this.ammunition = 1000;
     this.thruster = new ThrusterExhaustSystem(
       p,
       this.p.createVector(width / 2, height),
       0
     );
+    this.enginePlayer = Bodies.rectangle(x, y, this.size, this.size * 2, {
+      angle: 0,
+    });
+    console.log(this.enginePlayer);
+    World.add(engine.world, [this.enginePlayer]);
   }
 
   draw() {
     this.thruster.updatePos(
       p5.Vector.add(
-        this.pos,
-        p5.Vector.fromAngle(this.rotation - this.p.PI, this.size)
+        this.p.createVector(
+          this.enginePlayer.position.x,
+          this.enginePlayer.position.y
+        ),
+        p5.Vector.fromAngle(this.enginePlayer.angle - this.p.PI, this.size)
       ),
-      this.rotation - this.p.PI
+      this.enginePlayer.angle - this.p.PI
     );
+    // this.thruster.updatePos(
+    //   p5.Vector.add(
+    //     this.pos,
+    //     p5.Vector.fromAngle(this.rotation - this.p.PI, this.size)
+    //   ),
+    //   this.rotation - this.p.PI
+    // );
     if (this.p.keyIsDown(this.p.UP_ARROW) || this.p.keyIsDown(W_KEYCODE)) {
       this.thruster.fire(10);
     }
     this.thruster.run();
     this.p.push();
-    this.p.translate(this.pos.x, this.pos.y);
+    this.p.translate(
+      this.enginePlayer.position.x,
+      this.enginePlayer.position.y
+    );
+    this.p.angleMode(this.p.RADIANS);
     this.p.rectMode(this.p.CENTER);
-    this.p.rotate(this.rotation);
+    // console.log(this.enginePlayer);
+    this.p.rotate(this.enginePlayer.angle);
     this.p.fill(255);
     this.p.imageMode(this.p.CENTER);
     this.p.rotate(this.p.PI / 2);
@@ -77,7 +100,12 @@ export class Player {
   damage() {
     this.life--;
     if (this.life <= 0 && !gameOver) {
-      explosions.createExplosion(this.pos);
+      explosions.createExplosion(
+        this.p.createVector(
+          this.enginePlayer.position.x,
+          this.enginePlayer.position.y
+        )
+      );
       this.deathCountDown = 255;
     }
   }
@@ -104,29 +132,35 @@ export class Player {
 
   steer() {
     if (this.p.keyIsDown(this.p.LEFT_ARROW) || this.p.keyIsDown(A_KEYCODE)) {
-      this.rotation -= 0.05;
+      Body.rotate(this.enginePlayer, -0.05);
     }
 
     if (this.p.keyIsDown(this.p.RIGHT_ARROW) || this.p.keyIsDown(D_KEYCODE)) {
-      this.rotation += 0.05;
+      Body.rotate(this.enginePlayer, 0.05);
     }
 
-    this.acc = p5.Vector.fromAngle(this.rotation, 0.1);
+    // this.acc = p5.Vector.fromAngle(this.enginePlayer.angle, 0.1);
   }
 
   update() {
-    const newX = this.pos.x + this.vel.x;
-    const newY = this.pos.y + this.vel.y;
-    if (newX >= boardSizeX || newX <= -boardSizeX) {
-      this.vel.x = 0;
-    }
-    if (newY >= boardSizeY || newY <= -boardSizeY) {
-      this.vel.y = 0;
-    }
-    this.pos.add(this.vel);
+    // const newX = this.pos.x + this.vel.x;
+    // const newY = this.pos.y + this.vel.y;
+    // if (newX >= boardSizeX || newX <= -boardSizeX) {
+    //   this.vel.x = 0;
+    // }
+    // if (newY >= boardSizeY || newY <= -boardSizeY) {
+    //   this.vel.y = 0;
+    // }
+    // this.pos.add(this.vel);
     if (this.p.keyIsDown(this.p.UP_ARROW) || this.p.keyIsDown(W_KEYCODE)) {
-      this.vel.add(this.acc);
-      this.vel.limit(5);
+      Body.applyForce(
+        this.enginePlayer,
+        this.enginePlayer.position,
+        Vector.rotate(Vector.create(0.01, 0), this.enginePlayer.angle)
+      );
+      console.log(this.enginePlayer.force);
+      // this.vel.add(this.acc);
+      // this.vel.limit(5);
     }
   }
 
@@ -134,10 +168,13 @@ export class Player {
     if (this.p.keyIsDown(SPACE_KEYCODE) && this.ammunition > 0) {
       for (let i = 0; i < 2; i++) {
         const newPos = this.p
-          .createVector(this.pos.x, this.pos.y)
-          .add(p5.Vector.fromAngle(this.rotation, this.size));
+          .createVector(
+            this.enginePlayer.position.x,
+            this.enginePlayer.position.y
+          )
+          .add(p5.Vector.fromAngle(this.enginePlayer.angle, this.size));
         this.ammunition--;
-        bullets.addBullet(newPos, this.rotation);
+        bullets.addBullet(newPos, this.enginePlayer.angle);
       }
     }
   }
@@ -162,9 +199,6 @@ export const playerHitsAsteroid = (asteroid: Asteroid, player: Player) => {
   return playerHitsCircularTarget(asteroid, player);
 };
 
-export const playerHitsCollectible = (
-  ammo: { pos: Vector; size: number },
-  player: Player
-) => {
+export const playerHitsCollectible = (ammo: any, player: Player) => {
   return playerHitsCircularTarget(ammo, player);
 };
