@@ -10,10 +10,8 @@
   "dependencies": {
     "@types/p5": "^0.9.0",
     "@types/uuid": "^7.0.3",
-    "js-quadtree": "^3.1.1",
     "matter-js": "^0.14.2",
     "p5": "^1.0.0",
-    "quadtree-lib": "^1.0.9",
     "uuid": "^7.0.3"
   },
   "devDependencies": {
