@@ -1,5 +1,5 @@
 import p5 from "p5";
-import { borderSystem } from "./border";
+import { border } from "./border";
 import { player, playerHitsCollectible } from "./player";
 import { explosions } from "./explosions";
 import { ammunition } from "./ammunition";
@@ -20,7 +20,7 @@ export const draw = (p: p5) => {
   p.push();
   p.translate(-player.enginePlayer.position.x, -player.enginePlayer.position.y);
   p.translate(width / 2, height / 2);
-  borderSystem(p).getInstance().show();
+  border.show();
   p.noStroke();
   player.run();
   gameLogic();

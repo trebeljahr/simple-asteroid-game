@@ -53,6 +53,7 @@ export class Player {
       0
     );
     this.enginePlayer = Bodies.rectangle(x, y, this.size, this.size * 2, {
+      frictionAir: 0,
       angle: 0,
     });
     console.log(this.enginePlayer);
@@ -143,24 +144,30 @@ export class Player {
   }
 
   update() {
-    // const newX = this.pos.x + this.vel.x;
-    // const newY = this.pos.y + this.vel.y;
-    // if (newX >= boardSizeX || newX <= -boardSizeX) {
-    //   this.vel.x = 0;
+    // if (
+    //   this.enginePlayer.position.x >= boardSizeX ||
+    //   this.enginePlayer.position.x <= -boardSizeX
+    // ) {
+    //   Body.setVelocity(
+    //     this.enginePlayer,
+    //     Vector.create(0, this.enginePlayer.velocity.y)
+    //   );
     // }
-    // if (newY >= boardSizeY || newY <= -boardSizeY) {
-    //   this.vel.y = 0;
+    // if (
+    //   this.enginePlayer.position.y >= boardSizeY ||
+    //   this.enginePlayer.position.y <= -boardSizeY
+    // ) {
+    //   Body.setVelocity(
+    //     this.enginePlayer,
+    //     Vector.create(this.enginePlayer.velocity.y, 0)
+    //   );
     // }
-    // this.pos.add(this.vel);
     if (this.p.keyIsDown(this.p.UP_ARROW) || this.p.keyIsDown(W_KEYCODE)) {
       Body.applyForce(
         this.enginePlayer,
         this.enginePlayer.position,
         Vector.rotate(Vector.create(0.01, 0), this.enginePlayer.angle)
       );
-      console.log(this.enginePlayer.force);
-      // this.vel.add(this.acc);
-      // this.vel.limit(5);
     }
   }
 

@@ -5,6 +5,7 @@ import { resetAmmunition } from "./ammunition";
 import { resetbullets } from "./bullets";
 import { resetHearts } from "./hearts";
 import { resetAsteroids } from "./asteroids";
+import { resetBorder } from "./border";
 
 export let menuIsOpen: boolean = false,
   button: null | Element = null,
@@ -48,7 +49,7 @@ export const restart = (p: p5) => {
   resetbullets(p);
   resetHearts(p);
   resetAsteroids(p);
-
+  resetBorder(p);
   // socket.emit ("newPlayer", {
   //   name: "SomeUsername",
   //   pos: { x: player.pos.x, y: player.pos.y },

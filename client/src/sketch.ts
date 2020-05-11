@@ -56,7 +56,6 @@ const sketch = (p: p5) => {
   p.draw = () => {
     draw(p);
     Engine.update(engine, 1000 / 60);
-    // console.log(enginePlayer.position);
   };
 };
 
