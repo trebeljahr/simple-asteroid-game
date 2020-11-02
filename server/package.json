@@ -10,20 +10,20 @@
   "author": "Rico Trebeljahr",
   "license": "ISC",
   "dependencies": {
-    "browser-sync": "^2.26.7",
+    "browser-sync": "^2.26.13",
     "cors": "^2.8.5",
     "express": "^4.17.1",
     "socket.io": "^2.3.0"
   },
   "devDependencies": {
-    "@types/cors": "^2.8.6",
-    "@types/express": "^4.17.6",
-    "@types/node": "^13.13.2",
-    "@types/socket.io": "^2.1.4",
+    "@types/cors": "^2.8.8",
+    "@types/express": "^4.17.8",
+    "@types/node": "^13.13.30",
+    "@types/socket.io": "^2.1.11",
     "eslint": "^6.8.0",
-    "eslint-plugin-import": "^2.20.2",
-    "nodemon": "^2.0.3",
-    "ts-node": "^8.9.0",
-    "typescript": "^3.8.3"
+    "eslint-plugin-import": "^2.22.1",
+    "nodemon": "^2.0.6",
+    "ts-node": "^8.10.2",
+    "typescript": "^3.9.7"
   }
 }
