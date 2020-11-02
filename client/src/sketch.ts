@@ -2,16 +2,7 @@ import { restart, gameOver, pauseGame } from "./menu";
 import { draw } from "./draw";
 import { width, height, T_KEYCODE, boardSizeX, boardSizeY } from "./utils";
 import p5, { Image } from "p5";
-import {
-  Engine,
-  Render,
-  World,
-  Bodies,
-  Composite,
-  Body,
-  Vector,
-} from "matter-js";
-import { player } from "./player";
+import { Engine } from "matter-js";
 import { engine } from "./engine";
 
 const sketch = (p: p5) => {
@@ -49,9 +40,9 @@ const sketch = (p: p5) => {
     restart(p);
     engine.world.gravity.y = 0;
     engine.world.bounds.min.x = -boardSizeX;
-    engine.world.bounds.min.x = -boardSizeY;
+    engine.world.bounds.min.y = -boardSizeY;
     engine.world.bounds.max.x = boardSizeX;
-    engine.world.bounds.max.x = boardSizeY;
+    engine.world.bounds.max.y = boardSizeY;
   };
   p.draw = () => {
     draw(p);

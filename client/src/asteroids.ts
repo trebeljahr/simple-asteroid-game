@@ -18,7 +18,7 @@ export const resetAsteroids = (p: p5) => {
 
 export let invocations = { amount: 0 };
 
-const maxAsteroids = 500;
+const maxAsteroids = 10;
 class Asteroids {
   asteroids: Asteroid[];
   p: p5;
@@ -40,7 +40,7 @@ class Asteroids {
       asteroid.update();
       asteroid.draw();
       if (playerHitsAsteroid(asteroid, player)) {
-        // player.damage();
+        player.damage();
         explosions.createExplosion(asteroid.pos);
         return agg;
       }

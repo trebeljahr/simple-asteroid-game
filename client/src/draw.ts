@@ -7,8 +7,9 @@ import { hearts } from "./hearts";
 import { asteroids } from "./asteroids";
 import { bullets } from "./bullets";
 import { assets } from "./sketch";
-import { menuIsOpen } from "./menu";
+import { menuIsOpen, toggleWinScreen } from "./menu";
 import { distSquare, width, height } from "./utils";
+import { goals } from "./goals";
 
 export const draw = (p: p5) => {
   if (menuIsOpen) {
@@ -23,7 +24,7 @@ export const draw = (p: p5) => {
   border.show();
   p.noStroke();
   player.run();
-  gameLogic();
+  gameLogic(p);
   // Object.keys(enemyPlayers).forEach((id) => {
   //   fill(255);
   //   enemyPlayers[id].draw();
@@ -38,11 +39,16 @@ export const draw = (p: p5) => {
   //   });
 };
 
-function gameLogic() {
+function gameLogic(p: p5) {
   ammunition.run();
   hearts.run();
   explosions.run();
   asteroids.run();
+  goals.run();
+  if (goals.goals.length === 0) {
+    toggleWinScreen(p);
+    console.log("Player won!");
+  }
 
   for (let i = asteroids.asteroids.length - 1; i >= 0; i--) {
     let asteroid = asteroids.asteroids[i];
@@ -78,6 +84,17 @@ function gameLogic() {
     if (playerHitsCollectible(heart, player)) {
       player.life++;
       hearts.hearts.splice(i, 1);
+    }
+  }
+
+  for (let i = goals.goals.length - 1; i >= 0; i--) {
+    let goal = goals.goals[i];
+    if (
+      playerHitsCollectible(goal, player) &&
+      goal.goal === player.currentGoal
+    ) {
+      player.currentGoal++;
+      goals.goals.splice(i, 1);
     }
   }
 }

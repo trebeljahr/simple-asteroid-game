@@ -6,6 +6,7 @@ import { resetbullets } from "./bullets";
 import { resetHearts } from "./hearts";
 import { resetAsteroids } from "./asteroids";
 import { resetBorder } from "./border";
+import { resetGoals } from "./goals";
 
 export let menuIsOpen: boolean = false,
   button: null | Element = null,
@@ -15,6 +16,11 @@ export let gameOver: boolean = false;
 
 export const toggleDeathScreen = (p: p5) => {
   toggleMenu(p, "Game Over", "Press T to Start Again");
+  gameOver = true;
+};
+
+export const toggleWinScreen = (p: p5) => {
+  toggleMenu(p, "You won!", "Press T to Start Again");
   gameOver = true;
 };
 
@@ -46,6 +52,7 @@ export const restart = (p: p5) => {
   resetPlayer(p);
   resetExplosions(p);
   resetAmmunition(p);
+  resetGoals(p);
   resetbullets(p);
   resetHearts(p);
   resetAsteroids(p);
