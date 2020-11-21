@@ -1,22 +1,25 @@
-import p5, { Vector, Image } from "p5";
+import p5, { Image, Vector } from "p5";
+import { v4 } from "uuid";
+
+import { explosions } from "./explosions";
+import { Mover } from "./mover";
+import { player, playerHitsAsteroid } from "./player";
+import { assets } from "./sketch";
 import {
-  randomPositionNotHittingPlayer,
-  playerHitsCircularTarget,
   boardSizeX,
   boardSizeY,
+  playerHitsCircularTarget,
+  randomPositionNotHittingPlayer,
 } from "./utils";
-import { Mover } from "./mover";
-import { playerHitsAsteroid, player } from "./player";
-import { explosions } from "./explosions";
-import { assets } from "./sketch";
-import { v4 } from "uuid";
 
 export let asteroids = {} as Asteroids;
 export const resetAsteroids = (p: p5) => {
   asteroids = new Asteroids(p);
 };
 
-export let invocations = { amount: 0 };
+export let invocations = {
+  amount: 0,
+};
 
 const maxAsteroids = 10;
 class Asteroids {

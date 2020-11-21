@@ -1,4 +1,4 @@
-import { restart, gameOver, pauseGame } from "./menu";
+import { restart, gameOver, pauseGame, startTime } from "./menu";
 import { draw } from "./draw";
 import { width, height, T_KEYCODE, boardSizeX, boardSizeY } from "./utils";
 import p5, { Image } from "p5";

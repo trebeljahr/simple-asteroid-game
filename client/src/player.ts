@@ -40,7 +40,6 @@ export class Player {
   p: p5;
   size: number;
   life: number;
-  currentGoal: number;
   ammunition: number;
   thruster: ThrusterExhaustSystem;
   deathCountDown: number;
@@ -51,7 +50,6 @@ export class Player {
     this.size = 60;
     this.life = 3;
     this.ammunition = 1000;
-    this.currentGoal = 0;
     this.thruster = new ThrusterExhaustSystem(
       p,
       this.p.createVector(width / 2, height),
@@ -94,7 +92,7 @@ export class Player {
 
     this.p.pop();
     this.p.stroke(255);
-    const goal = goals.goals[0];
+    const goal = goals.goal;
     const nose = p5.Vector.add(
       this.p.createVector(x, y),
       p5.Vector.fromAngle(angle + this.p.PI, -this.size)

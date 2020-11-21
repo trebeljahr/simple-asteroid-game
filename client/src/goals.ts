@@ -1,30 +1,36 @@
 import p5, { Vector } from "p5";
+import { gameOver, toggleWinScreen } from "./menu";
 import { randomSpawnPoint } from "./utils";
+import { player, playerHitsCollectible } from "./player";
 
 export let goals = {} as Goals;
 export const resetGoals = (p: p5) => {
   goals = new Goals(p);
 };
 
+const lastGoal = 2;
 class Goals {
-  goals: Goal[];
+  goal: Goal;
   p: p5;
+  currentGoal: number;
   constructor(p: p5) {
     this.p = p;
-    this.goals = [];
-    this.addGoal(2);
+    this.currentGoal = 1;
+    this.goal = new Goal(this.p, randomSpawnPoint(this.p), this.currentGoal);
   }
-
-  addGoal(amount: number) {
-    for (let i = 0; i < amount; i++) {
-      this.goals.push(
-        new Goal(this.p, randomSpawnPoint(this.p), this.goals.length)
-      );
+  changeGoal() {
+    if (this.currentGoal === lastGoal) {
+      toggleWinScreen(this.p);
     }
+    this.goal = new Goal(this.p, randomSpawnPoint(this.p), this.currentGoal);
+    this.currentGoal++;
   }
 
   run() {
-    this.goals.forEach((goal) => goal.draw());
+    this.goal.draw();
+    if (playerHitsCollectible(this.goal, player)) {
+      this.changeGoal();
+    }
   }
 }
 

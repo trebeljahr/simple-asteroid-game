@@ -8,6 +8,12 @@ import { resetAsteroids } from "./asteroids";
 import { resetBorder } from "./border";
 import { resetGoals } from "./goals";
 
+export let startTime = Date.now();
+
+export const resetStartTime = () => {
+  startTime = Date.now();
+};
+
 export let menuIsOpen: boolean = false,
   button: null | Element = null,
   div: null | Element = null;
@@ -20,7 +26,13 @@ export const toggleDeathScreen = (p: p5) => {
 };
 
 export const toggleWinScreen = (p: p5) => {
-  toggleMenu(p, "You won!", "Press T to Start Again");
+  const endTime = Date.now();
+  const totalTime = Math.floor((endTime - startTime) / 1000);
+  toggleMenu(
+    p,
+    `You won and it took you ${totalTime} seconds`,
+    "Press T to Start Again"
+  );
   gameOver = true;
 };
 
@@ -49,6 +61,7 @@ export const toggleMenu = (p: p5, buttonText: string, divText: string) => {
 
 export const restart = (p: p5) => {
   // socket = io.connect();
+  resetStartTime();
   resetPlayer(p);
   resetExplosions(p);
   resetAmmunition(p);

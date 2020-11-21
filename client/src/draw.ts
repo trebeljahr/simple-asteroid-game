@@ -45,10 +45,6 @@ function gameLogic(p: p5) {
   explosions.run();
   asteroids.run();
   goals.run();
-  if (goals.goals.length === 0) {
-    toggleWinScreen(p);
-    console.log("Player won!");
-  }
 
   for (let i = asteroids.asteroids.length - 1; i >= 0; i--) {
     let asteroid = asteroids.asteroids[i];
@@ -84,17 +80,6 @@ function gameLogic(p: p5) {
     if (playerHitsCollectible(heart, player)) {
       player.life++;
       hearts.hearts.splice(i, 1);
-    }
-  }
-
-  for (let i = goals.goals.length - 1; i >= 0; i--) {
-    let goal = goals.goals[i];
-    if (
-      playerHitsCollectible(goal, player) &&
-      goal.goal === player.currentGoal
-    ) {
-      player.currentGoal++;
-      goals.goals.splice(i, 1);
     }
   }
 }
