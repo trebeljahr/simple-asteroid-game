@@ -8,7 +8,7 @@ export const resetGoals = (p: p5) => {
   goals = new Goals(p);
 };
 
-const lastGoal = 2;
+const lastGoal = 5;
 class Goals {
   goal: Goal;
   p: p5;
@@ -48,9 +48,14 @@ export class Goal {
 
   draw() {
     this.p.rectMode(this.p.CENTER);
-    this.p.fill("yellow");
+    this.p.stroke("yellow");
+    this.p.strokeWeight(10);
+    this.p.noFill();
     this.p.ellipse(this.pos.x, this.pos.y, this.size, this.size);
+    this.p.strokeWeight(1);
+    this.p.noStroke();
     this.p.fill(255);
+    this.p.textAlign(this.p.CENTER, this.p.CENTER);
     this.p.textSize(32);
     this.p.text(this.goal, this.pos.x, this.pos.y);
   }

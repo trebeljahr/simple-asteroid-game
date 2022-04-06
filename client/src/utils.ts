@@ -1,7 +1,5 @@
 import p5 from "p5";
 import { player, Player } from "./player";
-import { Vector } from "matter-js";
-import { Mover } from "./mover";
 
 export const BULLET_SPEED = 10;
 export const width = window.innerWidth;

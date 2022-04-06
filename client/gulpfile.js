@@ -1,14 +1,14 @@
-var gulp = require("gulp");
-var browserify = require("browserify");
-var source = require("vinyl-source-stream");
-var watchify = require("watchify");
-var tsify = require("tsify");
-var fancy_log = require("fancy-log");
-var paths = {
+const gulp = require("gulp");
+const browserify = require("browserify");
+const source = require("vinyl-source-stream");
+const watchify = require("watchify");
+const tsify = require("tsify");
+const fancy_log = require("fancy-log");
+const paths = {
   pages: ["../public/*.html"],
 };
 
-var watchedBrowserify = watchify(
+const watchedBrowserify = watchify(
   browserify({
     basedir: ".",
     debug: true,
