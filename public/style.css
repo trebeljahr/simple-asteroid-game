@@ -6,6 +6,16 @@ body {
   overflow-x: hidden;
   overflow-y: hidden;
 }
+.backgroundImage {
+  width: 100vw;
+  height: 100vh;
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: -1;
+  object-fit: cover;
+  background-repeat: no-repeat;
+}
 
 div {
   margin: 0;

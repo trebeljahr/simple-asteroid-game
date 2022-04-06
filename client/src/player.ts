@@ -68,9 +68,11 @@ export class Player {
       angle,
     } = this.enginePlayer;
 
+    const playerPos = this.p.createVector(x, y);
+
     this.thruster.updatePos(
       p5.Vector.add(
-        this.p.createVector(x, y),
+        playerPos,
         p5.Vector.fromAngle(angle - this.p.PI, this.size)
       ),
       angle - this.p.PI
@@ -89,17 +91,34 @@ export class Player {
     this.p.imageMode(this.p.CENTER);
     this.p.rotate(this.p.PI / 2);
     this.p.image(assets.rocket, 0, 0, this.size, this.size * 2);
+    this.p.noFill();
 
     this.p.pop();
     this.p.stroke(255);
+
+    this.p.push();
     const goal = goals.goal;
-    const nose = p5.Vector.add(
-      this.p.createVector(x, y),
-      p5.Vector.fromAngle(angle + this.p.PI, -this.size)
+    const angleToGoal = p5.Vector.sub(goal.pos, playerPos).heading();
+    this.p.stroke(255);
+    this.p.strokeWeight(10);
+    this.p.noFill();
+    this.p.arc(
+      playerPos.x,
+      playerPos.y,
+      this.size * 3,
+      this.size * 3,
+      angleToGoal - 0.1,
+      angleToGoal + 0.1
     );
-    if (goal) {
-      this.p.line(nose.x, nose.y, goal.pos.x, goal.pos.y);
-    }
+    this.p.pop();
+
+    // const nose = p5.Vector.add(
+    //   this.p.createVector(x, y),
+    //   p5.Vector.fromAngle(angle + this.p.PI, -this.size)
+    // );
+    // if (goal) {
+    //   this.p.line(nose.x, nose.y, goal.pos.x, goal.pos.y);
+    // }
   }
 
   damage() {

@@ -2,8 +2,8 @@ import p5 from "p5";
 import { player, Player } from "./player";
 
 export const BULLET_SPEED = 10;
-export const width = window.innerWidth;
-export const height = window.innerHeight;
+export let width = window.innerWidth;
+export let height = window.innerHeight;
 export const boardSizeX = width * 2;
 export const boardSizeY = height * 2;
 export const SPACE_KEYCODE = 32;
@@ -13,6 +13,11 @@ export const A_KEYCODE = 65;
 export const D_KEYCODE = 68;
 export const P_KEYCODE = 80;
 export const T_KEYCODE = 84;
+
+export const updateWindowSize = () => {
+  width = window.innerWidth;
+  height = window.innerHeight;
+};
 
 export const randomPosition = (p: p5) => {
   return p.createVector(

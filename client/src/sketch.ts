@@ -1,6 +1,13 @@
 import { restart, gameOver, pauseGame, startTime } from "./menu";
 import { draw } from "./draw";
-import { width, height, T_KEYCODE, boardSizeX, boardSizeY } from "./utils";
+import {
+  width,
+  height,
+  T_KEYCODE,
+  boardSizeX,
+  boardSizeY,
+  updateWindowSize,
+} from "./utils";
 import p5, { Image } from "p5";
 import { Engine } from "matter-js";
 import { engine } from "./engine";
@@ -47,6 +54,11 @@ const sketch = (p: p5) => {
   p.draw = () => {
     draw(p);
     Engine.update(engine, 1000 / 60);
+  };
+
+  p.windowResized = () => {
+    updateWindowSize();
+    p.resizeCanvas(width, height);
   };
 };
 

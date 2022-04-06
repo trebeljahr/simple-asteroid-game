@@ -16,8 +16,8 @@ export const draw = (p: p5) => {
     p.background("rgba(100, 0, 100, 0.1)");
     return;
   }
-
-  assets && p.background(assets.space);
+  p.clear();
+  // assets && p.background(assets.space);
   p.push();
   p.translate(-player.enginePlayer.position.x, -player.enginePlayer.position.y);
   p.translate(width / 2, height / 2);
