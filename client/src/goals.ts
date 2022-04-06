@@ -1,5 +1,5 @@
 import p5, { Vector } from "p5";
-import { gameOver, toggleWinScreen } from "./menu";
+import { toggleWinScreen } from "./menu";
 import { randomSpawnPoint } from "./utils";
 import { player, playerHitsCollectible } from "./player";
 

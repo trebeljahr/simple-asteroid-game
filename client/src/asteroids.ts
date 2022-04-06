@@ -21,7 +21,7 @@ export let invocations = {
   amount: 0,
 };
 
-const maxAsteroids = 10;
+const maxAsteroids = 100;
 class Asteroids {
   asteroids: Asteroid[];
   p: p5;

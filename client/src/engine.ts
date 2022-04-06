@@ -1,3 +1,3 @@
-import { Engine, Body } from "matter-js";
+import { Engine } from "matter-js";
 
 export let engine: Engine = Engine.create();
