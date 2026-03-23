@@ -116,19 +116,38 @@ const createActionButton = (
   return button;
 };
 
-const createPanel = (title: string, subtitle: string) => {
+const createPanelCloseButton = (label: string, onClick: () => void) => {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "menuPanelClose";
+  button.textContent = "X";
+  button.setAttribute("aria-label", label);
+  button.addEventListener("click", onClick);
+  return button;
+};
+
+const createPanel = (
+  title: string,
+  subtitle?: string,
+  titleClassName?: string
+) => {
   const panel = document.createElement("section");
   panel.className = "menuPanel";
 
   const titleElement = document.createElement("h1");
   titleElement.className = "menuTitle";
+  if (titleClassName !== undefined) {
+    titleElement.classList.add(titleClassName);
+  }
   titleElement.textContent = title;
   panel.appendChild(titleElement);
 
-  const subtitleElement = document.createElement("p");
-  subtitleElement.className = "menuSubtitle";
-  subtitleElement.textContent = subtitle;
-  panel.appendChild(subtitleElement);
+  if (subtitle !== undefined && subtitle.trim().length > 0) {
+    const subtitleElement = document.createElement("p");
+    subtitleElement.className = "menuSubtitle";
+    subtitleElement.textContent = subtitle;
+    panel.appendChild(subtitleElement);
+  }
 
   return panel;
 };
@@ -172,10 +191,8 @@ const ensureMenuStructure = () => {
   const menuScene = document.createElement("div");
   menuScene.className = "menuScene";
 
-  const menuBackdrop = document.createElement("img");
+  const menuBackdrop = document.createElement("div");
   menuBackdrop.className = "menuBackdrop";
-  menuBackdrop.src = "/assets/background.jpg";
-  menuBackdrop.alt = "";
   menuBackdrop.setAttribute("aria-hidden", "true");
   menuScene.appendChild(menuBackdrop);
 
@@ -203,10 +220,7 @@ const ensureMenuStructure = () => {
 };
 
 const renderOptionsPanel = (state: GameState) => {
-  const panel = createPanel(
-    "Options",
-    "Tune the experience here. More settings can slot in later without changing the state flow."
-  );
+  const panel = createPanel("Options");
   const buttonRow = createButtonRow();
   const soundLabel = state.settings.soundEnabled ? "Sound: On" : "Sound: Off";
   buttonRow.appendChild(
@@ -228,10 +242,7 @@ const renderOptionsPanel = (state: GameState) => {
 };
 
 const renderMainMenuPanel = () => {
-  const panel = createPanel(
-    "Asteroid Hangar",
-    "Pick a mode. Racing is live now, and the other modes are ready as placeholders for the next steps."
-  );
+  const panel = createPanel("Null Vector", undefined, "menuTitle--main-menu");
   const buttonRow = createButtonRow();
   buttonRow.appendChild(
     createActionButton("Race Mode", () => {
@@ -267,11 +278,6 @@ const renderMainMenuPanel = () => {
   );
   panel.appendChild(buttonRow);
 
-  const helperText = document.createElement("p");
-  helperText.className = "menuHelper";
-  helperText.textContent = "Press Esc during any mode to open the in-game menu.";
-  panel.appendChild(helperText);
-
   return panel;
 };
 
@@ -280,9 +286,17 @@ const renderPausePanel = (state: GameState) => {
     state.scene.type === "mode" ? getModeLabel(state.scene.mode) : "Game";
   const panel = createPanel(
     `${modeLabel} Paused`,
-    "Resume the run, tweak options, or head back to the mode select screen."
+    undefined,
+    "menuTitle--compact"
+  );
+  panel.classList.add("menuPanel--pause");
+  panel.appendChild(
+    createPanelCloseButton("Close pause menu", () => {
+      resumeGameplay();
+    })
   );
   const buttonRow = createButtonRow();
+  buttonRow.classList.add("menuActions--pause");
   buttonRow.appendChild(
     createActionButton("Resume", () => {
       resumeGameplay();
@@ -310,8 +324,8 @@ const renderPausePanel = (state: GameState) => {
   return panel;
 };
 
-const renderResultPanel = (title: string, subtitle: string) => {
-  const panel = createPanel(title, subtitle);
+const renderResultPanel = (title: string) => {
+  const panel = createPanel(title);
   const buttonRow = createButtonRow();
   buttonRow.appendChild(
     createActionButton("Try Again", () => {
@@ -352,8 +366,20 @@ const renderMenu = (state: GameState) => {
     state.scene.type === "main-menu" ||
     state.scene.type === "result" ||
     state.overlay !== null;
+  const shouldShowDecorativeScene =
+    state.scene.type === "main-menu" ||
+    state.scene.type === "result" ||
+    (state.overlay !== null &&
+      state.overlay.type === "options" &&
+      (state.overlay.returnTarget === "main-menu" ||
+        state.overlay.returnTarget === "result"));
+  const shouldShowGameplayShade =
+    state.overlay?.type === "pause" ||
+    (state.overlay?.type === "options" && state.overlay.returnTarget === "pause");
 
   menuRoot.classList.toggle("is-active", shouldShowMenu);
+  menuRoot.classList.toggle("has-scene", shouldShowDecorativeScene);
+  menuRoot.classList.toggle("has-gameplay-shade", shouldShowGameplayShade);
   panelMount.replaceChildren();
 
   if (!shouldShowMenu) {
@@ -376,7 +402,7 @@ const renderMenu = (state: GameState) => {
   }
 
   if (state.scene.type === "result") {
-    panelMount.appendChild(renderResultPanel(state.scene.title, state.scene.subtitle));
+    panelMount.appendChild(renderResultPanel(state.scene.title));
   }
 };
 

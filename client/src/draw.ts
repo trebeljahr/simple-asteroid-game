@@ -6,13 +6,23 @@ import { explosions } from "./explosions";
 import { GameMode, getGameState, shouldAdvanceRaceSimulation } from "./gameState";
 import { goals } from "./goals";
 import { hearts } from "./hearts";
+import { MAX_PLAYER_HEALTH } from "./healthHud";
+import { isMobileDevice } from "./input";
 import { player, playerHitsCollectible } from "./player";
+import { formatRaceDuration } from "./raceSession";
 import { circlesOverlap, createCameraBounds, width, height } from "./utils";
 
 const modeTitles: Record<GameMode, string> = {
   race: "Racing Mode",
   multiplayer: "Multiplayer Mode",
   horde: "Enemy Hordes Mode",
+};
+
+const shieldBlue = {
+  fill: [35, 102, 148, 112] as const,
+  glow: [102, 225, 255, 225] as const,
+  muted: [178, 236, 255, 190] as const,
+  stroke: [112, 221, 255, 138] as const,
 };
 
 export const draw = (p: p5) => {
@@ -38,6 +48,8 @@ export const draw = (p: p5) => {
     gameLogic(cameraBounds);
     p.pop();
     player.showHealth();
+    hearts.drawHudEffects();
+    drawGoalProgress(p);
     drawHudHint(p, "Esc: menu", "Race mode");
     return;
   }
@@ -51,15 +63,14 @@ export const draw = (p: p5) => {
   }
 
   if (state.scene.type === "main-menu") {
-    drawCenterMessage(
-      p,
-      "Choose a Mode",
-      "The hangar menu is ready. Race mode is live and the next two modes are staged as placeholders."
-    );
+    p.clear();
     return;
   }
 
-  drawCenterMessage(p, state.scene.title, state.scene.subtitle);
+  if (state.scene.type === "result") {
+    p.clear();
+    return;
+  }
 };
 
 function gameLogic(cameraBounds: ReturnType<typeof createCameraBounds>) {
@@ -154,7 +165,17 @@ function handleHeartCollection() {
     if (!playerHitsCollectible(heart, player)) {
       continue;
     }
-    player.life++;
+    if (player.life >= MAX_PLAYER_HEALTH) {
+      collectedHeartIndices.add(i);
+      continue;
+    }
+    hearts.createPickupEffect(
+      heart.pos,
+      Math.min(player.life + collectedHeartIndices.size, MAX_PLAYER_HEALTH - 1),
+      player.enginePlayer.position.x,
+      player.enginePlayer.position.y
+    );
+    player.life = Math.min(player.life + 1, MAX_PLAYER_HEALTH);
     collectedHeartIndices.add(i);
   }
 
@@ -198,13 +219,94 @@ function drawPlaceholderMode(p: p5, mode: GameMode) {
   drawHudHint(p, "Esc: menu", "Placeholder");
 }
 
-function drawHudHint(p: p5, actionText: string, modeLabel: string) {
-  p.fill(255);
+function drawGoalProgress(p: p5) {
+  const horizontalPadding = Math.max(14, width * 0.025);
+  const panelWidth = Math.min(312, Math.max(220, width * 0.34));
+  const panelHeight = Math.max(82, Math.min(94, height * 0.14));
+  const panelX = width - panelWidth - horizontalPadding;
+  const panelY = Math.max(16, height * 0.026);
+  const completedGoals = goals.completedGoals;
+  const totalGoals = goals.totalGoals;
+  const remainingGoals = goals.remainingGoals;
+  const timerLabel = formatRaceDuration(undefined, 1);
+
+  p.push();
+  p.rectMode(p.CORNER);
   p.noStroke();
+  p.fill(shieldBlue.fill[0], shieldBlue.fill[1], shieldBlue.fill[2], shieldBlue.fill[3]);
+  p.rect(panelX, panelY, panelWidth, panelHeight, 18);
+  p.stroke(
+    shieldBlue.stroke[0],
+    shieldBlue.stroke[1],
+    shieldBlue.stroke[2],
+    shieldBlue.stroke[3]
+  );
+  p.strokeWeight(1.5);
+  p.noFill();
+  p.rect(panelX, panelY, panelWidth, panelHeight, 18);
+
+  p.noStroke();
+  p.fill(shieldBlue.muted[0], shieldBlue.muted[1], shieldBlue.muted[2], 150);
+  p.textAlign(p.LEFT, p.TOP);
+  p.textSize(Math.max(10, panelHeight * 0.13));
+  p.text("Force-Field Route", panelX + 16, panelY + 12);
+
+  p.fill(shieldBlue.glow[0], shieldBlue.glow[1], shieldBlue.glow[2], 232);
   p.textAlign(p.RIGHT, p.TOP);
-  p.textSize(16);
-  p.text(modeLabel, width - 24, 24);
-  p.fill(210, 225, 235);
-  p.textSize(14);
-  p.text(actionText, width - 24, 48);
+  p.textSize(Math.max(16, panelHeight * 0.22));
+  p.text(timerLabel, panelX + panelWidth - 16, panelY + 10);
+
+  p.fill(shieldBlue.glow[0], shieldBlue.glow[1], shieldBlue.glow[2], 238);
+  p.textAlign(p.LEFT, p.TOP);
+  p.textSize(Math.max(14, panelHeight * 0.21));
+  p.text(
+    `${completedGoals} cleared • ${remainingGoals} remaining`,
+    panelX + 16,
+    panelY + 36
+  );
+
+  const capsuleGap = 10;
+  const capsuleWidth = Math.min(44, (panelWidth - 32 - capsuleGap * (totalGoals - 1)) / totalGoals);
+  const capsuleHeight = 10;
+  const rowX = panelX + 16;
+  const rowY = panelY + 66;
+
+  for (let i = 0; i < totalGoals; i++) {
+    const capsuleX = rowX + i * (capsuleWidth + capsuleGap);
+    const isCleared = i < completedGoals;
+    const isCurrent = i === completedGoals;
+    const pulse = (p.sin(p.frameCount * 0.14 + i * 0.4) + 1) / 2;
+    const alpha = isCleared ? 240 : isCurrent ? 145 + pulse * 55 : 42;
+
+    p.noStroke();
+    p.fill(
+      shieldBlue.glow[0],
+      shieldBlue.glow[1],
+      shieldBlue.glow[2],
+      alpha
+    );
+    p.rect(capsuleX, rowY, capsuleWidth, capsuleHeight, 999);
+
+    if (isCurrent) {
+      p.fill(209, 248, 255, 210);
+      p.circle(capsuleX + capsuleWidth / 2, rowY + capsuleHeight / 2, 7 + pulse * 2);
+    }
+  }
+
+  p.pop();
+}
+
+function drawHudHint(p: p5, actionText: string, modeLabel: string) {
+  if (isMobileDevice()) {
+    return;
+  }
+
+  p.fill(200, 220, 232, 160);
+  p.noStroke();
+  p.textAlign(p.RIGHT, p.BOTTOM);
+  p.textSize(13);
+  p.text(modeLabel, width - 24, height - 42);
+  p.fill(170, 198, 214, 150);
+  p.textSize(12);
+  p.text(actionText, width - 24, height - 22);
 }

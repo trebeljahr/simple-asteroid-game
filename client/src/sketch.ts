@@ -13,8 +13,44 @@ import { Engine } from "matter-js";
 import { engine } from "./engine";
 import { handleEscapeKey } from "./gameUiActions";
 import { getGameState, shouldAdvanceRaceSimulation } from "./gameState";
+import { resetAsteroids } from "./asteroids";
+import { resetHearts } from "./hearts";
+import { initializeShipInput } from "./input";
+import { initializeMobileControls } from "./mobileControls";
+
+const MIN_SPLASH_DURATION_MS = 1000;
+const ASTEROID_TEXTURE_SIZE = 512;
+const appBootStartedAt = performance.now();
+
+const rasterizeImageAsset = (p: p5, source: Image, size: number) => {
+  const graphics = p.createGraphics(size, size);
+  graphics.clear();
+  graphics.imageMode(graphics.CENTER);
+  graphics.image(source, size / 2, size / 2, size, size);
+  const rasterized = graphics.get();
+  graphics.remove();
+  return rasterized;
+};
 
 const sketch = (p: p5) => {
+  let hasShownFirstFrame = false;
+  let loadingShellDismissed = false;
+
+  const completeInitialLoading = () => {
+    if (loadingShellDismissed) {
+      return;
+    }
+
+    const elapsed = performance.now() - appBootStartedAt;
+    const remaining = Math.max(0, MIN_SPLASH_DURATION_MS - elapsed);
+    loadingShellDismissed = true;
+
+    window.setTimeout(() => {
+      document.body.classList.remove("app-loading");
+      document.body.classList.add("app-ready");
+    }, remaining);
+  };
+
   p.keyPressed = () => {
     switch (p.keyCode) {
       case ESC_KEYCODE:
@@ -42,8 +78,14 @@ const sketch = (p: p5) => {
     };
   };
   p.setup = () => {
-    p.noCanvas();
     p.createCanvas(width, height);
+    assets.asteroids = [
+      rasterizeImageAsset(p, assets.asteroids[0], ASTEROID_TEXTURE_SIZE),
+      rasterizeImageAsset(p, assets.asteroids[1], ASTEROID_TEXTURE_SIZE),
+      rasterizeImageAsset(p, assets.asteroids[2], ASTEROID_TEXTURE_SIZE),
+    ];
+    initializeShipInput();
+    initializeMobileControls();
     initializeMenu(p);
     engine.world.gravity.y = 0;
     engine.world.bounds.min.x = -boardSizeX;
@@ -56,11 +98,25 @@ const sketch = (p: p5) => {
     if (shouldAdvanceRaceSimulation(getGameState())) {
       Engine.update(engine, 1000 / 60);
     }
+    if (!hasShownFirstFrame) {
+      completeInitialLoading();
+      hasShownFirstFrame = true;
+    }
   };
 
   p.windowResized = () => {
     updateWindowSize();
     p.resizeCanvas(width, height);
+    engine.world.bounds.min.x = -boardSizeX;
+    engine.world.bounds.min.y = -boardSizeY;
+    engine.world.bounds.max.x = boardSizeX;
+    engine.world.bounds.max.y = boardSizeY;
+
+    const state = getGameState();
+    if (state.scene.type === "mode" && state.scene.mode === "race") {
+      resetAsteroids(p);
+      resetHearts(p);
+    }
   };
 };
 

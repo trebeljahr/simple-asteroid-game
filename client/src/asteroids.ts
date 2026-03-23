@@ -10,29 +10,34 @@ import {
   boardSizeY,
   CameraBounds,
   circleIntersectsBounds,
+  clamp,
+  circlesOverlap,
   distSquare,
+  distanceToSegmentSquare,
 } from "./utils";
 
-interface SpawnSlot {
-  gridColumn: number;
-  gridRow: number;
-  key: string;
+interface SpawnPoint {
   x: number;
   y: number;
 }
 
-interface SlotLayoutOptions {
-  goalSafeRadius: number;
-  keepGoalColumnOpen: boolean;
-  keepPlayerRowOpen: boolean;
-  playerSafeRadius: number;
+interface RouteSegment {
+  end: Vector;
+  start: Vector;
 }
 
-const MAX_SPAWN_SLOT_FACTOR = 1.45;
-const MIN_ASTEROID_SIZE = 64;
-const MIN_CELL_SIZE = 190;
-const SLOT_CONTENT_PADDING = 56;
-const SPAWN_QUERY_PADDING = 48;
+const HASH_QUERY_PADDING = 36;
+const HASH_WORLD_MARGIN = 160;
+const MAX_SPAWN_POINT_FACTOR = 1.9;
+const MIN_ASTEROID_SIZE = 70;
+const MIN_ASTEROID_COUNT = 44;
+const PLAYER_SAFE_RADIUS = 320;
+const GOAL_SAFE_RADIUS = 180;
+const POISSON_ATTEMPTS = 24;
+const REFERENCE_WORLD_AREA = 1440 * 900 * 16;
+const ROUTE_CORRIDOR_RADIUS = 170;
+const SPAWN_DISTANCE_SCALES = [1, 0.98, 0.94];
+const SPATIAL_HASH_CELL_SIZE = 320;
 
 export let asteroids = {} as Asteroids;
 export const resetAsteroids = (p: p5) => {
@@ -41,13 +46,10 @@ export const resetAsteroids = (p: p5) => {
 
 export const maxAsteroids = 100;
 export const maxAsteroidSize = 190;
+const MIN_ASTEROID_SEPARATION = maxAsteroidSize + 18;
 
-const createGridKey = (gridColumn: number, gridRow: number) => {
-  return `${gridColumn}:${gridRow}`;
-};
-
-const clampGridValue = (value: number, maxValue: number) => {
-  return Math.max(0, Math.min(maxValue, value));
+const createHashKey = (column: number, row: number) => {
+  return `${column}:${row}`;
 };
 
 const shuffle = <T>(p: p5, values: T[]) => {
@@ -62,236 +64,395 @@ const shuffle = <T>(p: p5, values: T[]) => {
 };
 
 class Asteroids {
+  asteroidHashKeys: Array<string | null>;
+  asteroidTargetCount: number;
   asteroids: Asteroid[];
-  asteroidIndexByGridKey: Map<string, number>;
-  cellSize: number;
-  gridColumns: number;
-  gridLeftEdge: number;
-  gridRows: number;
-  gridTopEdge: number;
-  maxSpawnJitter: number;
   p: p5;
-  occupiedSlotIndices: Set<number>;
-  spawnSlots: SpawnSlot[];
+  occupiedSpawnPointIndices: Set<number>;
+  routeSegments: RouteSegment[];
+  spatialHash: Map<string, Set<number>>;
+  spawnPoints: SpawnPoint[];
 
   constructor(p: p5) {
     this.p = p;
     this.asteroids = [];
-    this.asteroidIndexByGridKey = new Map<string, number>();
-    this.occupiedSlotIndices = new Set<number>();
-    this.spawnSlots = [];
-
-    this.cellSize = this.computeCellSize();
-    this.gridColumns = Math.max(
-      1,
-      Math.floor((boardSizeX * 2) / this.cellSize)
-    );
-    this.gridRows = Math.max(1, Math.floor((boardSizeY * 2) / this.cellSize));
-    this.gridLeftEdge = -(this.gridColumns * this.cellSize) / 2;
-    this.gridTopEdge = -(this.gridRows * this.cellSize) / 2;
-    this.maxSpawnJitter = Math.max(12, Math.floor(this.cellSize * 0.08));
-    this.spawnSlots = this.createSpawnSlots();
+    this.asteroidHashKeys = [];
+    this.asteroidTargetCount = this.getAsteroidTargetCount();
+    this.occupiedSpawnPointIndices = new Set<number>();
+    this.spatialHash = new Map<string, Set<number>>();
+    this.routeSegments = this.createRouteSegments();
+    this.spawnPoints = this.createSpawnPoints();
 
     this.ensureAsteroidCount();
   }
 
-  computeCellSize() {
-    const worldWidth = boardSizeX * 2;
-    const worldHeight = boardSizeY * 2;
-    const targetSlotCount = maxAsteroids * MAX_SPAWN_SLOT_FACTOR;
-    return Math.max(
-      MIN_CELL_SIZE,
-      Math.floor(Math.sqrt((worldWidth * worldHeight) / targetSlotCount))
-    );
+  createRouteSegments() {
+    const routeAnchors = [
+      this.p.createVector(
+        player.enginePlayer.position.x,
+        player.enginePlayer.position.y
+      ),
+      ...goals.route.map((goal) => goal.pos.copy()),
+    ];
+    const segments: RouteSegment[] = [];
+
+    for (let i = 0; i < routeAnchors.length - 1; i++) {
+      segments.push({
+        start: routeAnchors[i],
+        end: routeAnchors[i + 1],
+      });
+    }
+
+    return segments;
   }
 
-  createSpawnSlots() {
-    const playerPosition = player.enginePlayer.position;
-    const goalPosition = goals.goal?.pos;
+  createSpawnPoints() {
+    const worldArea = boardSizeX * 2 * boardSizeY * 2;
+    const targetSpawnPoints = Math.ceil(this.asteroidTargetCount * MAX_SPAWN_POINT_FACTOR);
+    const baseMinDistance = clamp(
+      Math.sqrt(worldArea / (this.asteroidTargetCount * 4.8)),
+      MIN_ASTEROID_SEPARATION,
+      290
+    );
 
-    const layouts: SlotLayoutOptions[] = [
-      {
-        keepPlayerRowOpen: true,
-        keepGoalColumnOpen: true,
-        playerSafeRadius: Math.max(this.cellSize * 1.25, 260),
-        goalSafeRadius: Math.max(this.cellSize * 0.8, 180),
-      },
-      {
-        keepPlayerRowOpen: true,
-        keepGoalColumnOpen: false,
-        playerSafeRadius: Math.max(this.cellSize * 1.1, 240),
-        goalSafeRadius: Math.max(this.cellSize * 0.65, 160),
-      },
-      {
-        keepPlayerRowOpen: false,
-        keepGoalColumnOpen: false,
-        playerSafeRadius: Math.max(this.cellSize, 220),
-        goalSafeRadius: Math.max(this.cellSize * 0.5, 140),
-      },
-    ];
-
-    for (let i = 0; i < layouts.length; i++) {
-      const slots = this.buildSpawnSlots(
-        playerPosition.x,
-        playerPosition.y,
-        goalPosition?.x ?? null,
-        goalPosition?.y ?? null,
-        layouts[i]
+    for (let i = 0; i < SPAWN_DISTANCE_SCALES.length; i++) {
+      const nextPoints = this.generatePoissonSpawnPoints(
+        baseMinDistance * SPAWN_DISTANCE_SCALES[i],
+        targetSpawnPoints
       );
-      if (slots.length >= maxAsteroids) {
-        return shuffle(this.p, slots);
+      if (nextPoints.length >= this.asteroidTargetCount) {
+        return shuffle(this.p, nextPoints);
       }
     }
 
     return shuffle(
       this.p,
-      this.buildSpawnSlots(
-        playerPosition.x,
-        playerPosition.y,
-        goalPosition?.x ?? null,
-        goalPosition?.y ?? null,
-        {
-          keepPlayerRowOpen: false,
-          keepGoalColumnOpen: false,
-          playerSafeRadius: Math.max(this.cellSize * 0.9, 180),
-          goalSafeRadius: 0,
-        }
+      this.generateFallbackSpawnPoints(
+        Math.max(MIN_ASTEROID_SEPARATION, baseMinDistance * 0.92),
+        targetSpawnPoints
       )
     );
   }
 
-  buildSpawnSlots(
-    playerX: number,
-    playerY: number,
-    goalX: number | null,
-    goalY: number | null,
-    layout: SlotLayoutOptions
-  ) {
-    const playerGridRow = this.gridRowFor(playerY);
-    const goalGridColumn = goalX === null ? null : this.gridColumnFor(goalX);
-    const slots: SpawnSlot[] = [];
+  getAsteroidTargetCount() {
+    const worldArea = boardSizeX * 2 * boardSizeY * 2;
+    const scaledCount = Math.round(
+      maxAsteroids * Math.sqrt(worldArea / REFERENCE_WORLD_AREA)
+    );
+    return clamp(scaledCount, MIN_ASTEROID_COUNT, maxAsteroids);
+  }
 
-    for (let gridRow = 0; gridRow < this.gridRows; gridRow++) {
-      for (let gridColumn = 0; gridColumn < this.gridColumns; gridColumn++) {
-        if (layout.keepPlayerRowOpen && gridRow === playerGridRow) {
+  generatePoissonSpawnPoints(minDistance: number, targetSpawnPoints: number) {
+    const cellSize = minDistance / Math.sqrt(2);
+    const columns = Math.ceil((boardSizeX * 2) / cellSize);
+    const rows = Math.ceil((boardSizeY * 2) / cellSize);
+    const grid = new Array<SpawnPoint | null>(columns * rows).fill(null);
+    const spawnPoints: SpawnPoint[] = [];
+    const activePoints: SpawnPoint[] = [];
+
+    const insertPoint = (point: SpawnPoint) => {
+      spawnPoints.push(point);
+      activePoints.push(point);
+      const gridColumn = Math.floor((point.x + boardSizeX) / cellSize);
+      const gridRow = Math.floor((point.y + boardSizeY) / cellSize);
+      grid[gridRow * columns + gridColumn] = point;
+    };
+
+    const isValidPoint = (point: SpawnPoint) => {
+      if (!this.isSpawnPointAllowed(point)) {
+        return false;
+      }
+
+      const gridColumn = Math.floor((point.x + boardSizeX) / cellSize);
+      const gridRow = Math.floor((point.y + boardSizeY) / cellSize);
+      const minColumn = Math.max(0, gridColumn - 2);
+      const maxColumn = Math.min(columns - 1, gridColumn + 2);
+      const minRow = Math.max(0, gridRow - 2);
+      const maxRow = Math.min(rows - 1, gridRow + 2);
+
+      for (let row = minRow; row <= maxRow; row++) {
+        for (let column = minColumn; column <= maxColumn; column++) {
+          const neighbor = grid[row * columns + column];
+          if (neighbor === null) {
+            continue;
+          }
+          if (
+            distSquare(point.x, point.y, neighbor.x, neighbor.y) <
+            minDistance * minDistance
+          ) {
+            return false;
+          }
+        }
+      }
+
+      return true;
+    };
+
+    const seedPoint = this.findSeedPoint();
+    if (seedPoint === null) {
+      return spawnPoints;
+    }
+
+    insertPoint(seedPoint);
+
+    while (activePoints.length > 0 && spawnPoints.length < targetSpawnPoints) {
+      const activeIndex = Math.floor(this.p.random(activePoints.length));
+      const origin = activePoints[activeIndex];
+      let foundNextPoint = false;
+
+      for (let attempt = 0; attempt < POISSON_ATTEMPTS; attempt++) {
+        const angle = this.p.random(this.p.TWO_PI);
+        const distance = this.p.random(minDistance, minDistance * 2.05);
+        const candidate = {
+          x: origin.x + this.p.cos(angle) * distance,
+          y: origin.y + this.p.sin(angle) * distance,
+        };
+
+        if (!isValidPoint(candidate)) {
           continue;
         }
-        if (
-          layout.keepGoalColumnOpen &&
-          goalGridColumn !== null &&
-          gridColumn === goalGridColumn
-        ) {
-          continue;
-        }
 
-        const x = this.gridLeftEdge + gridColumn * this.cellSize + this.cellSize / 2;
-        const y = this.gridTopEdge + gridRow * this.cellSize + this.cellSize / 2;
+        insertPoint(candidate);
+        foundNextPoint = true;
+        break;
+      }
 
-        if (
-          distSquare(x, y, playerX, playerY) <
-          layout.playerSafeRadius * layout.playerSafeRadius
-        ) {
-          continue;
-        }
-
-        if (
-          goalX !== null &&
-          goalY !== null &&
-          layout.goalSafeRadius > 0 &&
-          distSquare(x, y, goalX, goalY) <
-            layout.goalSafeRadius * layout.goalSafeRadius
-        ) {
-          continue;
-        }
-
-        slots.push({
-          gridColumn,
-          gridRow,
-          key: createGridKey(gridColumn, gridRow),
-          x,
-          y,
-        });
+      if (!foundNextPoint) {
+        activePoints.splice(activeIndex, 1);
       }
     }
 
-    return slots;
+    return spawnPoints;
   }
 
-  gridColumnFor(x: number) {
-    return clampGridValue(
-      Math.floor((x - this.gridLeftEdge) / this.cellSize),
-      this.gridColumns - 1
-    );
-  }
+  generateFallbackSpawnPoints(minDistance: number, targetSpawnPoints: number) {
+    const spawnPoints: SpawnPoint[] = [];
 
-  gridRowFor(y: number) {
-    return clampGridValue(
-      Math.floor((y - this.gridTopEdge) / this.cellSize),
-      this.gridRows - 1
-    );
-  }
+    for (let attempt = 0; attempt < targetSpawnPoints * 80; attempt++) {
+      if (spawnPoints.length >= targetSpawnPoints) {
+        break;
+      }
 
-  pickOpenSlotIndex() {
-    const openSlotIndices: number[] = [];
+      const candidate = this.findSeedPoint();
+      if (candidate === null) {
+        break;
+      }
 
-    for (let i = 0; i < this.spawnSlots.length; i++) {
-      if (!this.occupiedSlotIndices.has(i)) {
-        openSlotIndices.push(i);
+      let isFarEnough = true;
+      for (let i = 0; i < spawnPoints.length; i++) {
+        if (
+          distSquare(
+            candidate.x,
+            candidate.y,
+            spawnPoints[i].x,
+            spawnPoints[i].y
+          ) <
+          minDistance * minDistance
+        ) {
+          isFarEnough = false;
+          break;
+        }
+      }
+
+      if (isFarEnough) {
+        spawnPoints.push(candidate);
       }
     }
 
-    if (openSlotIndices.length === 0) {
+    return spawnPoints;
+  }
+
+  findSeedPoint() {
+    for (let attempt = 0; attempt < 240; attempt++) {
+      const candidate = {
+        x: this.p.random(
+          -boardSizeX + HASH_WORLD_MARGIN,
+          boardSizeX - HASH_WORLD_MARGIN
+        ),
+        y: this.p.random(
+          -boardSizeY + HASH_WORLD_MARGIN,
+          boardSizeY - HASH_WORLD_MARGIN
+        ),
+      };
+
+      if (this.isSpawnPointAllowed(candidate)) {
+        return candidate;
+      }
+    }
+
+    return null;
+  }
+
+  isSpawnPointAllowed(point: SpawnPoint) {
+    if (
+      point.x < -boardSizeX + HASH_WORLD_MARGIN ||
+      point.x > boardSizeX - HASH_WORLD_MARGIN ||
+      point.y < -boardSizeY + HASH_WORLD_MARGIN ||
+      point.y > boardSizeY - HASH_WORLD_MARGIN
+    ) {
+      return false;
+    }
+
+    if (
+      distSquare(
+        point.x,
+        point.y,
+        player.enginePlayer.position.x,
+        player.enginePlayer.position.y
+      ) <
+      PLAYER_SAFE_RADIUS * PLAYER_SAFE_RADIUS
+    ) {
+      return false;
+    }
+
+    for (let i = 0; i < goals.route.length; i++) {
+      const goal = goals.route[i];
+      if (
+        distSquare(point.x, point.y, goal.pos.x, goal.pos.y) <
+        GOAL_SAFE_RADIUS * GOAL_SAFE_RADIUS
+      ) {
+        return false;
+      }
+    }
+
+    for (let i = 0; i < this.routeSegments.length; i++) {
+      const segment = this.routeSegments[i];
+      if (
+        distanceToSegmentSquare(
+          point.x,
+          point.y,
+          segment.start.x,
+          segment.start.y,
+          segment.end.x,
+          segment.end.y
+        ) <
+        ROUTE_CORRIDOR_RADIUS * ROUTE_CORRIDOR_RADIUS
+      ) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  pickOpenSpawnPointIndex(asteroidSize: number) {
+    const openPointIndices: number[] = [];
+
+    for (let i = 0; i < this.spawnPoints.length; i++) {
+      if (
+        !this.occupiedSpawnPointIndices.has(i) &&
+        this.isSpawnPointAvailableForAsteroid(i, asteroidSize)
+      ) {
+        openPointIndices.push(i);
+      }
+    }
+
+    if (openPointIndices.length === 0) {
       return null;
     }
 
-    return this.p.random(openSlotIndices) as number;
+    return this.p.random(openPointIndices) as number;
   }
 
-  createAsteroidForSlot(slotIndex: number) {
-    const slot = this.spawnSlots[slotIndex];
-    const maxSize = Math.max(
-      MIN_ASTEROID_SIZE + 24,
-      Math.min(maxAsteroidSize, this.cellSize - SLOT_CONTENT_PADDING)
-    );
-    const minSize = Math.min(MIN_ASTEROID_SIZE, maxSize - 18);
-    const size = this.p.random(minSize, maxSize);
-    const jitterLimit = Math.max(
-      0,
-      Math.min(this.maxSpawnJitter, (this.cellSize - size - 24) / 2)
-    );
-    const pos = this.p.createVector(
-      slot.x + this.p.random(-jitterLimit, jitterLimit),
-      slot.y + this.p.random(-jitterLimit, jitterLimit)
-    );
-    const vel = this.p.createVector(0, 0);
-    const hitPoints = Math.round(size * 10);
+  isSpawnPointAvailableForAsteroid(spawnPointIndex: number, asteroidSize: number) {
+    const spawnPoint = this.spawnPoints[spawnPointIndex];
+    const nearbyAsteroids = this.queryNearby(spawnPoint.x, spawnPoint.y, asteroidSize / 2);
 
-    return new Asteroid(this.p, pos, vel, size, hitPoints, slotIndex, slot.key);
+    for (let i = 0; i < nearbyAsteroids.length; i++) {
+      const asteroid = this.asteroids[nearbyAsteroids[i]];
+      if (
+        circlesOverlap(
+          spawnPoint.x,
+          spawnPoint.y,
+          asteroidSize + 18,
+          asteroid.pos.x,
+          asteroid.pos.y,
+          asteroid.size + 18
+        )
+      ) {
+        return false;
+      }
+    }
+
+    return true;
   }
 
-  assignAsteroidToSlot(index: number, asteroid: Asteroid) {
-    this.occupiedSlotIndices.add(asteroid.slotIndex);
-    this.asteroidIndexByGridKey.set(asteroid.slotKey, index);
+  createAsteroidForSpawnPoint(spawnPointIndex: number, asteroidSize: number) {
+    const spawnPoint = this.spawnPoints[spawnPointIndex];
+    const asteroidHitPoints = Math.round(asteroidSize * 10);
+
+    return new Asteroid(
+      this.p,
+      this.p.createVector(spawnPoint.x, spawnPoint.y),
+      this.p.createVector(0, 0),
+      asteroidSize,
+      asteroidHitPoints,
+      spawnPointIndex
+    );
   }
 
   createNewAsteroid() {
-    const slotIndex = this.pickOpenSlotIndex();
-    if (slotIndex === null) {
-      return null;
+    for (let attempt = 0; attempt < 10; attempt++) {
+      const asteroidSize = this.p.random(MIN_ASTEROID_SIZE, maxAsteroidSize);
+      const spawnPointIndex = this.pickOpenSpawnPointIndex(asteroidSize);
+      if (spawnPointIndex === null) {
+        continue;
+      }
+
+      return this.createAsteroidForSpawnPoint(spawnPointIndex, asteroidSize);
     }
-    return this.createAsteroidForSlot(slotIndex);
+
+    return null;
   }
 
   ensureAsteroidCount() {
-    while (this.asteroids.length < maxAsteroids) {
+    while (this.asteroids.length < this.asteroidTargetCount) {
       const asteroid = this.createNewAsteroid();
       if (asteroid === null) {
         return;
       }
+
       const asteroidIndex = this.asteroids.length;
       this.asteroids.push(asteroid);
-      this.assignAsteroidToSlot(asteroidIndex, asteroid);
+      this.registerAsteroid(asteroidIndex, asteroid);
     }
+  }
+
+  registerAsteroid(asteroidIndex: number, asteroid: Asteroid) {
+    this.occupiedSpawnPointIndices.add(asteroid.spawnPointIndex);
+
+    const hashKey = this.hashKeyForPosition(asteroid.pos.x, asteroid.pos.y);
+    const existingBucket = this.spatialHash.get(hashKey);
+    if (existingBucket !== undefined) {
+      existingBucket.add(asteroidIndex);
+    } else {
+      this.spatialHash.set(hashKey, new Set<number>([asteroidIndex]));
+    }
+
+    this.asteroidHashKeys[asteroidIndex] = hashKey;
+  }
+
+  unregisterAsteroid(asteroidIndex: number) {
+    const asteroid = this.asteroids[asteroidIndex];
+    const hashKey = this.asteroidHashKeys[asteroidIndex];
+
+    this.occupiedSpawnPointIndices.delete(asteroid.spawnPointIndex);
+
+    if (hashKey !== null && hashKey !== undefined) {
+      const hashBucket = this.spatialHash.get(hashKey);
+      hashBucket?.delete(asteroidIndex);
+      if (hashBucket !== undefined && hashBucket.size === 0) {
+        this.spatialHash.delete(hashKey);
+      }
+    }
+
+    this.asteroidHashKeys[asteroidIndex] = null;
+  }
+
+  hashKeyForPosition(x: number, y: number) {
+    const column = Math.floor((x + boardSizeX) / SPATIAL_HASH_CELL_SIZE);
+    const row = Math.floor((y + boardSizeY) / SPATIAL_HASH_CELL_SIZE);
+    return createHashKey(column, row);
   }
 
   run(cameraBounds: CameraBounds) {
@@ -314,25 +475,26 @@ class Asteroids {
   }
 
   queryNearby(x: number, y: number, radius: number) {
-    const candidateIndices: number[] = [];
-    const searchPadding = radius + maxAsteroidSize / 2 + SPAWN_QUERY_PADDING;
-    const minColumn = this.gridColumnFor(x - searchPadding);
-    const maxColumn = this.gridColumnFor(x + searchPadding);
-    const minRow = this.gridRowFor(y - searchPadding);
-    const maxRow = this.gridRowFor(y + searchPadding);
+    const nearbyAsteroidIndices: number[] = [];
+    const searchPadding = radius + maxAsteroidSize / 2 + HASH_QUERY_PADDING;
+    const minColumn = Math.floor((x - searchPadding + boardSizeX) / SPATIAL_HASH_CELL_SIZE);
+    const maxColumn = Math.floor((x + searchPadding + boardSizeX) / SPATIAL_HASH_CELL_SIZE);
+    const minRow = Math.floor((y - searchPadding + boardSizeY) / SPATIAL_HASH_CELL_SIZE);
+    const maxRow = Math.floor((y + searchPadding + boardSizeY) / SPATIAL_HASH_CELL_SIZE);
 
-    for (let gridRow = minRow; gridRow <= maxRow; gridRow++) {
-      for (let gridColumn = minColumn; gridColumn <= maxColumn; gridColumn++) {
-        const asteroidIndex = this.asteroidIndexByGridKey.get(
-          createGridKey(gridColumn, gridRow)
-        );
-        if (asteroidIndex !== undefined) {
-          candidateIndices.push(asteroidIndex);
+    for (let row = minRow; row <= maxRow; row++) {
+      for (let column = minColumn; column <= maxColumn; column++) {
+        const hashBucket = this.spatialHash.get(createHashKey(column, row));
+        if (hashBucket === undefined) {
+          continue;
         }
+        hashBucket.forEach((asteroidIndex) => {
+          nearbyAsteroidIndices.push(asteroidIndex);
+        });
       }
     }
 
-    return candidateIndices;
+    return nearbyAsteroidIndices;
   }
 
   spawnNewAsteroid(indexToChange: number) {
@@ -341,17 +503,27 @@ class Asteroids {
     }
 
     const previousAsteroid = this.asteroids[indexToChange];
-    this.occupiedSlotIndices.delete(previousAsteroid.slotIndex);
-    this.asteroidIndexByGridKey.delete(previousAsteroid.slotKey);
+    this.unregisterAsteroid(indexToChange);
 
     const replacement = this.createNewAsteroid();
     if (replacement === null) {
-      this.assignAsteroidToSlot(indexToChange, previousAsteroid);
+      this.registerAsteroid(indexToChange, previousAsteroid);
       return;
     }
 
     this.asteroids[indexToChange] = replacement;
-    this.assignAsteroidToSlot(indexToChange, replacement);
+    this.registerAsteroid(indexToChange, replacement);
+  }
+
+  refreshAfterResize() {
+    this.asteroidTargetCount = this.getAsteroidTargetCount();
+    this.asteroids = [];
+    this.asteroidHashKeys = [];
+    this.occupiedSpawnPointIndices.clear();
+    this.spatialHash.clear();
+    this.routeSegments = this.createRouteSegments();
+    this.spawnPoints = this.createSpawnPoints();
+    this.ensureAsteroidCount();
   }
 }
 
@@ -361,8 +533,7 @@ export class Asteroid extends Mover {
   id: string;
   img: Image;
   p: p5;
-  slotIndex: number;
-  slotKey: string;
+  spawnPointIndex: number;
   spinSpeed: number;
 
   constructor(
@@ -371,8 +542,7 @@ export class Asteroid extends Mover {
     vel: Vector,
     r: number,
     hitPoints: number,
-    slotIndex: number,
-    slotKey: string
+    spawnPointIndex: number
   ) {
     super(p, pos, vel, r);
     this.p = p;
@@ -380,8 +550,7 @@ export class Asteroid extends Mover {
     this.img = p.random(assets.asteroids);
     this.baseRotation = p.random(p.TWO_PI);
     this.spinSpeed = p.random(-0.0045, 0.0045);
-    this.slotIndex = slotIndex;
-    this.slotKey = slotKey;
+    this.spawnPointIndex = spawnPointIndex;
     this.id = v4();
   }
 

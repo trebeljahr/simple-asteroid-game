@@ -1,5 +1,6 @@
 import p5 from "p5";
 import { GameMode, getGameState, gameStateMachine } from "./gameState";
+import { requestLandscapeOrientationLock } from "./input";
 import { resetRaceMode } from "./raceMode";
 
 let activeP5Instance: p5 | null = null;
@@ -10,6 +11,7 @@ export const configureGameModeActions = (p: p5) => {
 
 export const activateGameMode = (mode: GameMode) => {
   if (mode === "race") {
+    requestLandscapeOrientationLock();
     if (activeP5Instance === null) {
       return;
     }

@@ -1,5 +1,5 @@
 import { gameStateMachine, getGameState } from "./gameState";
-import { getRaceDurationSeconds } from "./raceSession";
+import { formatRaceDuration } from "./raceSession";
 
 export const openPauseMenu = () => {
   return gameStateMachine.send({ type: "OPEN_PAUSE" });
@@ -26,10 +26,10 @@ export const toggleSoundEnabled = () => {
 };
 
 export const showRaceVictory = () => {
-  const totalTime = getRaceDurationSeconds();
+  const totalTime = formatRaceDuration(undefined, 2);
   return gameStateMachine.send({
     type: "SHOW_RESULT",
-    title: `Race complete in ${totalTime} seconds`,
+    title: `Race complete in ${totalTime}`,
     subtitle: "The course is clear. Launch again or switch to another mode.",
   });
 };

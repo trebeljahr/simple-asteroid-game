@@ -4,23 +4,23 @@ import {
   height,
   boardSizeX,
   boardSizeY,
-  A_KEYCODE,
-  D_KEYCODE,
-  W_KEYCODE,
-  SPACE_KEYCODE,
   playerHitsCircularTarget,
 } from "./utils";
 import { showRaceDefeat } from "./gameUiActions";
 import { explosions } from "./explosions";
+import { MAX_PLAYER_HEALTH, getHudHeartSize, getHudHeartTopLeft } from "./healthHud";
 import { ThrusterExhaustSystem } from "./thruster";
 import { bullets } from "./bullets";
+import { hearts } from "./hearts";
 import { assets } from "./sketch";
 import { World, Body, Bodies, Vector } from "matter-js";
 import { engine } from "./engine";
 import { goals } from "./goals";
+import { isShipActionActive } from "./input";
 
 export let player = {} as Player;
 export const maxSpeed = 10;
+
 export const resetPlayer = (p: p5) => {
   if (player && player.enginePlayer) {
     World.remove(engine.world, player.enginePlayer);
@@ -38,6 +38,23 @@ const stopHorizontalMotion = (body: Body, xPos: number) => {
   Body.setPosition(body, Vector.create(xPos, body.position.y));
 };
 
+const drawHeartOutline = (p: p5, x: number, y: number, size: number) => {
+  p.push();
+  p.translate(x, y);
+  p.scale(size / 100);
+  p.noFill();
+  p.stroke(138, 149, 163, 220);
+  p.strokeWeight(7);
+  p.beginShape();
+  p.vertex(50, 88);
+  p.bezierVertex(14, 60, 8, 22, 30, 22);
+  p.bezierVertex(43, 22, 50, 34, 50, 34);
+  p.bezierVertex(50, 34, 57, 22, 70, 22);
+  p.bezierVertex(92, 22, 86, 60, 50, 88);
+  p.endShape();
+  p.pop();
+};
+
 export class Player {
   p: p5;
   size: number;
@@ -50,7 +67,7 @@ export class Player {
     this.p = p;
     this.deathCountDown = 0;
     this.size = 60;
-    this.life = 3;
+    this.life = MAX_PLAYER_HEALTH;
     this.ammunition = 1000;
     this.thruster = new ThrusterExhaustSystem(
       p,
@@ -80,7 +97,7 @@ export class Player {
       angle - this.p.PI
     );
 
-    if (this.p.keyIsDown(this.p.UP_ARROW) || this.p.keyIsDown(W_KEYCODE)) {
+    if (isShipActionActive("thrust")) {
       this.thruster.fire(10);
     }
     this.thruster.run();
@@ -117,10 +134,10 @@ export class Player {
 
     const angleToGoal = p5.Vector.sub(goal.pos, playerPos).heading();
     const pulse = (this.p.sin(this.p.frameCount * 0.12) + 1) * 4;
-    const tailStart = this.size * 1.1;
-    const tailEnd = this.size * 1.8 + pulse;
-    const arrowBase = this.size * 1.45 + pulse;
-    const arrowTip = this.size * 2.05 + pulse;
+    const tailStart = this.size * 1.45;
+    const tailEnd = this.size * 2.35 + pulse;
+    const arrowBase = this.size * 1.95 + pulse;
+    const arrowTip = this.size * 2.78 + pulse;
 
     this.p.push();
     this.p.translate(playerPos.x, playerPos.y);
@@ -149,6 +166,7 @@ export class Player {
     if (this.life <= 0) {
       return;
     }
+    hearts.createLossEffect(this.life - 1);
     this.life--;
     if (this.life <= 0) {
       explosions.createExplosion(
@@ -162,31 +180,23 @@ export class Player {
   }
 
   showHealth() {
-    this.p.fill(255);
-    let heartSize = 60;
-    let offSet = 20;
-    this.p.text(
-      this.ammunition,
-      offSet + (this.life + 1) * heartSize,
-      offSet + heartSize / 2
-    );
-    for (let i = 0; i < this.life; i++) {
-      this.p.image(
-        assets.heart,
-        i * heartSize + heartSize,
-        offSet,
-        heartSize,
-        heartSize
-      );
+    const heartSize = getHudHeartSize();
+    for (let i = 0; i < MAX_PLAYER_HEALTH; i++) {
+      const heartPos = getHudHeartTopLeft(i);
+      if (i < this.life) {
+        this.p.image(assets.heart, heartPos.x, heartPos.y, heartSize, heartSize);
+        continue;
+      }
+      drawHeartOutline(this.p, heartPos.x, heartPos.y, heartSize);
     }
   }
 
   steer() {
-    if (this.p.keyIsDown(this.p.LEFT_ARROW) || this.p.keyIsDown(A_KEYCODE)) {
+    if (isShipActionActive("turnLeft")) {
       Body.rotate(this.enginePlayer, -0.05);
     }
 
-    if (this.p.keyIsDown(this.p.RIGHT_ARROW) || this.p.keyIsDown(D_KEYCODE)) {
+    if (isShipActionActive("turnRight")) {
       Body.rotate(this.enginePlayer, 0.05);
     }
   }
@@ -209,7 +219,7 @@ export class Player {
     if (y <= -boardSizeY) {
       stopVerticalMotion(this.enginePlayer, -boardSizeY);
     }
-    if (this.p.keyIsDown(this.p.UP_ARROW) || this.p.keyIsDown(W_KEYCODE)) {
+    if (isShipActionActive("thrust")) {
       Body.applyForce(
         this.enginePlayer,
         this.enginePlayer.position,
@@ -243,7 +253,7 @@ export class Player {
   }
 
   shoot() {
-    if (this.p.keyIsDown(SPACE_KEYCODE) && this.ammunition > 0) {
+    if (isShipActionActive("fire") && this.ammunition > 0) {
       for (let i = 0; i < 2; i++) {
         const newPos = this.p
           .createVector(

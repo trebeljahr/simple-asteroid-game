@@ -68,6 +68,33 @@ export const distSquare = (x1: number, y1: number, x2: number, y2: number) => {
   return (x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1);
 };
 
+export const clamp = (value: number, minValue: number, maxValue: number) => {
+  return Math.max(minValue, Math.min(maxValue, value));
+};
+
+export const distanceToSegmentSquare = (
+  pointX: number,
+  pointY: number,
+  startX: number,
+  startY: number,
+  endX: number,
+  endY: number
+) => {
+  const segmentLengthSquare = distSquare(startX, startY, endX, endY);
+  if (segmentLengthSquare === 0) {
+    return distSquare(pointX, pointY, startX, startY);
+  }
+
+  const projection =
+    ((pointX - startX) * (endX - startX) + (pointY - startY) * (endY - startY)) /
+    segmentLengthSquare;
+  const clampedProjection = clamp(projection, 0, 1);
+  const nearestX = startX + (endX - startX) * clampedProjection;
+  const nearestY = startY + (endY - startY) * clampedProjection;
+
+  return distSquare(pointX, pointY, nearestX, nearestY);
+};
+
 export const circlesOverlap = (
   x1: number,
   y1: number,

@@ -19,7 +19,7 @@ export const resetRaceMode = (p: p5) => {
   });
   resetGoals(p);
   resetbullets(p);
-  resetHearts(p);
   resetAsteroids(p);
+  resetHearts(p);
   resetBorder(p);
 };

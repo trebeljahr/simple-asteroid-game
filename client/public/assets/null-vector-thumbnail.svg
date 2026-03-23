@@ -1,0 +1,82 @@
+<svg
+  width="512"
+  height="512"
+  viewBox="0 0 512 512"
+  fill="none"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <defs>
+    <linearGradient id="bg" x1="64" y1="48" x2="456" y2="464" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0D1733" />
+      <stop offset="1" stop-color="#050914" />
+    </linearGradient>
+    <radialGradient id="coreGlow" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(276 220) rotate(116.345) scale(246.092)">
+      <stop stop-color="#18406B" stop-opacity="0.9" />
+      <stop offset="0.6" stop-color="#0A1730" stop-opacity="0.4" />
+      <stop offset="1" stop-color="#050914" stop-opacity="0" />
+    </radialGradient>
+    <linearGradient id="trail" x1="130" y1="360" x2="332" y2="142" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#4DC7FF" stop-opacity="0.18" />
+      <stop offset="0.38" stop-color="#7BE0FF" stop-opacity="0.95" />
+      <stop offset="1" stop-color="#DDFBFF" />
+    </linearGradient>
+    <linearGradient id="ship" x1="0" y1="-32" x2="56" y2="32" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFE28C" />
+      <stop offset="1" stop-color="#FF8F5A" />
+    </linearGradient>
+    <linearGradient id="asteroid" x1="118" y1="317" x2="226" y2="430" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#C28D68" />
+      <stop offset="1" stop-color="#865C46" />
+    </linearGradient>
+  </defs>
+
+  <rect x="28" y="28" width="456" height="456" rx="112" fill="url(#bg)" />
+  <rect x="28" y="28" width="456" height="456" rx="112" fill="url(#coreGlow)" />
+
+  <circle cx="256" cy="256" r="182" stroke="#7BDFFF" stroke-opacity="0.14" stroke-width="18" />
+  <circle
+    cx="256"
+    cy="256"
+    r="116"
+    stroke="#A6F0FF"
+    stroke-opacity="0.48"
+    stroke-width="10"
+    stroke-dasharray="14 18"
+  />
+
+  <path
+    d="M132 356C188 333 239 288 284 234C311 201 330 170 342 142"
+    stroke="url(#trail)"
+    stroke-width="24"
+    stroke-linecap="round"
+  />
+  <path
+    d="M138 360C190 340 237 296 279 244C304 213 324 180 336 150"
+    stroke="#DDFBFF"
+    stroke-opacity="0.32"
+    stroke-width="8"
+    stroke-linecap="round"
+  />
+
+  <path
+    d="M151 325C178 300 222 301 244 332C261 355 260 390 239 409C215 431 176 431 152 407C126 381 125 348 151 325Z"
+    fill="url(#asteroid)"
+  />
+  <path
+    d="M178 328C199 316 224 323 236 342C245 357 243 377 230 391"
+    stroke="#E3B390"
+    stroke-opacity="0.5"
+    stroke-width="10"
+    stroke-linecap="round"
+  />
+
+  <g transform="translate(342 146) rotate(14)">
+    <path d="M0 -28L62 0L0 28L13 0L0 -28Z" fill="url(#ship)" />
+    <path d="M5 0H-34" stroke="#FFF0B7" stroke-opacity="0.78" stroke-width="10" stroke-linecap="round" />
+  </g>
+
+  <circle cx="356" cy="110" r="8" fill="#9EEBFF" fill-opacity="0.92" />
+  <circle cx="398" cy="156" r="5" fill="#FFD39B" fill-opacity="0.82" />
+  <circle cx="110" cy="154" r="6" fill="#94E6FF" fill-opacity="0.5" />
+  <circle cx="144" cy="116" r="3" fill="#FFFFFF" fill-opacity="0.6" />
+</svg>

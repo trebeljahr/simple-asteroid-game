@@ -1,73 +1,336 @@
 import p5, { Vector } from "p5";
 import { showRaceVictory } from "./gameUiActions";
-import { CameraBounds, circleIntersectsBounds, randomSpawnPoint } from "./utils";
+import {
+  boardSizeX,
+  boardSizeY,
+  CameraBounds,
+  circleIntersectsBounds,
+  clamp,
+  distSquare,
+  height,
+  width,
+} from "./utils";
 import { player, playerHitsCollectible } from "./player";
+
+interface GoalLeg {
+  distance: number;
+  label: string;
+}
+
+const GOAL_WORLD_MARGIN = 240;
+const GOAL_POSITION_ATTEMPTS = 80;
+const GOAL_SCAN_STEPS = 36;
+const GOAL_SEPARATION = 260;
+
+const createGoalLegs = (): GoalLeg[] => {
+  const worldDistance = Math.min(boardSizeX, boardSizeY);
+  const screenDiagonal = Math.sqrt(width * width + height * height);
+  const worldDiagonal = Math.sqrt(
+    boardSizeX * boardSizeX + boardSizeY * boardSizeY
+  );
+
+  return [
+    {
+      distance: Math.max(screenDiagonal * 0.64, worldDistance * 0.42),
+      label: "Warmup Gate",
+    },
+    {
+      distance: worldDiagonal * 0.5,
+      label: "Midfield Gate",
+    },
+    {
+      distance: worldDiagonal * 0.67,
+      label: "Deep Space Gate",
+    },
+    {
+      distance: worldDiagonal * 0.46,
+      label: "Sprint Gate",
+    },
+  ];
+};
 
 export let goals = {} as Goals;
 export const resetGoals = (p: p5) => {
   goals = new Goals(p);
 };
 
-const lastGoal = 5;
 class Goals {
-  goal: Goal;
+  currentGoalIndex: number;
   p: p5;
-  currentGoal: number;
+  route: Goal[];
+
   constructor(p: p5) {
     this.p = p;
-    this.currentGoal = 1;
-    this.goal = new Goal(this.p, randomSpawnPoint(this.p), this.currentGoal);
+    this.currentGoalIndex = 0;
+    this.route = this.createRoute();
   }
-  changeGoal() {
-    if (this.currentGoal === lastGoal) {
-      showRaceVictory();
-      return;
+
+  get completedGoals() {
+    return this.currentGoalIndex;
+  }
+
+  get goal() {
+    return this.route[this.currentGoalIndex];
+  }
+
+  get remainingGoals() {
+    return this.route.length - this.currentGoalIndex;
+  }
+
+  get totalGoals() {
+    return this.route.length;
+  }
+
+  createRoute() {
+    const route: Goal[] = [];
+    let previousHeading: number | null = null;
+    let origin = this.p.createVector(
+      player.enginePlayer.position.x,
+      player.enginePlayer.position.y
+    );
+
+    const legs = createGoalLegs();
+
+    for (let i = 0; i < legs.length; i++) {
+      const nextGoal = this.createGoalPosition(
+        origin,
+        legs[i].distance,
+        route,
+        previousHeading
+      );
+      previousHeading = nextGoal.heading;
+      origin = nextGoal.pos.copy();
+      route.push(
+        new Goal(this.p, nextGoal.pos, i + 1, legs.length, legs[i].label)
+      );
     }
-    this.goal = new Goal(this.p, randomSpawnPoint(this.p), this.currentGoal);
-    this.currentGoal++;
+
+    return route;
+  }
+
+  createGoalPosition(
+    origin: Vector,
+    distance: number,
+    existingRoute: Goal[],
+    previousHeading: number | null
+  ) {
+    for (let attempt = 0; attempt < GOAL_POSITION_ATTEMPTS; attempt++) {
+      const nextHeading = this.sampleHeading(previousHeading, attempt);
+      const candidate = p5.Vector.add(
+        origin,
+        p5.Vector.fromAngle(nextHeading, distance)
+      );
+      if (this.isGoalPositionValid(candidate, existingRoute)) {
+        return {
+          heading: nextHeading,
+          pos: candidate,
+        };
+      }
+    }
+
+    for (let step = 0; step < GOAL_SCAN_STEPS; step++) {
+      const nextHeading = (this.p.TWO_PI * step) / GOAL_SCAN_STEPS;
+      const candidate = p5.Vector.add(
+        origin,
+        p5.Vector.fromAngle(nextHeading, distance)
+      );
+      if (this.isGoalPositionValid(candidate, existingRoute)) {
+        return {
+          heading: nextHeading,
+          pos: candidate,
+        };
+      }
+    }
+
+    const centerHeading = p5.Vector.sub(this.p.createVector(0, 0), origin).heading();
+    for (let step = 0; step < GOAL_SCAN_STEPS; step++) {
+      const offset = ((step % 2 === 0 ? 1 : -1) * Math.ceil(step / 2) * this.p.PI) /
+        GOAL_SCAN_STEPS;
+      const nextHeading = centerHeading + offset;
+      const candidate = p5.Vector.add(
+        origin,
+        p5.Vector.fromAngle(nextHeading, distance)
+      );
+      if (this.isGoalPositionValid(candidate, existingRoute)) {
+        return {
+          heading: nextHeading,
+          pos: candidate,
+        };
+      }
+    }
+
+    return {
+      heading: centerHeading,
+      pos: this.p.createVector(
+        clamp(
+          origin.x + this.p.cos(centerHeading) * distance,
+          -boardSizeX + GOAL_WORLD_MARGIN,
+          boardSizeX - GOAL_WORLD_MARGIN
+        ),
+        clamp(
+          origin.y + this.p.sin(centerHeading) * distance,
+          -boardSizeY + GOAL_WORLD_MARGIN,
+          boardSizeY - GOAL_WORLD_MARGIN
+        )
+      ),
+    };
+  }
+
+  sampleHeading(previousHeading: number | null, attempt: number) {
+    if (previousHeading === null) {
+      return this.p.random(this.p.TWO_PI);
+    }
+
+    const turnWindow = this.p.map(
+      attempt,
+      0,
+      GOAL_POSITION_ATTEMPTS - 1,
+      this.p.PI * 0.72,
+      this.p.PI
+    );
+    return previousHeading + this.p.random(-turnWindow, turnWindow);
+  }
+
+  isGoalPositionValid(candidate: Vector, existingRoute: Goal[]) {
+    if (
+      candidate.x < -boardSizeX + GOAL_WORLD_MARGIN ||
+      candidate.x > boardSizeX - GOAL_WORLD_MARGIN ||
+      candidate.y < -boardSizeY + GOAL_WORLD_MARGIN ||
+      candidate.y > boardSizeY - GOAL_WORLD_MARGIN
+    ) {
+      return false;
+    }
+
+    if (
+      distSquare(
+        candidate.x,
+        candidate.y,
+        player.enginePlayer.position.x,
+        player.enginePlayer.position.y
+      ) <
+      GOAL_SEPARATION * GOAL_SEPARATION
+    ) {
+      return false;
+    }
+
+    for (let i = 0; i < existingRoute.length; i++) {
+      const routeGoal = existingRoute[i];
+      if (
+        distSquare(candidate.x, candidate.y, routeGoal.pos.x, routeGoal.pos.y) <
+        GOAL_SEPARATION * GOAL_SEPARATION
+      ) {
+        return false;
+      }
+    }
+
+    return true;
   }
 
   run(cameraBounds?: CameraBounds) {
+    const currentGoal = this.goal;
     if (
       cameraBounds === undefined ||
       circleIntersectsBounds(
-        this.goal.pos.x,
-        this.goal.pos.y,
-        this.goal.size,
+        currentGoal.pos.x,
+        currentGoal.pos.y,
+        currentGoal.size,
         cameraBounds
       )
     ) {
-      this.goal.draw();
+      currentGoal.draw();
     }
-    if (playerHitsCollectible(this.goal, player)) {
-      this.changeGoal();
+
+    if (playerHitsCollectible(currentGoal, player)) {
+      this.advanceGoal();
     }
+  }
+
+  advanceGoal() {
+    if (this.currentGoalIndex >= this.route.length - 1) {
+      showRaceVictory();
+      return;
+    }
+
+    this.currentGoalIndex++;
   }
 }
 
 export class Goal {
+  index: number;
+  label: string;
   p: p5;
+  phase: number;
   pos: Vector;
   size: number;
-  goal: number;
-  constructor(p: p5, pos: Vector, goal: number) {
+  totalGoals: number;
+
+  constructor(
+    p: p5,
+    pos: Vector,
+    index: number,
+    totalGoals: number,
+    label: string
+  ) {
     this.pos = pos.copy();
-    this.size = 100;
+    this.size = 120;
     this.p = p;
-    this.goal = goal;
+    this.index = index;
+    this.totalGoals = totalGoals;
+    this.label = label;
+    this.phase = p.random(p.TWO_PI);
   }
 
   draw() {
-    this.p.rectMode(this.p.CENTER);
-    this.p.stroke("yellow");
-    this.p.strokeWeight(10);
+    const pulse = (this.p.sin(this.p.frameCount * 0.08 + this.phase) + 1) / 2;
+    const spinA = this.phase + this.p.frameCount * 0.014;
+    const spinB = -this.phase - this.p.frameCount * 0.02;
+    const outerSize = this.size + pulse * 10;
+    const glowBlue = [110, 228, 255] as const;
+
+    this.p.push();
+    this.p.translate(this.pos.x, this.pos.y);
     this.p.noFill();
-    this.p.ellipse(this.pos.x, this.pos.y, this.size, this.size);
-    this.p.strokeWeight(1);
+
+    this.p.stroke(glowBlue[0], glowBlue[1], glowBlue[2], 34);
+    this.p.strokeWeight(18);
+    this.p.circle(0, 0, outerSize + 34);
+
+    this.p.stroke(glowBlue[0], glowBlue[1], glowBlue[2], 210);
+    this.p.strokeWeight(6);
+    this.p.push();
+    this.p.rotate(spinA);
+    this.p.arc(0, 0, outerSize + 10, outerSize + 10, 0.2, 1.45);
+    this.p.arc(0, 0, outerSize + 10, outerSize + 10, 2.1, 3.28);
+    this.p.arc(0, 0, outerSize + 10, outerSize + 10, 4.05, 5.28);
+    this.p.pop();
+
+    this.p.stroke(162, 240, 255, 180);
+    this.p.strokeWeight(3);
+    this.p.push();
+    this.p.rotate(spinB);
+    this.p.arc(0, 0, this.size * 0.9, this.size * 0.9, 0.42, 1.12);
+    this.p.arc(0, 0, this.size * 0.9, this.size * 0.9, 2.52, 3.25);
+    this.p.arc(0, 0, this.size * 0.9, this.size * 0.9, 4.56, 5.31);
+    this.p.pop();
+
     this.p.noStroke();
-    this.p.fill(255);
+    this.p.fill(glowBlue[0], glowBlue[1], glowBlue[2], 32 + pulse * 30);
+    this.p.circle(0, 0, this.size * 0.56 + pulse * 12);
+
+    this.p.stroke(182, 245, 255, 150);
+    this.p.strokeWeight(2);
+    for (let markerIndex = 0; markerIndex < 6; markerIndex++) {
+      const markerAngle = spinA + (this.p.TWO_PI * markerIndex) / 6;
+      const markerStart = p5.Vector.fromAngle(markerAngle, this.size * 0.64);
+      const markerEnd = p5.Vector.fromAngle(markerAngle, this.size * 0.82);
+      this.p.line(markerStart.x, markerStart.y, markerEnd.x, markerEnd.y);
+    }
+
+    this.p.noStroke();
+    this.p.fill(229, 248, 255);
     this.p.textAlign(this.p.CENTER, this.p.CENTER);
-    this.p.textSize(32);
-    this.p.text(this.goal, this.pos.x, this.pos.y);
+    this.p.textSize(26);
+    this.p.text(`${this.index}/${this.totalGoals}`, 0, -4);
+    this.p.pop();
   }
 }
