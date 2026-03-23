@@ -2,3 +2,6 @@
   base = ""
   command = "npm run build:client"
   publish = "client/dist"
+
+[build.environment]
+  NODE_VERSION = "22"

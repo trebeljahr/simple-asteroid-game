@@ -21,6 +21,10 @@
   "repository": {
     "type": "git"
   },
+  "engines": {
+    "node": ">=20",
+    "npm": ">=10"
+  },
   "author": "Rico Trebeljahr",
   "license": "ISC",
   "devDependencies": {
