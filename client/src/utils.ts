@@ -13,6 +13,7 @@ export const A_KEYCODE = 65;
 export const D_KEYCODE = 68;
 export const P_KEYCODE = 80;
 export const T_KEYCODE = 84;
+export const ESC_KEYCODE = 27;
 
 export const updateWindowSize = () => {
   width = window.innerWidth;
@@ -28,6 +29,18 @@ export const randomPosition = (p: p5) => {
 
 export const distSquare = (x1: number, y1: number, x2: number, y2: number) => {
   return (x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1);
+};
+
+export const circlesOverlap = (
+  x1: number,
+  y1: number,
+  diameter1: number,
+  x2: number,
+  y2: number,
+  diameter2: number
+) => {
+  const radiusSum = diameter1 / 2 + diameter2 / 2;
+  return distSquare(x1, y1, x2, y2) <= radiusSum * radiusSum;
 };
 
 export const playerHitsCircularTarget = (target: any, player: Player) => {

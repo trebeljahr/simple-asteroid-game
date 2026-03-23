@@ -3,17 +3,36 @@ import { assets } from "./sketch";
 import { randomSpawnPoint } from "./utils";
 
 export let ammunition = {} as AmmunitionPackages;
-export const resetAmmunition = (p: p5) => {
-  ammunition = new AmmunitionPackages(p);
+
+interface AmmunitionConfig {
+  initialPackages: number;
+  spawnEnabled: boolean;
+}
+
+const defaultConfig: AmmunitionConfig = {
+  initialPackages: 50,
+  spawnEnabled: true,
+};
+
+export const resetAmmunition = (
+  p: p5,
+  config: Partial<AmmunitionConfig> = {}
+) => {
+  ammunition = new AmmunitionPackages(p, {
+    ...defaultConfig,
+    ...config,
+  });
 };
 
 class AmmunitionPackages {
   ammunitionPackages: Ammunition[];
   p: p5;
-  constructor(p: p5) {
+  spawnEnabled: boolean;
+  constructor(p: p5, config: AmmunitionConfig) {
     this.p = p;
+    this.spawnEnabled = config.spawnEnabled;
     this.ammunitionPackages = [];
-    this.addAmmunitionPackages(50);
+    this.addAmmunitionPackages(config.initialPackages);
   }
 
   addAmmunitionPackages(amount: number) {
@@ -30,10 +49,10 @@ class AmmunitionPackages {
   }
 
   run() {
-    if (this.p.frameCount % 240 === 0) {
+    if (this.spawnEnabled && this.p.frameCount % 240 === 0) {
       this.addAmmunitionPackages(1);
     }
-    for (let i = this.ammunitionPackages.length - 1; i > 0; i--) {
+    for (let i = this.ammunitionPackages.length - 1; i >= 0; i--) {
       const heart = this.ammunitionPackages[i];
       heart.draw();
     }

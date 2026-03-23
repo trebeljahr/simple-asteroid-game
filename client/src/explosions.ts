@@ -30,7 +30,7 @@ class ExplosionSystem {
   }
 
   run() {
-    for (let i = this.particles.length - 1; i > 0; i--) {
+    for (let i = this.particles.length - 1; i >= 0; i--) {
       let particle = this.particles[i];
       particle.run();
       if (particle.isDead()) {

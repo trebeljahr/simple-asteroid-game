@@ -9,12 +9,14 @@ export const resetbullets = (p: p5) => {
 class BulletSystem {
   p: p5;
   bullets: Bullet[];
+  maxBullets: number;
   constructor(p: p5) {
     this.p = p;
     this.bullets = [];
+    this.maxBullets = 250;
   }
   update() {
-    for (let j = this.bullets.length - 1; j > 0; j--) {
+    for (let j = this.bullets.length - 1; j >= 0; j--) {
       const bullet = this.bullets[j];
       this.p.fill(255);
       this.p.stroke(255, 0, 0);
@@ -25,6 +27,9 @@ class BulletSystem {
     }
   }
   addBullet(pos: Vector, rotation: number) {
+    if (this.bullets.length >= this.maxBullets) {
+      this.bullets.shift();
+    }
     this.bullets.push(
       new Bullet(
         this.p,

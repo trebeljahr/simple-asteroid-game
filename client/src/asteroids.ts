@@ -1,16 +1,9 @@
 import p5, { Image, Vector } from "p5";
 import { v4 } from "uuid";
 
-import { explosions } from "./explosions";
 import { Mover } from "./mover";
-import { player, playerHitsAsteroid } from "./player";
 import { assets } from "./sketch";
-import {
-  boardSizeX,
-  boardSizeY,
-  playerHitsCircularTarget,
-  randomPositionNotHittingPlayer,
-} from "./utils";
+import { randomPositionNotHittingPlayer } from "./utils";
 
 export let asteroids = {} as Asteroids;
 export const resetAsteroids = (p: p5) => {
@@ -21,7 +14,9 @@ export let invocations = {
   amount: 0,
 };
 
-const maxAsteroids = 100;
+export const maxAsteroids = 100;
+export const maxAsteroidSize = 200;
+
 class Asteroids {
   asteroids: Asteroid[];
   p: p5;
@@ -33,40 +28,34 @@ class Asteroids {
     }
   }
   findById(id: string): Asteroid {
-    return this.asteroids.find((asteroid) => asteroid.id === id);
+    return this.asteroids.find((asteroid) => asteroid.id === id) as Asteroid;
   }
-  run = () => {
-    if (this.asteroids.length < maxAsteroids) {
-      this.asteroids = [...this.asteroids, this.createNewAsteroid()];
+
+  ensureAsteroidCount() {
+    while (this.asteroids.length < maxAsteroids) {
+      this.asteroids.push(this.createNewAsteroid());
     }
-    this.asteroids = this.asteroids.reduce((agg, asteroid) => {
+  }
+
+  run = () => {
+    this.ensureAsteroidCount();
+    for (let i = 0; i < this.asteroids.length; i++) {
+      const asteroid = this.asteroids[i];
       asteroid.update();
       asteroid.draw();
-      if (playerHitsAsteroid(asteroid, player)) {
-        player.damage();
-        explosions.createExplosion(asteroid.pos);
-        return agg;
-      }
-      return [...agg, asteroid];
-    }, [] as Asteroid[]);
-
-    if (this.asteroids.length < maxAsteroids) {
-      this.asteroids = [...this.asteroids, this.createNewAsteroid()];
     }
+    this.ensureAsteroidCount();
   };
 
   addAsteroid = () => {
-    this.asteroids = [...this.asteroids, this.createNewAsteroid()];
+    this.asteroids.push(this.createNewAsteroid());
   };
 
   spawnNewAsteroid(indexToChange: number) {
-    if (this.asteroids.length < 0) {
+    if (this.asteroids.length <= 0) {
       return;
     }
-    const newAsteroid = this.createNewAsteroid();
-    this.asteroids = this.asteroids.map((asteroid, i) => {
-      return i === indexToChange ? asteroid : newAsteroid;
-    });
+    this.asteroids[indexToChange] = this.createNewAsteroid();
   }
 
   createNewAsteroid() {

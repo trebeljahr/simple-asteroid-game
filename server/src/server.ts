@@ -1,45 +1,71 @@
-let express = require("express");
-let app = require("express")();
-let cors = require("cors");
-let http = require("http").createServer(app);
-let io = require("socket.io")(http);
-const browserSync = require("browser-sync");
+import cors from "cors";
+import express from "express";
+import { existsSync } from "fs";
+import { createServer } from "http";
+import path from "path";
+import { Server } from "socket.io";
 
-app.use(cors());
-app.use(express.static("../public"));
+const app = express();
+const httpServer = createServer(app);
+const io = new Server(httpServer, {
+  cors: {
+    origin: true,
+    credentials: true,
+  },
+});
 
-let enemies = [];
-let bullets = [];
-let asteroids = [];
+const clientDistPath = path.resolve(__dirname, "../../client/dist");
 
-io.on("connection", function (socket: any) {
-  console.log("New user with id: " + socket.id);
+app.use(
+  cors({
+    origin: true,
+    credentials: true,
+  })
+);
 
-  socket.on("newPlayer", (data: any) => {
-    socket.broadcast.emit("generateNewPlayer", { ...data, id: socket.id });
+app.get("/health", (_request, response) => {
+  response.json({ ok: true });
+});
+
+if (existsSync(clientDistPath)) {
+  app.use(express.static(clientDistPath));
+
+  app.get("*", (_request, response) => {
+    response.sendFile(path.join(clientDistPath, "index.html"));
+  });
+} else {
+  app.get("/", (_request, response) => {
+    response
+      .status(200)
+      .send("Client build not found. Run `npm run dev` or `npm run build` from the repo root.");
+  });
+}
+
+io.on("connection", (socket) => {
+  console.log(`New user with id: ${socket.id}`);
+
+  socket.on("newPlayer", (data: unknown) => {
+    socket.broadcast.emit("generateNewPlayer", {
+      ...((data as Record<string, unknown>) || {}),
+      id: socket.id,
+    });
   });
 
-  socket.on("playerUpdate", (data: any) => {
-    socket.broadcast.emit("otherPlayerMoved", { ...data, id: socket.id });
+  socket.on("playerUpdate", (data: unknown) => {
+    socket.broadcast.emit("otherPlayerMoved", {
+      ...((data as Record<string, unknown>) || {}),
+      id: socket.id,
+    });
   });
 
   socket.on("disconnect", () => {
-    console.log("Player with id: " + socket.id + " disconnected");
+    console.log(`Player with id: ${socket.id} disconnected`);
     socket.broadcast.emit("playerLeft", { id: socket.id });
   });
 });
 
-const port = 9777;
+const port = Number(process.env.PORT ?? 9777);
 
-http.listen(port, listening);
-
-function listening() {
-  browserSync({
-    files: ["../public/**/*.{html,js,css}"],
-    online: false,
-    open: false,
-    port: port + 1,
-    proxy: "localhost:" + port,
-    ui: false,
-  });
-}
+httpServer.listen(port, () => {
+  console.log(`Server listening on http://localhost:${port}`);
+});

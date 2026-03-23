@@ -1,29 +1,28 @@
 {
-  "name": "asteroid-game-server",
+  "name": "@simple-asteroid-game/server",
   "version": "1.0.0",
+  "private": true,
   "description": "This is the server for the asteroid game",
-  "main": "server.js",
+  "main": "dist/server.js",
   "scripts": {
-    "start": "node -r ts-node/register ./src/server.ts",
-    "dev": "nodemon"
+    "dev": "nodemon --watch src --ext ts --exec \"node --import tsx ./src/server.ts\"",
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/server.js",
+    "check": "tsc --noEmit -p tsconfig.json"
   },
   "author": "Rico Trebeljahr",
   "license": "ISC",
   "dependencies": {
-    "browser-sync": "^2.26.13",
     "cors": "^2.8.5",
     "express": "^4.17.1",
-    "socket.io": "^2.3.0"
+    "socket.io": "^4.8.1"
   },
   "devDependencies": {
     "@types/cors": "^2.8.8",
     "@types/express": "^4.17.8",
     "@types/node": "^13.13.30",
-    "@types/socket.io": "^2.1.11",
-    "eslint": "^6.8.0",
-    "eslint-plugin-import": "^2.22.1",
-    "nodemon": "^2.0.6",
-    "ts-node": "^8.10.2",
-    "typescript": "^3.9.7"
+    "nodemon": "^3.1.10",
+    "tsx": "^4.19.3",
+    "typescript": "^5.8.2"
   }
 }

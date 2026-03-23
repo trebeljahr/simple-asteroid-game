@@ -1,100 +1,225 @@
-import p5, { Element } from "p5";
-import { resetPlayer } from "./player";
-import { resetExplosions } from "./explosions";
-import { resetAmmunition } from "./ammunition";
-import { resetbullets } from "./bullets";
-import { resetHearts } from "./hearts";
-import { resetAsteroids } from "./asteroids";
-import { resetBorder } from "./border";
-import { resetGoals } from "./goals";
+import p5 from "p5";
+import { GameMode, GameState, gameStateMachine } from "./gameState";
+import {
+  closeOptionsMenu,
+  openOptionsMenu,
+  resumeGameplay,
+  returnToMainMenu,
+  toggleSoundEnabled,
+} from "./gameUiActions";
+import {
+  activateGameMode,
+  configureGameModeActions,
+  restartCurrentMode,
+} from "./gameModeActions";
 
-export let startTime = Date.now();
+let initialized = false;
 
-export const resetStartTime = () => {
-  startTime = Date.now();
+const getMenuRoot = () => {
+  return document.getElementById("menu");
 };
 
-export let menuIsOpen: boolean = false,
-  button: null | Element = null,
-  div: null | Element = null;
-
-export let gameOver: boolean = false;
-
-export const toggleDeathScreen = (p: p5) => {
-  toggleMenu(p, "Game Over", "Press T to Start Again");
-  gameOver = true;
+const getModeLabel = (mode: GameMode) => {
+  switch (mode) {
+    case "race":
+      return "Racing";
+    case "multiplayer":
+      return "Multiplayer";
+    case "horde":
+      return "Enemy Hordes";
+    default:
+      return mode;
+  }
 };
 
-export const toggleWinScreen = (p: p5) => {
-  const endTime = Date.now();
-  const totalTime = Math.floor((endTime - startTime) / 1000);
-  toggleMenu(
-    p,
-    `You won and it took you ${totalTime} seconds`,
-    "Press T to Start Again"
+const createActionButton = (
+  label: string,
+  onClick: () => void,
+  variant = "primary"
+) => {
+  const button = document.createElement("button");
+  button.className = `menuButton menuButton--${variant}`;
+  button.textContent = label;
+  button.type = "button";
+  button.addEventListener("click", onClick);
+  return button;
+};
+
+const createPanel = (title: string, subtitle: string) => {
+  const panel = document.createElement("section");
+  panel.className = "menuPanel";
+
+  const titleElement = document.createElement("h1");
+  titleElement.className = "menuTitle";
+  titleElement.textContent = title;
+  panel.appendChild(titleElement);
+
+  const subtitleElement = document.createElement("p");
+  subtitleElement.className = "menuSubtitle";
+  subtitleElement.textContent = subtitle;
+  panel.appendChild(subtitleElement);
+
+  return panel;
+};
+
+const createButtonRow = () => {
+  const buttonRow = document.createElement("div");
+  buttonRow.className = "menuActions";
+  return buttonRow;
+};
+
+const renderOptionsPanel = (state: GameState) => {
+  const panel = createPanel(
+    "Options",
+    "Tune the experience here. More settings can slot in later without changing the state flow."
   );
-  gameOver = true;
+  const buttonRow = createButtonRow();
+  const soundLabel = state.settings.soundEnabled ? "Sound: On" : "Sound: Off";
+  buttonRow.appendChild(
+    createActionButton(soundLabel, () => {
+      toggleSoundEnabled();
+    })
+  );
+  buttonRow.appendChild(
+    createActionButton("Back", () => {
+      closeOptionsMenu();
+    }, "secondary")
+  );
+  panel.appendChild(buttonRow);
+  return panel;
 };
 
-export const pauseGame = (p: p5) => {
-  toggleMenu(p, "Pause", "Press T to Continue");
+const renderMainMenuPanel = () => {
+  const panel = createPanel(
+    "Asteroid Hangar",
+    "Pick a mode. Racing is live now, and the other modes are ready as placeholders for the next steps."
+  );
+  const buttonRow = createButtonRow();
+  buttonRow.appendChild(
+    createActionButton("Race Mode", () => {
+      activateGameMode("race");
+    })
+  );
+  buttonRow.appendChild(
+    createActionButton("Multiplayer", () => {
+      activateGameMode("multiplayer");
+    }, "secondary")
+  );
+  buttonRow.appendChild(
+    createActionButton("Enemy Hordes", () => {
+      activateGameMode("horde");
+    }, "secondary")
+  );
+  buttonRow.appendChild(
+    createActionButton("Options", () => {
+      openOptionsMenu();
+    }, "ghost")
+  );
+  panel.appendChild(buttonRow);
+
+  const helperText = document.createElement("p");
+  helperText.className = "menuHelper";
+  helperText.textContent = "Press Esc during any mode to open the in-game menu.";
+  panel.appendChild(helperText);
+
+  return panel;
 };
 
-export const toggleMenu = (p: p5, buttonText: string, divText: string) => {
-  if (gameOver) return;
-  menuIsOpen = !menuIsOpen;
-  if (button && div) {
-    button.remove();
-    button = null;
-    div.remove();
-    div = null;
+const renderPausePanel = (state: GameState) => {
+  const modeLabel =
+    state.scene.type === "mode" ? getModeLabel(state.scene.mode) : "Game";
+  const panel = createPanel(
+    `${modeLabel} Paused`,
+    "Resume the run, tweak options, or head back to the mode select screen."
+  );
+  const buttonRow = createButtonRow();
+  buttonRow.appendChild(
+    createActionButton("Resume", () => {
+      resumeGameplay();
+    })
+  );
+  buttonRow.appendChild(
+    createActionButton("Options", () => {
+      openOptionsMenu();
+    }, "secondary")
+  );
+  buttonRow.appendChild(
+    createActionButton("Main Menu", () => {
+      returnToMainMenu();
+    }, "ghost")
+  );
+  panel.appendChild(buttonRow);
+  return panel;
+};
+
+const renderResultPanel = (title: string, subtitle: string) => {
+  const panel = createPanel(title, subtitle);
+  const buttonRow = createButtonRow();
+  buttonRow.appendChild(
+    createActionButton("Try Again", () => {
+      restartCurrentMode();
+    })
+  );
+  buttonRow.appendChild(
+    createActionButton("Options", () => {
+      openOptionsMenu();
+    }, "secondary")
+  );
+  buttonRow.appendChild(
+    createActionButton("Main Menu", () => {
+      returnToMainMenu();
+    }, "ghost")
+  );
+  panel.appendChild(buttonRow);
+  return panel;
+};
+
+const renderMenu = (state: GameState) => {
+  const menuRoot = getMenuRoot();
+  if (menuRoot === null) {
     return;
   }
-  button = p.createButton(buttonText);
-  button.class("resumeButton");
-  button.parent("menu");
-  button.mouseClicked(pauseGame);
 
-  div = p.createDiv(divText);
-  div.parent("menu");
-};
+  menuRoot.innerHTML = "";
 
-export const restart = (p: p5) => {
-  // socket = io.connect();
-  resetStartTime();
-  resetPlayer(p);
-  resetExplosions(p);
-  resetAmmunition(p);
-  resetGoals(p);
-  resetbullets(p);
-  resetHearts(p);
-  resetAsteroids(p);
-  resetBorder(p);
-  // socket.emit ("newPlayer", {
-  //   name: "SomeUsername",
-  //   pos: { x: player.pos.x, y: player.pos.y },
-  // });
+  const shouldShowMenu =
+    state.scene.type === "main-menu" ||
+    state.scene.type === "result" ||
+    state.overlay !== null;
 
-  if (gameOver) {
-    gameOver = false;
-    toggleMenu(p, "", "");
+  menuRoot.classList.toggle("is-active", shouldShowMenu);
+
+  if (!shouldShowMenu) {
+    return;
   }
 
-  // socket.on("generateNewPlayer", generateNewPlayer);
+  if (state.overlay !== null && state.overlay.type === "options") {
+    menuRoot.appendChild(renderOptionsPanel(state));
+    return;
+  }
 
-  // socket.on("playerLeft", deletePlayer);
+  if (state.scene.type === "main-menu") {
+    menuRoot.appendChild(renderMainMenuPanel());
+    return;
+  }
 
-  // socket.on("otherPlayerMoved", (data) => {
-  //   if (!enemyPlayers[data.id]) {
-  //     generateNewPlayer(data);
-  //     return;
-  //   }
-  //   let enemy = enemyPlayers[data.id];
-  //   enemy.pos.x = data.pos.x;
-  //   enemy.pos.y = data.pos.y;
-  //   enemy.rotation = data.rotation;
-  //   enemy.thrusterON = data.thrusterON;
-  //   enemy.vel.x = data.vel.x;
-  //   enemy.vel.y = data.vel.y;
-  // });
+  if (state.overlay !== null && state.overlay.type === "pause") {
+    menuRoot.appendChild(renderPausePanel(state));
+    return;
+  }
+
+  if (state.scene.type === "result") {
+    menuRoot.appendChild(renderResultPanel(state.scene.title, state.scene.subtitle));
+  }
+};
+
+export const initializeMenu = (p: p5) => {
+  configureGameModeActions(p);
+  if (!initialized) {
+    gameStateMachine.subscribe((state) => {
+      renderMenu(state);
+    });
+    initialized = true;
+  }
+  renderMenu(gameStateMachine.getState());
 };

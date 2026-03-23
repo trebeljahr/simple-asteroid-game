@@ -1,141 +1,128 @@
-export class Point {
+export interface QuadTreeItem<T> {
   x: number;
   y: number;
-  data: any;
-  constructor(x: number, y: number, data: any) {
-    this.x = x;
-    this.y = y;
-    this.data = data;
-  }
+  data: T;
 }
 
-interface Range {
+export interface QueryRange {
   x: number;
   y: number;
-  w: number;
-  h: number;
+  halfWidth: number;
+  halfHeight: number;
 }
 
-export class Rectangle {
+class RectangleBoundary {
   x: number;
   y: number;
-  w: number;
-  h: number;
-  constructor(x: number, y: number, w: number, h: number) {
+  halfWidth: number;
+  halfHeight: number;
+
+  constructor(x: number, y: number, halfWidth: number, halfHeight: number) {
     this.x = x;
     this.y = y;
-    this.w = w;
-    this.h = h;
+    this.halfWidth = halfWidth;
+    this.halfHeight = halfHeight;
   }
 
-  get left() {
-    return this.x - this.w / 2;
-  }
-
-  get right() {
-    return this.x + this.w / 2;
-  }
-
-  get top() {
-    return this.y - this.h / 2;
-  }
-
-  get bottom() {
-    return this.y + this.h / 2;
-  }
-
-  contains(point: Point) {
+  contains<T>(item: QuadTreeItem<T>) {
     return (
-      point.x >= this.x - this.w &&
-      point.x <= this.x + this.w &&
-      point.y >= this.y - this.h &&
-      point.y <= this.y + this.h
+      item.x >= this.x - this.halfWidth &&
+      item.x <= this.x + this.halfWidth &&
+      item.y >= this.y - this.halfHeight &&
+      item.y <= this.y + this.halfHeight
     );
   }
 
-  intersects(range: Range) {
+  intersects(range: QueryRange) {
     return !(
-      range.x - range.w > this.x + this.w ||
-      range.x + range.w < this.x - this.w ||
-      range.y - range.h > this.y + this.h ||
-      range.y + range.h < this.y - this.h
+      range.x - range.halfWidth > this.x + this.halfWidth ||
+      range.x + range.halfWidth < this.x - this.halfWidth ||
+      range.y - range.halfHeight > this.y + this.halfHeight ||
+      range.y + range.halfHeight < this.y - this.halfHeight
     );
   }
 }
 
-class Circle {
-  x: number;
-  y: number;
-  r: number;
-  rSquared: number;
-  constructor(x: number, y: number, r: number) {
-    this.x = x;
-    this.y = y;
-    this.r = r;
-    this.rSquared = this.r * this.r;
-  }
+const createChildBoundary = (
+  boundary: RectangleBoundary,
+  xOffset: number,
+  yOffset: number
+) => {
+  return new RectangleBoundary(
+    boundary.x + xOffset * (boundary.halfWidth / 2),
+    boundary.y + yOffset * (boundary.halfHeight / 2),
+    boundary.halfWidth / 2,
+    boundary.halfHeight / 2
+  );
+};
 
-  contains(point: Point) {
-    let d = Math.pow(point.x - this.x, 2) + Math.pow(point.y - this.y, 2);
-    return d <= this.rSquared;
-  }
+export const createQueryRange = (
+  x: number,
+  y: number,
+  halfWidth: number,
+  halfHeight: number
+): QueryRange => {
+  return {
+    x,
+    y,
+    halfWidth,
+    halfHeight,
+  };
+};
 
-  intersects(range: Range) {
-    let xDist = Math.abs(range.x - this.x);
-    let yDist = Math.abs(range.y - this.y);
-    let r = this.r;
-
-    let w = range.w;
-    let h = range.h;
-
-    let edges = Math.pow(xDist - w, 2) + Math.pow(yDist - h, 2);
-    if (xDist > r + w || yDist > r + h) return false;
-    if (xDist <= w || yDist <= h) return true;
-    return edges <= this.rSquared;
-  }
-}
-
-export class QuadTree {
-  boundary: Rectangle;
+export class QuadTree<T> {
+  boundary: RectangleBoundary;
   capacity: number;
-  points: Point[];
+  items: Array<QuadTreeItem<T>>;
   divided: boolean;
-  northeast: QuadTree;
-  northwest: QuadTree;
-  southeast: QuadTree;
-  southwest: QuadTree;
-  constructor(boundary: Rectangle, capacity: number) {
-    this.boundary = boundary;
+  northeast: QuadTree<T> | null;
+  northwest: QuadTree<T> | null;
+  southeast: QuadTree<T> | null;
+  southwest: QuadTree<T> | null;
+
+  constructor(boundary: QueryRange, capacity: number) {
+    this.boundary = new RectangleBoundary(
+      boundary.x,
+      boundary.y,
+      boundary.halfWidth,
+      boundary.halfHeight
+    );
     this.capacity = capacity;
-    this.points = [];
+    this.items = [];
     this.divided = false;
+    this.northeast = null;
+    this.northwest = null;
+    this.southeast = null;
+    this.southwest = null;
   }
 
   subdivide() {
-    let x = this.boundary.x;
-    let y = this.boundary.y;
-    let w = this.boundary.w / 2;
-    let h = this.boundary.h / 2;
-
-    let ne = new Rectangle(x + w, y - h, w, h);
-    this.northeast = new QuadTree(ne, this.capacity);
-    let nw = new Rectangle(x - w, y - h, w, h);
-    this.northwest = new QuadTree(nw, this.capacity);
-    let se = new Rectangle(x + w, y + h, w, h);
-    this.southeast = new QuadTree(se, this.capacity);
-    let sw = new Rectangle(x - w, y + h, w, h);
-    this.southwest = new QuadTree(sw, this.capacity);
-
+    this.northeast = new QuadTree<T>(
+      createChildBoundary(this.boundary, 1, -1),
+      this.capacity
+    );
+    this.northwest = new QuadTree<T>(
+      createChildBoundary(this.boundary, -1, -1),
+      this.capacity
+    );
+    this.southeast = new QuadTree<T>(
+      createChildBoundary(this.boundary, 1, 1),
+      this.capacity
+    );
+    this.southwest = new QuadTree<T>(
+      createChildBoundary(this.boundary, -1, 1),
+      this.capacity
+    );
     this.divided = true;
   }
 
-  insert(point: Point): boolean {
-    if (!this.boundary.contains(point)) {
+  insert(item: QuadTreeItem<T>): boolean {
+    if (!this.boundary.contains(item)) {
       return false;
     }
 
-    if (this.points.length < this.capacity) {
-      this.points.push(point);
+    if (this.items.length < this.capacity) {
+      this.items.push(item);
       return true;
     }
 
@@ -144,56 +131,37 @@ export class QuadTree {
     }
 
     return (
-      this.northeast.insert(point) ||
-      this.northwest.insert(point) ||
-      this.southeast.insert(point) ||
-      this.southwest.insert(point)
+      (this.northeast !== null && this.northeast.insert(item)) ||
+      (this.northwest !== null && this.northwest.insert(item)) ||
+      (this.southeast !== null && this.southeast.insert(item)) ||
+      (this.southwest !== null && this.southwest.insert(item))
     );
   }
 
-  query(range: Rectangle | Circle, found: Point[]) {
-    if (!found) {
-      found = [];
-    }
-
-    if (!range.intersects(this.boundary)) {
+  query(range: QueryRange, found: Array<QuadTreeItem<T>> = []) {
+    if (!this.boundary.intersects(range)) {
       return found;
     }
 
-    for (let p of this.points) {
-      if (range.contains(p)) {
-        found.push(p);
+    for (let i = 0; i < this.items.length; i++) {
+      const item = this.items[i];
+      if (
+        item.x >= range.x - range.halfWidth &&
+        item.x <= range.x + range.halfWidth &&
+        item.y >= range.y - range.halfHeight &&
+        item.y <= range.y + range.halfHeight
+      ) {
+        found.push(item);
       }
     }
 
     if (this.divided) {
-      this.northwest.query(range, found);
-      this.northeast.query(range, found);
-      this.southwest.query(range, found);
-      this.southeast.query(range, found);
+      this.northwest && this.northwest.query(range, found);
+      this.northeast && this.northeast.query(range, found);
+      this.southwest && this.southwest.query(range, found);
+      this.southeast && this.southeast.query(range, found);
     }
 
     return found;
-  }
-
-  forEach(fn: () => void) {
-    this.points.forEach(fn);
-    if (this.divided) {
-      this.northeast.forEach(fn);
-      this.northwest.forEach(fn);
-      this.southeast.forEach(fn);
-      this.southwest.forEach(fn);
-    }
-  }
-
-  get length() {
-    let count = this.points.length;
-    if (this.divided) {
-      count += this.northwest.length;
-      count += this.northeast.length;
-      count += this.southwest.length;
-      count += this.southeast.length;
-    }
-    return count;
   }
 }

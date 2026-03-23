@@ -3,6 +3,8 @@ import { assets } from "./sketch";
 import { randomSpawnPoint } from "./utils";
 
 export let hearts = {} as Hearts;
+export const maxHeartSize = 200 / 3;
+
 export const resetHearts = (p: p5) => {
   hearts = new Hearts(p);
 };
@@ -26,7 +28,7 @@ class Hearts {
     if (this.p.frameCount % 240 === 0) {
       this.spawnHearts(1);
     }
-    for (let i = this.hearts.length - 1; i > 0; i--) {
+    for (let i = this.hearts.length - 1; i >= 0; i--) {
       let heart = this.hearts[i];
       heart.draw();
     }

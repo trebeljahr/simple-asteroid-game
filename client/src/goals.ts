@@ -1,5 +1,5 @@
 import p5, { Vector } from "p5";
-import { toggleWinScreen } from "./menu";
+import { showRaceVictory } from "./gameUiActions";
 import { randomSpawnPoint } from "./utils";
 import { player, playerHitsCollectible } from "./player";
 
@@ -20,7 +20,8 @@ class Goals {
   }
   changeGoal() {
     if (this.currentGoal === lastGoal) {
-      toggleWinScreen(this.p);
+      showRaceVictory();
+      return;
     }
     this.goal = new Goal(this.p, randomSpawnPoint(this.p), this.currentGoal);
     this.currentGoal++;

@@ -10,7 +10,7 @@ import {
   SPACE_KEYCODE,
   playerHitsCircularTarget,
 } from "./utils";
-import { toggleDeathScreen, gameOver } from "./menu";
+import { showRaceDefeat } from "./gameUiActions";
 import { explosions } from "./explosions";
 import { ThrusterExhaustSystem } from "./thruster";
 import { Asteroid, invocations } from "./asteroids";
@@ -23,6 +23,9 @@ import { goals } from "./goals";
 export let player = {} as Player;
 export const maxSpeed = 10;
 export const resetPlayer = (p: p5) => {
+  if (player && player.enginePlayer) {
+    World.remove(engine.world, player.enginePlayer);
+  }
   player = new Player(p, p.random(width), p.random(height));
 };
 
@@ -96,21 +99,7 @@ export class Player {
     this.p.pop();
     this.p.stroke(255);
 
-    this.p.push();
-    const goal = goals.goal;
-    const angleToGoal = p5.Vector.sub(goal.pos, playerPos).heading();
-    this.p.stroke(255);
-    this.p.strokeWeight(10);
-    this.p.noFill();
-    this.p.arc(
-      playerPos.x,
-      playerPos.y,
-      this.size * 3,
-      this.size * 3,
-      angleToGoal - 0.1,
-      angleToGoal + 0.1
-    );
-    this.p.pop();
+    this.drawGoalIndicator(playerPos);
 
     // const nose = p5.Vector.add(
     //   this.p.createVector(x, y),
@@ -121,9 +110,48 @@ export class Player {
     // }
   }
 
+  drawGoalIndicator(playerPos: p5.Vector) {
+    const goal = goals.goal;
+    if (!goal) {
+      return;
+    }
+
+    const angleToGoal = p5.Vector.sub(goal.pos, playerPos).heading();
+    const pulse = (this.p.sin(this.p.frameCount * 0.12) + 1) * 4;
+    const tailStart = this.size * 1.1;
+    const tailEnd = this.size * 1.8 + pulse;
+    const arrowBase = this.size * 1.45 + pulse;
+    const arrowTip = this.size * 2.05 + pulse;
+
+    this.p.push();
+    this.p.translate(playerPos.x, playerPos.y);
+    this.p.rotate(angleToGoal);
+    this.p.stroke(255, 225, 110);
+    this.p.strokeWeight(4);
+    this.p.line(tailStart, 0, tailEnd, 0);
+    this.p.noStroke();
+    this.p.fill(255, 225, 110, 220);
+    this.p.triangle(
+      arrowTip,
+      0,
+      arrowBase,
+      -this.size * 0.22,
+      arrowBase,
+      this.size * 0.22
+    );
+    this.p.noFill();
+    this.p.stroke(255, 225, 110, 120);
+    this.p.strokeWeight(2);
+    this.p.circle(tailStart - this.size * 0.15, 0, this.size * 0.45);
+    this.p.pop();
+  }
+
   damage() {
+    if (this.life <= 0) {
+      return;
+    }
     this.life--;
-    if (this.life <= 0 && !gameOver) {
+    if (this.life <= 0) {
       explosions.createExplosion(
         this.p.createVector(
           this.enginePlayer.position.x,
@@ -233,7 +261,7 @@ export class Player {
   run() {
     if (this.life <= 0) {
       if (this.deathCountDown < 0) {
-        toggleDeathScreen(this.p);
+        showRaceDefeat();
       }
       this.deathCountDown -= 15;
       return;

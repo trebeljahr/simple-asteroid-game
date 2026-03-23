@@ -1,11 +1,22 @@
 {
   "name": "asteroid-game",
   "version": "1.0.0",
+  "private": true,
   "description": "This is a small asteroid game for multiplayer using typescript, sockets and p5 canvas.",
+  "workspaces": [
+    "client",
+    "server"
+  ],
   "scripts": {
-    "build:client": "cd client && npm run build",
-    "dev:server": "cd server && npm run dev",
-    "start": "concurrently \"npm run build:client\" \"npm run dev:server\""
+    "setup": "node ./scripts/setup.mjs",
+    "dev": "concurrently -k -n client,server -c cyan,green \"npm run dev --workspace @simple-asteroid-game/client\" \"npm run dev --workspace @simple-asteroid-game/server\"",
+    "start": "npm run dev",
+    "dev:client": "npm run dev --workspace @simple-asteroid-game/client",
+    "dev:server": "npm run dev --workspace @simple-asteroid-game/server",
+    "build": "npm run build --workspace @simple-asteroid-game/client && npm run build --workspace @simple-asteroid-game/server",
+    "build:client": "npm run build --workspace @simple-asteroid-game/client",
+    "build:server": "npm run build --workspace @simple-asteroid-game/server",
+    "check": "npm run check --workspace @simple-asteroid-game/client && npm run check --workspace @simple-asteroid-game/server"
   },
   "repository": {
     "type": "git"
