@@ -4,8 +4,8 @@ import { player, Player } from "./player";
 export const BULLET_SPEED = 10;
 export let width = window.innerWidth;
 export let height = window.innerHeight;
-export const boardSizeX = width * 2;
-export const boardSizeY = height * 2;
+export let boardSizeX = width * 2;
+export let boardSizeY = height * 2;
 export const SPACE_KEYCODE = 32;
 export const S_KEYCODE = 83;
 export const W_KEYCODE = 87;
@@ -18,6 +18,43 @@ export const ESC_KEYCODE = 27;
 export const updateWindowSize = () => {
   width = window.innerWidth;
   height = window.innerHeight;
+  boardSizeX = width * 2;
+  boardSizeY = height * 2;
+};
+
+export interface CameraBounds {
+  left: number;
+  right: number;
+  top: number;
+  bottom: number;
+}
+
+export const createCameraBounds = (
+  centerX: number,
+  centerY: number,
+  padding = 0
+): CameraBounds => {
+  return {
+    left: centerX - width / 2 - padding,
+    right: centerX + width / 2 + padding,
+    top: centerY - height / 2 - padding,
+    bottom: centerY + height / 2 + padding,
+  };
+};
+
+export const circleIntersectsBounds = (
+  x: number,
+  y: number,
+  diameter: number,
+  bounds: CameraBounds
+) => {
+  const radius = diameter / 2;
+  return (
+    x + radius >= bounds.left &&
+    x - radius <= bounds.right &&
+    y + radius >= bounds.top &&
+    y - radius <= bounds.bottom
+  );
 };
 
 export const randomPosition = (p: p5) => {

@@ -1,6 +1,6 @@
 import p5, { Vector } from "p5";
 import { assets } from "./sketch";
-import { randomSpawnPoint } from "./utils";
+import { CameraBounds, circleIntersectsBounds, randomSpawnPoint } from "./utils";
 
 export let hearts = {} as Hearts;
 export const maxHeartSize = 200 / 3;
@@ -24,12 +24,18 @@ class Hearts {
     }
   }
 
-  run() {
+  run(cameraBounds?: CameraBounds) {
     if (this.p.frameCount % 240 === 0) {
       this.spawnHearts(1);
     }
     for (let i = this.hearts.length - 1; i >= 0; i--) {
-      let heart = this.hearts[i];
+      const heart = this.hearts[i];
+      if (
+        cameraBounds !== undefined &&
+        !circleIntersectsBounds(heart.pos.x, heart.pos.y, heart.size, cameraBounds)
+      ) {
+        continue;
+      }
       heart.draw();
     }
   }

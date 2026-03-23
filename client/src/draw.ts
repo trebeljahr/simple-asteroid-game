@@ -5,10 +5,9 @@ import { bullets } from "./bullets";
 import { explosions } from "./explosions";
 import { GameMode, getGameState, shouldAdvanceRaceSimulation } from "./gameState";
 import { goals } from "./goals";
-import { hearts, maxHeartSize } from "./hearts";
+import { hearts } from "./hearts";
 import { player, playerHitsCollectible } from "./player";
-import { QuadTree, createQueryRange } from "./quadtree";
-import { boardSizeX, boardSizeY, circlesOverlap, height, width } from "./utils";
+import { circlesOverlap, createCameraBounds, width, height } from "./utils";
 
 const modeTitles: Record<GameMode, string> = {
   race: "Racing Mode",
@@ -16,20 +15,19 @@ const modeTitles: Record<GameMode, string> = {
   horde: "Enemy Hordes Mode",
 };
 
-interface IndexedAsteroid {
-  asteroidIndex: number;
-}
-
-interface IndexedHeart {
-  heartIndex: number;
-}
-
 export const draw = (p: p5) => {
   const state = getGameState();
   if (state.scene.type === "mode" && state.scene.mode === "race") {
     if (!shouldAdvanceRaceSimulation(state)) {
       return;
     }
+
+    const cameraBounds = createCameraBounds(
+      player.enginePlayer.position.x,
+      player.enginePlayer.position.y,
+      maxAsteroidSize
+    );
+
     p.clear();
     p.push();
     p.translate(-player.enginePlayer.position.x, -player.enginePlayer.position.y);
@@ -37,7 +35,7 @@ export const draw = (p: p5) => {
     border.show();
     p.noStroke();
     player.run();
-    gameLogic();
+    gameLogic(cameraBounds);
     p.pop();
     player.showHealth();
     drawHudHint(p, "Esc: menu", "Race mode");
@@ -64,79 +62,33 @@ export const draw = (p: p5) => {
   drawCenterMessage(p, state.scene.title, state.scene.subtitle);
 };
 
-function gameLogic() {
-  bullets.update();
-  hearts.run();
-  explosions.run();
-  asteroids.run();
-  goals.run();
+function gameLogic(cameraBounds: ReturnType<typeof createCameraBounds>) {
+  bullets.update(cameraBounds);
+  hearts.run(cameraBounds);
+  explosions.run(cameraBounds);
+  asteroids.run(cameraBounds);
+  goals.run(cameraBounds);
 
-  const asteroidTree = buildAsteroidQuadTree();
   const replacedAsteroidIndices = new Set<number>();
 
-  handlePlayerAsteroidCollisions(asteroidTree, replacedAsteroidIndices);
-  handleBulletAsteroidCollisions(asteroidTree, replacedAsteroidIndices);
+  handlePlayerAsteroidCollisions(replacedAsteroidIndices);
+  handleBulletAsteroidCollisions(replacedAsteroidIndices);
   handleHeartCollection();
 }
 
-function buildAsteroidQuadTree() {
-  const asteroidTree = new QuadTree<IndexedAsteroid>(
-    createQueryRange(0, 0, boardSizeX, boardSizeY),
-    8
-  );
-
-  for (let i = 0; i < asteroids.asteroids.length; i++) {
-    const asteroid = asteroids.asteroids[i];
-    asteroidTree.insert({
-      x: asteroid.pos.x,
-      y: asteroid.pos.y,
-      data: {
-        asteroidIndex: i,
-      },
-    });
-  }
-
-  return asteroidTree;
-}
-
-function buildHeartQuadTree() {
-  const heartTree = new QuadTree<IndexedHeart>(
-    createQueryRange(0, 0, boardSizeX, boardSizeY),
-    8
-  );
-
-  for (let i = 0; i < hearts.hearts.length; i++) {
-    const heart = hearts.hearts[i];
-    heartTree.insert({
-      x: heart.pos.x,
-      y: heart.pos.y,
-      data: {
-        heartIndex: i,
-      },
-    });
-  }
-
-  return heartTree;
-}
-
-function handlePlayerAsteroidCollisions(
-  asteroidTree: QuadTree<IndexedAsteroid>,
-  replacedAsteroidIndices: Set<number>
-) {
-  const nearbyAsteroids = asteroidTree.query(
-    createQueryRange(
-      player.enginePlayer.position.x,
-      player.enginePlayer.position.y,
-      player.size / 2 + maxAsteroidSize / 2,
-      player.size / 2 + maxAsteroidSize / 2
-    )
+function handlePlayerAsteroidCollisions(replacedAsteroidIndices: Set<number>) {
+  const nearbyAsteroids = asteroids.queryNearby(
+    player.enginePlayer.position.x,
+    player.enginePlayer.position.y,
+    player.size / 2
   );
 
   for (let i = 0; i < nearbyAsteroids.length; i++) {
-    const asteroidIndex = nearbyAsteroids[i].data.asteroidIndex;
+    const asteroidIndex = nearbyAsteroids[i];
     if (replacedAsteroidIndices.has(asteroidIndex)) {
       continue;
     }
+
     const asteroid = asteroids.asteroids[asteroidIndex];
     if (
       circlesOverlap(
@@ -156,26 +108,21 @@ function handlePlayerAsteroidCollisions(
   }
 }
 
-function handleBulletAsteroidCollisions(
-  asteroidTree: QuadTree<IndexedAsteroid>,
-  replacedAsteroidIndices: Set<number>
-) {
+function handleBulletAsteroidCollisions(replacedAsteroidIndices: Set<number>) {
   for (let bulletIndex = bullets.bullets.length - 1; bulletIndex >= 0; bulletIndex--) {
     const bullet = bullets.bullets[bulletIndex];
-    const nearbyAsteroids = asteroidTree.query(
-      createQueryRange(
-        bullet.pos.x,
-        bullet.pos.y,
-        bullet.size / 2 + maxAsteroidSize / 2,
-        bullet.size / 2 + maxAsteroidSize / 2
-      )
+    const nearbyAsteroids = asteroids.queryNearby(
+      bullet.pos.x,
+      bullet.pos.y,
+      bullet.size / 2
     );
 
     for (let i = 0; i < nearbyAsteroids.length; i++) {
-      const asteroidIndex = nearbyAsteroids[i].data.asteroidIndex;
+      const asteroidIndex = nearbyAsteroids[i];
       if (replacedAsteroidIndices.has(asteroidIndex)) {
         continue;
       }
+
       const asteroid = asteroids.asteroids[asteroidIndex];
       if (
         circlesOverlap(
@@ -200,26 +147,15 @@ function handleBulletAsteroidCollisions(
 }
 
 function handleHeartCollection() {
-  const nearbyHearts = buildHeartQuadTree().query(
-    createQueryRange(
-      player.enginePlayer.position.x,
-      player.enginePlayer.position.y,
-      player.size / 2 + maxHeartSize / 2,
-      player.size / 2 + maxHeartSize / 2
-    )
-  );
   const collectedHeartIndices = new Set<number>();
 
-  for (let i = 0; i < nearbyHearts.length; i++) {
-    const heartIndex = nearbyHearts[i].data.heartIndex;
-    if (collectedHeartIndices.has(heartIndex)) {
+  for (let i = 0; i < hearts.hearts.length; i++) {
+    const heart = hearts.hearts[i];
+    if (!playerHitsCollectible(heart, player)) {
       continue;
     }
-    const heart = hearts.hearts[heartIndex];
-    if (playerHitsCollectible(heart, player)) {
-      player.life++;
-      collectedHeartIndices.add(heartIndex);
-    }
+    player.life++;
+    collectedHeartIndices.add(i);
   }
 
   if (collectedHeartIndices.size === 0) {

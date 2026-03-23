@@ -13,7 +13,78 @@ import {
   restartCurrentMode,
 } from "./gameModeActions";
 
+interface MenuRockConfig {
+  delay: string;
+  driftX: string;
+  driftY: string;
+  duration: string;
+  opacity: string;
+  size: string;
+  src: string;
+  top: string;
+  left: string;
+}
+
+const menuRocks: MenuRockConfig[] = [
+  {
+    src: "/assets/asteroid1.svg",
+    left: "8%",
+    top: "10%",
+    size: "11rem",
+    opacity: "0.38",
+    duration: "26s",
+    delay: "-7s",
+    driftX: "2.5rem",
+    driftY: "1.75rem",
+  },
+  {
+    src: "/assets/asteroid2.svg",
+    left: "78%",
+    top: "14%",
+    size: "9rem",
+    opacity: "0.28",
+    duration: "22s",
+    delay: "-11s",
+    driftX: "-1.25rem",
+    driftY: "2rem",
+  },
+  {
+    src: "/assets/asteroid3.svg",
+    left: "15%",
+    top: "68%",
+    size: "13rem",
+    opacity: "0.2",
+    duration: "31s",
+    delay: "-5s",
+    driftX: "3rem",
+    driftY: "-2.5rem",
+  },
+  {
+    src: "/assets/asteroid2.svg",
+    left: "70%",
+    top: "62%",
+    size: "15rem",
+    opacity: "0.18",
+    duration: "34s",
+    delay: "-13s",
+    driftX: "-2.75rem",
+    driftY: "-1.5rem",
+  },
+  {
+    src: "/assets/asteroid1.svg",
+    left: "47%",
+    top: "6%",
+    size: "7rem",
+    opacity: "0.22",
+    duration: "19s",
+    delay: "-3s",
+    driftX: "1.5rem",
+    driftY: "2.25rem",
+  },
+];
+
 let initialized = false;
+let menuPanelMount: HTMLDivElement | null = null;
 
 const getMenuRoot = () => {
   return document.getElementById("menu");
@@ -68,6 +139,69 @@ const createButtonRow = () => {
   return buttonRow;
 };
 
+const createRockElement = (config: MenuRockConfig) => {
+  const rock = document.createElement("img");
+  rock.className = "menuRock";
+  rock.src = config.src;
+  rock.alt = "";
+  rock.setAttribute("aria-hidden", "true");
+  rock.style.setProperty("--rock-left", config.left);
+  rock.style.setProperty("--rock-top", config.top);
+  rock.style.setProperty("--rock-size", config.size);
+  rock.style.setProperty("--rock-opacity", config.opacity);
+  rock.style.setProperty("--rock-duration", config.duration);
+  rock.style.setProperty("--rock-delay", config.delay);
+  rock.style.setProperty("--rock-drift-x", config.driftX);
+  rock.style.setProperty("--rock-drift-y", config.driftY);
+  return rock;
+};
+
+const ensureMenuStructure = () => {
+  const menuRoot = getMenuRoot();
+  if (menuRoot === null) {
+    return null;
+  }
+
+  if (menuPanelMount !== null) {
+    return {
+      menuRoot,
+      menuPanelMount,
+    };
+  }
+
+  const menuScene = document.createElement("div");
+  menuScene.className = "menuScene";
+
+  const menuBackdrop = document.createElement("img");
+  menuBackdrop.className = "menuBackdrop";
+  menuBackdrop.src = "/assets/background.jpg";
+  menuBackdrop.alt = "";
+  menuBackdrop.setAttribute("aria-hidden", "true");
+  menuScene.appendChild(menuBackdrop);
+
+  const menuGlow = document.createElement("div");
+  menuGlow.className = "menuGlow";
+  menuScene.appendChild(menuGlow);
+
+  for (let i = 0; i < menuRocks.length; i++) {
+    menuScene.appendChild(createRockElement(menuRocks[i]));
+  }
+
+  const menuPane = document.createElement("div");
+  menuPane.className = "menuScenePane";
+  menuScene.appendChild(menuPane);
+
+  menuPanelMount = document.createElement("div");
+  menuPanelMount.className = "menuContent";
+
+  menuRoot.replaceChildren(menuScene, menuPanelMount);
+
+  return {
+    menuRoot,
+    menuPanelMount,
+  };
+};
+
 const renderOptionsPanel = (state: GameState) => {
   const panel = createPanel(
     "Options",
@@ -81,9 +215,13 @@ const renderOptionsPanel = (state: GameState) => {
     })
   );
   buttonRow.appendChild(
-    createActionButton("Back", () => {
-      closeOptionsMenu();
-    }, "secondary")
+    createActionButton(
+      "Back",
+      () => {
+        closeOptionsMenu();
+      },
+      "secondary"
+    )
   );
   panel.appendChild(buttonRow);
   return panel;
@@ -101,19 +239,31 @@ const renderMainMenuPanel = () => {
     })
   );
   buttonRow.appendChild(
-    createActionButton("Multiplayer", () => {
-      activateGameMode("multiplayer");
-    }, "secondary")
+    createActionButton(
+      "Multiplayer",
+      () => {
+        activateGameMode("multiplayer");
+      },
+      "secondary"
+    )
   );
   buttonRow.appendChild(
-    createActionButton("Enemy Hordes", () => {
-      activateGameMode("horde");
-    }, "secondary")
+    createActionButton(
+      "Enemy Hordes",
+      () => {
+        activateGameMode("horde");
+      },
+      "secondary"
+    )
   );
   buttonRow.appendChild(
-    createActionButton("Options", () => {
-      openOptionsMenu();
-    }, "ghost")
+    createActionButton(
+      "Options",
+      () => {
+        openOptionsMenu();
+      },
+      "ghost"
+    )
   );
   panel.appendChild(buttonRow);
 
@@ -139,14 +289,22 @@ const renderPausePanel = (state: GameState) => {
     })
   );
   buttonRow.appendChild(
-    createActionButton("Options", () => {
-      openOptionsMenu();
-    }, "secondary")
+    createActionButton(
+      "Options",
+      () => {
+        openOptionsMenu();
+      },
+      "secondary"
+    )
   );
   buttonRow.appendChild(
-    createActionButton("Main Menu", () => {
-      returnToMainMenu();
-    }, "ghost")
+    createActionButton(
+      "Main Menu",
+      () => {
+        returnToMainMenu();
+      },
+      "ghost"
+    )
   );
   panel.appendChild(buttonRow);
   return panel;
@@ -161,26 +319,34 @@ const renderResultPanel = (title: string, subtitle: string) => {
     })
   );
   buttonRow.appendChild(
-    createActionButton("Options", () => {
-      openOptionsMenu();
-    }, "secondary")
+    createActionButton(
+      "Options",
+      () => {
+        openOptionsMenu();
+      },
+      "secondary"
+    )
   );
   buttonRow.appendChild(
-    createActionButton("Main Menu", () => {
-      returnToMainMenu();
-    }, "ghost")
+    createActionButton(
+      "Main Menu",
+      () => {
+        returnToMainMenu();
+      },
+      "ghost"
+    )
   );
   panel.appendChild(buttonRow);
   return panel;
 };
 
 const renderMenu = (state: GameState) => {
-  const menuRoot = getMenuRoot();
-  if (menuRoot === null) {
+  const menuElements = ensureMenuStructure();
+  if (menuElements === null) {
     return;
   }
 
-  menuRoot.innerHTML = "";
+  const { menuRoot, menuPanelMount: panelMount } = menuElements;
 
   const shouldShowMenu =
     state.scene.type === "main-menu" ||
@@ -188,28 +354,29 @@ const renderMenu = (state: GameState) => {
     state.overlay !== null;
 
   menuRoot.classList.toggle("is-active", shouldShowMenu);
+  panelMount.replaceChildren();
 
   if (!shouldShowMenu) {
     return;
   }
 
   if (state.overlay !== null && state.overlay.type === "options") {
-    menuRoot.appendChild(renderOptionsPanel(state));
+    panelMount.appendChild(renderOptionsPanel(state));
     return;
   }
 
   if (state.scene.type === "main-menu") {
-    menuRoot.appendChild(renderMainMenuPanel());
+    panelMount.appendChild(renderMainMenuPanel());
     return;
   }
 
   if (state.overlay !== null && state.overlay.type === "pause") {
-    menuRoot.appendChild(renderPausePanel(state));
+    panelMount.appendChild(renderPausePanel(state));
     return;
   }
 
   if (state.scene.type === "result") {
-    menuRoot.appendChild(renderResultPanel(state.scene.title, state.scene.subtitle));
+    panelMount.appendChild(renderResultPanel(state.scene.title, state.scene.subtitle));
   }
 };
 

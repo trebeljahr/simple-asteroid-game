@@ -1,3 +1,10 @@
+:root {
+  --menu-border: rgba(125, 211, 252, 0.28);
+  --menu-panel-top: rgba(6, 15, 31, 0.9);
+  --menu-panel-bottom: rgba(8, 22, 42, 0.8);
+  --menu-shadow: rgba(0, 0, 0, 0.5);
+}
+
 body {
   margin: 0;
   padding: 0;
@@ -30,38 +37,110 @@ canvas {
 .menuRoot {
   display: flex;
   position: absolute;
-  width: 100vw;
-  height: 100vh;
-  padding: 0;
-  margin: 0;
-  top: 0;
-  left: 0;
+  inset: 0;
   align-items: center;
   justify-content: center;
   z-index: 10;
+  overflow: hidden;
+  opacity: 0;
   pointer-events: none;
+  transition: opacity 180ms ease;
 }
 
 .menuRoot.is-active {
+  opacity: 1;
   pointer-events: auto;
 }
 
-.menuPanel {
-  width: min(34rem, calc(100vw - 2rem));
-  padding: 2rem;
-  border: 1px solid rgba(115, 196, 255, 0.35);
-  border-radius: 1.5rem;
+.menuScene {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+.menuBackdrop {
+  position: absolute;
+  inset: -4%;
+  width: 108%;
+  height: 108%;
+  object-fit: cover;
+  filter: saturate(1.25) brightness(0.36) blur(2px);
+  transform: scale(1.04);
+}
+
+.menuGlow {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 20% 20%, rgba(77, 166, 255, 0.18), transparent 32%),
+    radial-gradient(circle at 75% 24%, rgba(255, 170, 92, 0.14), transparent 24%),
+    radial-gradient(circle at 72% 78%, rgba(80, 205, 255, 0.12), transparent 28%);
+}
+
+.menuScenePane {
+  position: absolute;
+  inset: 0;
   background: linear-gradient(
     180deg,
-    rgba(4, 12, 26, 0.92),
-    rgba(7, 23, 43, 0.82)
+    rgba(2, 8, 18, 0.74),
+    rgba(2, 8, 18, 0.84) 38%,
+    rgba(3, 10, 22, 0.9)
   );
-  box-shadow: 0 1.5rem 4rem rgba(0, 0, 0, 0.45);
-  backdrop-filter: blur(14px);
+  backdrop-filter: blur(10px) saturate(0.82);
+}
+
+.menuRock {
+  position: absolute;
+  left: var(--rock-left);
+  top: var(--rock-top);
+  width: var(--rock-size);
+  opacity: var(--rock-opacity);
+  filter: drop-shadow(0 1rem 2rem rgba(0, 0, 0, 0.5)) saturate(0.7)
+    brightness(0.72);
+  transform-origin: center;
+  animation: menuRockFloat var(--rock-duration) ease-in-out infinite;
+  animation-delay: var(--rock-delay);
+}
+
+.menuContent {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  width: 100%;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.menuPanel {
+  position: relative;
+  width: min(36rem, calc(100vw - 2rem));
+  padding: 2rem;
+  border: 1px solid var(--menu-border);
+  border-radius: 1.5rem;
+  background: linear-gradient(180deg, var(--menu-panel-top), var(--menu-panel-bottom));
+  box-shadow:
+    0 1.5rem 4rem var(--menu-shadow),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(16px);
   text-align: center;
 }
 
+.menuPanel::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    140deg,
+    rgba(255, 255, 255, 0.06),
+    transparent 36%,
+    rgba(120, 200, 255, 0.04)
+  );
+  pointer-events: none;
+}
+
 .menuTitle {
+  position: relative;
   margin: 0 0 0.75rem;
   font-size: clamp(2rem, 5vw, 3rem);
   line-height: 1.05;
@@ -70,6 +149,7 @@ canvas {
 }
 
 .menuSubtitle {
+  position: relative;
   margin: 0;
   font-size: 1rem;
   line-height: 1.6;
@@ -77,6 +157,7 @@ canvas {
 }
 
 .menuActions {
+  position: relative;
   display: grid;
   gap: 0.85rem;
   margin-top: 1.5rem;
@@ -93,8 +174,11 @@ canvas {
   letter-spacing: 0.04em;
   text-transform: uppercase;
   cursor: pointer;
-  transition: transform 120ms ease, box-shadow 120ms ease,
-    background-color 120ms ease, border-color 120ms ease;
+  transition:
+    transform 120ms ease,
+    box-shadow 120ms ease,
+    background-color 120ms ease,
+    border-color 120ms ease;
 }
 
 .menuButton:hover,
@@ -122,13 +206,33 @@ canvas {
 }
 
 .menuHelper {
+  position: relative;
   margin: 1.2rem 0 0;
   font-size: 0.92rem;
   letter-spacing: 0.03em;
   color: rgba(205, 222, 235, 0.78);
 }
 
+@keyframes menuRockFloat {
+  0% {
+    transform: translate3d(0, 0, 0) rotate(0deg);
+  }
+
+  50% {
+    transform: translate3d(var(--rock-drift-x), var(--rock-drift-y), 0)
+      rotate(180deg);
+  }
+
+  100% {
+    transform: translate3d(0, 0, 0) rotate(360deg);
+  }
+}
+
 @media (max-width: 640px) {
+  .menuContent {
+    padding: 0.75rem;
+  }
+
   .menuPanel {
     padding: 1.5rem;
     border-radius: 1.1rem;
@@ -136,5 +240,19 @@ canvas {
 
   .menuTitle {
     letter-spacing: 0.05em;
+  }
+
+  .menuRock {
+    opacity: calc(var(--rock-opacity) * 0.85);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .menuRoot {
+    transition: none;
+  }
+
+  .menuRock {
+    animation: none;
   }
 }

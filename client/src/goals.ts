@@ -1,6 +1,6 @@
 import p5, { Vector } from "p5";
 import { showRaceVictory } from "./gameUiActions";
-import { randomSpawnPoint } from "./utils";
+import { CameraBounds, circleIntersectsBounds, randomSpawnPoint } from "./utils";
 import { player, playerHitsCollectible } from "./player";
 
 export let goals = {} as Goals;
@@ -27,8 +27,18 @@ class Goals {
     this.currentGoal++;
   }
 
-  run() {
-    this.goal.draw();
+  run(cameraBounds?: CameraBounds) {
+    if (
+      cameraBounds === undefined ||
+      circleIntersectsBounds(
+        this.goal.pos.x,
+        this.goal.pos.y,
+        this.goal.size,
+        cameraBounds
+      )
+    ) {
+      this.goal.draw();
+    }
     if (playerHitsCollectible(this.goal, player)) {
       this.changeGoal();
     }

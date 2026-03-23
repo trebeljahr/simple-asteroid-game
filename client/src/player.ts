@@ -13,7 +13,6 @@ import {
 import { showRaceDefeat } from "./gameUiActions";
 import { explosions } from "./explosions";
 import { ThrusterExhaustSystem } from "./thruster";
-import { Asteroid, invocations } from "./asteroids";
 import { bullets } from "./bullets";
 import { assets } from "./sketch";
 import { World, Body, Bodies, Vector } from "matter-js";
@@ -272,11 +271,6 @@ export class Player {
     this.shoot();
   }
 }
-
-export const playerHitsAsteroid = (asteroid: Asteroid, player: Player) => {
-  invocations.amount = invocations.amount + 1;
-  return playerHitsCircularTarget(asteroid, player);
-};
 
 export const playerHitsCollectible = (ammo: any, player: Player) => {
   return playerHitsCircularTarget(ammo, player);

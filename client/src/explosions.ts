@@ -1,6 +1,6 @@
 import p5, { Vector } from "p5";
 import { Mover } from "./mover";
-import { rgba } from "./utils";
+import { CameraBounds, circleIntersectsBounds, rgba } from "./utils";
 
 export let explosions = {} as ExplosionSystem;
 
@@ -17,7 +17,7 @@ class ExplosionSystem {
   }
 
   createExplosion(pos: Vector) {
-    for (let i = 0; i < 100; i++) {
+    for (let i = 0; i < 72; i++) {
       this.particles.push(
         new ExplosionParticle(
           this.p,
@@ -29,10 +29,10 @@ class ExplosionSystem {
     }
   }
 
-  run() {
+  run(cameraBounds?: CameraBounds) {
     for (let i = this.particles.length - 1; i >= 0; i--) {
-      let particle = this.particles[i];
-      particle.run();
+      const particle = this.particles[i];
+      particle.run(cameraBounds);
       if (particle.isDead()) {
         this.particles.splice(i, 1);
       }
@@ -67,12 +67,17 @@ class ExplosionParticle extends Mover {
     this.p.pop();
   }
 
-  run() {
+  run(cameraBounds?: CameraBounds) {
     this.update();
-    this.p.fill(
-      rgba(this.redValue, this.greenValue, this.blueValue, this.lifespan)
-    );
-    this.show();
+    if (
+      cameraBounds === undefined ||
+      circleIntersectsBounds(this.pos.x, this.pos.y, this.size * 2, cameraBounds)
+    ) {
+      this.p.fill(
+        rgba(this.redValue, this.greenValue, this.blueValue, this.lifespan)
+      );
+      this.show();
+    }
     this.decay();
   }
 

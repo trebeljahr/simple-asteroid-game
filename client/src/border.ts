@@ -8,23 +8,13 @@ export const resetBorder = (p: p5) => {
 };
 class Border {
   p: p5;
-  x: number;
-  y: number;
-  w: number;
-  h: number;
-  bW: number;
   constructor(p: p5) {
     this.p = p;
-    this.x = -boardSizeX;
-    this.y = -boardSizeY;
-    this.w = boardSizeX;
-    this.h = boardSizeY;
-    this.bW = 200;
   }
 
   show() {
     this.p.noFill();
     this.p.stroke(255);
-    this.p.rect(this.x, this.y, this.w * 2, this.h * 2);
+    this.p.rect(-boardSizeX, -boardSizeY, boardSizeX * 2, boardSizeY * 2);
   }
 }

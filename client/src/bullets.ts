@@ -1,5 +1,6 @@
 import p5, { Vector } from "p5";
 import { Mover } from "./mover";
+import { CameraBounds, circleIntersectsBounds } from "./utils";
 
 export let bullets = {} as BulletSystem;
 export const resetbullets = (p: p5) => {
@@ -15,12 +16,18 @@ class BulletSystem {
     this.bullets = [];
     this.maxBullets = 250;
   }
-  update() {
+  update(cameraBounds?: CameraBounds) {
+    this.p.fill(255);
+    this.p.stroke(255, 0, 0);
     for (let j = this.bullets.length - 1; j >= 0; j--) {
       const bullet = this.bullets[j];
-      this.p.fill(255);
-      this.p.stroke(255, 0, 0);
-      bullet.run();
+      if (
+        cameraBounds === undefined ||
+        circleIntersectsBounds(bullet.pos.x, bullet.pos.y, bullet.size, cameraBounds)
+      ) {
+        bullet.draw();
+      }
+      bullet.update();
       if (!bullet.inScreen()) {
         this.bullets.splice(j, 1);
       }
