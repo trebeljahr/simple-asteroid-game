@@ -22,13 +22,13 @@ import { goals } from "./goals";
 import { isShipActionActive } from "./input";
 import { shipDebris } from "./shipDebris";
 import {
-  DEFAULT_RACE_SHIP_VARIANT,
   getShipCollider,
   getShipColliderSpec,
   getShipCollisionBoundingDiameter,
   ShipCollider,
   ShipVariant,
 } from "../../shared/src";
+import { getGameState } from "./gameState";
 
 export let player = {} as Player;
 export const maxSpeed = 10;
@@ -109,8 +109,10 @@ export class Player {
     this.p = p;
     this.deathCountDown = 0;
     this.collisionRecoveryFrames = 0;
-    this.size = 60;
-    this.shipVariant = DEFAULT_RACE_SHIP_VARIANT;
+    const gameState = getGameState();
+    this.shipVariant = gameState.settings.shipVariant;
+    const colliderSpec = getShipColliderSpec(this.shipVariant);
+    this.size = colliderSpec.renderWidth;
     this.life = MAX_PLAYER_HEALTH;
     this.ammunition = 1000;
     this.thruster = new ThrusterExhaustSystem(
@@ -118,7 +120,6 @@ export class Player {
       this.p.createVector(width / 2, height),
       0
     );
-    const colliderSpec = getShipColliderSpec(this.shipVariant);
     this.enginePlayer = Bodies.rectangle(x, y, colliderSpec.length, colliderSpec.width, {
       frictionAir: 0,
       angle: 0,
@@ -146,11 +147,12 @@ export class Player {
     } = this.enginePlayer;
 
     const playerPos = this.p.createVector(x, y);
+    const spec = getShipColliderSpec(this.shipVariant);
 
     this.thruster.updatePos(
       p5.Vector.add(
         playerPos,
-        p5.Vector.fromAngle(angle - this.p.PI, this.size)
+        p5.Vector.fromAngle(angle - this.p.PI, spec.renderHeight / 2)
       ),
       angle - this.p.PI
     );
@@ -172,7 +174,7 @@ export class Player {
         Math.floor(this.collisionRecoveryFrames / 3) % 2 === 0 ? 170 : 105;
       this.p.tint(255, blinkAlpha);
     }
-    this.p.image(assets.raceShip, 0, 0, this.size, this.size * 2);
+    this.p.image(assets.raceShip, 0, 0, spec.renderWidth, spec.renderHeight);
     this.p.noTint();
     this.p.noFill();
 
@@ -180,14 +182,6 @@ export class Player {
     this.p.stroke(255);
 
     this.drawGoalIndicator(playerPos);
-
-    // const nose = p5.Vector.add(
-    //   this.p.createVector(x, y),
-    //   p5.Vector.fromAngle(angle + this.p.PI, -this.size)
-    // );
-    // if (goal) {
-    //   this.p.line(nose.x, nose.y, goal.pos.x, goal.pos.y);
-    // }
   }
 
   drawGoalIndicator(playerPos: p5.Vector) {
@@ -196,12 +190,15 @@ export class Player {
       return;
     }
 
+    const spec = getShipColliderSpec(this.shipVariant);
+    const renderRadius = Math.max(spec.renderWidth, spec.renderHeight) / 2;
+
     const angleToGoal = p5.Vector.sub(goal.pos, playerPos).heading();
     const pulse = (this.p.sin(this.p.frameCount * 0.12) + 1) * 4;
-    const tailStart = this.size * 1.45;
-    const tailEnd = this.size * 2.35 + pulse;
-    const arrowBase = this.size * 1.95 + pulse;
-    const arrowTip = this.size * 2.78 + pulse;
+    const tailStart = renderRadius * 1.45;
+    const tailEnd = renderRadius * 2.35 + pulse;
+    const arrowBase = renderRadius * 1.95 + pulse;
+    const arrowTip = renderRadius * 2.78 + pulse;
 
     this.p.push();
     this.p.translate(playerPos.x, playerPos.y);
@@ -215,14 +212,14 @@ export class Player {
       arrowTip,
       0,
       arrowBase,
-      -this.size * 0.22,
+      -renderRadius * 0.22,
       arrowBase,
-      this.size * 0.22
+      renderRadius * 0.22
     );
     this.p.noFill();
     this.p.stroke(255, 225, 110, 120);
     this.p.strokeWeight(2);
-    this.p.circle(tailStart - this.size * 0.15, 0, this.size * 0.45);
+    this.p.circle(tailStart - renderRadius * 0.15, 0, renderRadius * 0.45);
     this.p.pop();
   }
 
@@ -330,13 +327,14 @@ export class Player {
 
   shoot() {
     if (isShipActionActive("fire") && this.ammunition > 0) {
+      const spec = getShipColliderSpec(this.shipVariant);
       for (let i = 0; i < 2; i++) {
         const newPos = this.p
           .createVector(
             this.enginePlayer.position.x,
             this.enginePlayer.position.y
           )
-          .add(p5.Vector.fromAngle(this.enginePlayer.angle, this.size));
+          .add(p5.Vector.fromAngle(this.enginePlayer.angle, spec.renderHeight / 2));
         this.ammunition--;
         bullets.addBullet(newPos, this.enginePlayer.angle);
       }

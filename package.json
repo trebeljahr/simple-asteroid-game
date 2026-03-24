@@ -17,7 +17,8 @@
     "build": "npm run build --workspace @simple-asteroid-game/client && npm run build --workspace @simple-asteroid-game/server",
     "build:client": "npm run build --workspace @simple-asteroid-game/client",
     "build:server": "npm run build --workspace @simple-asteroid-game/server",
-    "check": "npm run check --workspace @simple-asteroid-game/shared && npm run check --workspace @simple-asteroid-game/client && npm run check --workspace @simple-asteroid-game/server"
+    "check": "npm run check --workspace @simple-asteroid-game/shared && npm run check --workspace @simple-asteroid-game/client && npm run check --workspace @simple-asteroid-game/server",
+    "tools:extract-shapes": "tsx scripts/extract-ship-shapes.ts"
   },
   "repository": {
     "type": "git"
@@ -29,7 +30,8 @@
   "author": "Rico Trebeljahr",
   "license": "ISC",
   "devDependencies": {
-    "concurrently": "^5.1.0"
+    "concurrently": "^5.1.0",
+    "tsx": "^4.19.3"
   },
   "dependencies": {}
 }

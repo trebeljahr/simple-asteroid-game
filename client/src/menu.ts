@@ -14,6 +14,7 @@ import {
   restartCurrentMode,
 } from "./gameModeActions";
 import { isCollisionDebugAvailable } from "./collisionDebug";
+import { MULTIPLAYER_SHIP_VARIANTS, ShipVariant } from "../../shared/src";
 
 interface MenuRockConfig {
   delay: string;
@@ -103,6 +104,10 @@ const getModeLabel = (mode: GameMode) => {
     default:
       return mode;
   }
+};
+
+const capitalizeWords = (str: string) => {
+  return str.split("-").map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(" ");
 };
 
 const createActionButton = (
@@ -221,6 +226,48 @@ const ensureMenuStructure = () => {
   };
 };
 
+const renderShipSelection = (currentVariant: ShipVariant) => {
+  const container = document.createElement("div");
+  container.className = "shipSelection";
+
+  const label = document.createElement("h2");
+  label.className = "shipSelectionLabel";
+  label.textContent = "Choose Your Ship";
+  container.appendChild(label);
+
+  const grid = document.createElement("div");
+  grid.className = "shipGrid";
+
+  for (const variant of MULTIPLAYER_SHIP_VARIANTS) {
+    const item = document.createElement("button");
+    item.type = "button";
+    item.className = "shipItem";
+    if (variant === currentVariant) {
+      item.classList.add("is-selected");
+    }
+
+    const img = document.createElement("img");
+    img.className = "shipImage";
+    img.src = `/assets/alternatives/ship-alt-${variant}.svg`;
+    img.alt = capitalizeWords(variant);
+    item.appendChild(img);
+
+    const name = document.createElement("span");
+    name.className = "shipName";
+    name.textContent = capitalizeWords(variant);
+    item.appendChild(name);
+
+    item.addEventListener("click", () => {
+      gameStateMachine.send({ type: "SELECT_SHIP", shipVariant: variant });
+    });
+
+    grid.appendChild(item);
+  }
+
+  container.appendChild(grid);
+  return container;
+};
+
 const renderOptionsPanel = (state: GameState) => {
   const panel = createPanel("Options");
   const buttonRow = createButtonRow();
@@ -253,12 +300,15 @@ const renderOptionsPanel = (state: GameState) => {
   return panel;
 };
 
-const renderMainMenuPanel = () => {
+const renderMainMenuPanel = (state: GameState) => {
   const panel = createPanel(
     "Asteroids",
     "Race the force-field route or queue for a live two-ship duel.",
     "menuTitle--main-menu"
   );
+  
+  panel.appendChild(renderShipSelection(state.settings.shipVariant));
+
   const buttonRow = createButtonRow();
   buttonRow.appendChild(
     createActionButton("Race Mode", () => {
@@ -331,8 +381,11 @@ const renderPausePanel = (state: GameState) => {
   return panel;
 };
 
-const renderResultPanel = (title: string, subtitle: string) => {
+const renderResultPanel = (state: GameState, title: string, subtitle: string) => {
   const panel = createPanel(title, subtitle);
+  
+  panel.appendChild(renderShipSelection(state.settings.shipVariant));
+
   const buttonRow = createButtonRow();
   buttonRow.appendChild(
     createActionButton("Try Again", () => {
@@ -399,7 +452,7 @@ const renderMenu = (state: GameState) => {
   }
 
   if (state.scene.type === "main-menu") {
-    panelMount.appendChild(renderMainMenuPanel());
+    panelMount.appendChild(renderMainMenuPanel(state));
     return;
   }
 
@@ -409,7 +462,7 @@ const renderMenu = (state: GameState) => {
   }
 
   if (state.scene.type === "result") {
-    panelMount.appendChild(renderResultPanel(state.scene.title, state.scene.subtitle));
+    panelMount.appendChild(renderResultPanel(state, state.scene.title, state.scene.subtitle));
   }
 };
 

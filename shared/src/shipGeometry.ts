@@ -26,7 +26,19 @@ export interface ShipCollider {
 }
 
 const SHIP_COLLIDER_SPECS: Record<ShipVariant, ShipColliderSpec> = {
+  "aurora-sprint": {
+    length: 80,
+    renderHeight: 120,
+    renderWidth: 60,
+    width: 40,
+  },
   "comet-lance": {
+    length: 82,
+    renderHeight: 120,
+    renderWidth: 60,
+    width: 42,
+  },
+  "ember-needle": {
     length: 82,
     renderHeight: 120,
     renderWidth: 60,
@@ -38,18 +50,50 @@ const SHIP_COLLIDER_SPECS: Record<ShipVariant, ShipColliderSpec> = {
     renderWidth: 60,
     width: 40,
   },
+  "solar-sloop": {
+    length: 70,
+    renderHeight: 120,
+    renderWidth: 80,
+    width: 50,
+  },
+  "starfin-drifter": {
+    length: 75,
+    renderHeight: 120,
+    renderWidth: 80,
+    width: 55,
+  },
 };
 
 const SHIP_COLLISION_BOUNDING_DIAMETERS: Record<ShipVariant, number> = {
+  "aurora-sprint": getCollisionShapeBoundingDiameter(
+    SHIP_COLLISION_SHAPES["aurora-sprint"],
+    SHIP_COLLIDER_SPECS["aurora-sprint"].renderHeight,
+    SHIP_COLLIDER_SPECS["aurora-sprint"].renderWidth
+  ),
   "comet-lance": getCollisionShapeBoundingDiameter(
     SHIP_COLLISION_SHAPES["comet-lance"],
     SHIP_COLLIDER_SPECS["comet-lance"].renderHeight,
     SHIP_COLLIDER_SPECS["comet-lance"].renderWidth
   ),
+  "ember-needle": getCollisionShapeBoundingDiameter(
+    SHIP_COLLISION_SHAPES["ember-needle"],
+    SHIP_COLLIDER_SPECS["ember-needle"].renderHeight,
+    SHIP_COLLIDER_SPECS["ember-needle"].renderWidth
+  ),
   "orbit-dart": getCollisionShapeBoundingDiameter(
     SHIP_COLLISION_SHAPES["orbit-dart"],
     SHIP_COLLIDER_SPECS["orbit-dart"].renderHeight,
     SHIP_COLLIDER_SPECS["orbit-dart"].renderWidth
+  ),
+  "solar-sloop": getCollisionShapeBoundingDiameter(
+    SHIP_COLLISION_SHAPES["solar-sloop"],
+    SHIP_COLLIDER_SPECS["solar-sloop"].renderHeight,
+    SHIP_COLLIDER_SPECS["solar-sloop"].renderWidth
+  ),
+  "starfin-drifter": getCollisionShapeBoundingDiameter(
+    SHIP_COLLISION_SHAPES["starfin-drifter"],
+    SHIP_COLLIDER_SPECS["starfin-drifter"].renderHeight,
+    SHIP_COLLIDER_SPECS["starfin-drifter"].renderWidth
   ),
 };
 

@@ -12,12 +12,12 @@ import p5, { Image } from "p5";
 import { Engine } from "matter-js";
 import { engine } from "./engine";
 import { handleEscapeKey } from "./gameUiActions";
-import { getGameState, shouldAdvanceRaceSimulation } from "./gameState";
+import { getGameState, gameStateMachine, shouldAdvanceRaceSimulation } from "./gameState";
 import { initializeShipInput } from "./input";
 import { initializeMobileControls } from "./mobileControls";
 import { initializeMultiplayerSession } from "./multiplayerSession";
 import { refreshRaceViewport } from "./raceMode";
-import type { ShipVariant } from "../../shared/src";
+import { ShipVariant, MULTIPLAYER_SHIP_VARIANTS } from "../../shared/src";
 
 const MIN_SPLASH_DURATION_MS = 1000;
 const ASTEROID_TEXTURE_SIZE = 512;
@@ -95,18 +95,22 @@ const sketch = (p: p5) => {
     const asteroid3 = p.loadImage("/assets/asteroid3.svg");
     const heart = p.loadImage("/assets/heart.svg");
     const space = p.loadImage("/assets/background.jpg");
-    const orbitDart = p.loadImage("/assets/alternatives/ship-alt-orbit-dart.svg");
-    const cometLance = p.loadImage("/assets/alternatives/ship-alt-comet-lance.svg");
+    
+    const multiplayerShips: Partial<Record<ShipVariant, Image>> = {};
+    for (const variant of MULTIPLAYER_SHIP_VARIANTS) {
+      multiplayerShips[variant] = p.loadImage(`/assets/alternatives/ship-alt-${variant}.svg`);
+    }
+
     const ammoAsset = p.loadImage("/assets/bullets.svg");
+    
+    const initialState = getGameState();
+
     assets = {
       asteroids: [asteroid1, asteroid2, asteroid3],
       heart,
       space,
-      multiplayerShips: {
-        "comet-lance": cometLance,
-        "orbit-dart": orbitDart,
-      },
-      raceShip: orbitDart,
+      multiplayerShips: multiplayerShips as Record<ShipVariant, Image>,
+      raceShip: multiplayerShips[initialState.settings.shipVariant]!,
       ammoAsset,
     };
   };
@@ -127,6 +131,10 @@ const sketch = (p: p5) => {
     engine.world.bounds.max.x = boardSizeX;
     engine.world.bounds.max.y = boardSizeY;
     window.addEventListener("orientationchange", scheduleViewportSync);
+
+    gameStateMachine.subscribe((state) => {
+      assets.raceShip = assets.multiplayerShips[state.settings.shipVariant];
+    });
   };
   p.draw = () => {
     draw(p);

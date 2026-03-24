@@ -2,7 +2,13 @@ export type MatchEndReason = "destroyed" | "inactive" | "opponent-left";
 export type MatchOutcome = "draw" | "loss" | "win";
 export type MatchPhase = "active" | "countdown";
 export type PlayerSlot = "alpha" | "beta";
-export type ShipVariant = "comet-lance" | "orbit-dart";
+export type ShipVariant =
+  | "aurora-sprint"
+  | "comet-lance"
+  | "ember-needle"
+  | "orbit-dart"
+  | "solar-sloop"
+  | "starfin-drifter";
 
 export interface ArenaConfig {
   height: number;
@@ -180,8 +186,12 @@ export const MULTIPLAYER_ARENA: ArenaConfig = {
 };
 export const DEFAULT_RACE_SHIP_VARIANT: ShipVariant = "orbit-dart";
 export const MULTIPLAYER_SHIP_VARIANTS = [
-  "orbit-dart",
+  "aurora-sprint",
   "comet-lance",
+  "ember-needle",
+  "orbit-dart",
+  "solar-sloop",
+  "starfin-drifter",
 ] as const satisfies readonly ShipVariant[];
 export const TICK_INTERVAL_MS = 1000 / 60;
 export const SNAPSHOT_INTERVAL_TICKS = 2;

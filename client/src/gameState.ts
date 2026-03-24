@@ -1,4 +1,9 @@
 import { isCollisionDebugAvailable } from "./collisionDebug";
+import {
+  ShipVariant,
+  DEFAULT_RACE_SHIP_VARIANT,
+  MULTIPLAYER_SHIP_VARIANTS,
+} from "../../shared/src";
 
 export type GameMode = "race" | "multiplayer" | "horde";
 
@@ -34,6 +39,7 @@ export type OverlayState = PauseOverlay | OptionsOverlay;
 export interface SettingsState {
   collisionDebugEnabled: boolean;
   soundEnabled: boolean;
+  shipVariant: ShipVariant;
 }
 
 export interface GameState {
@@ -51,12 +57,14 @@ export type GameStateEvent =
   | { type: "RETURN_TO_MAIN_MENU" }
   | { type: "SHOW_RESULT"; mode: GameMode; title: string; subtitle: string }
   | { type: "TOGGLE_COLLISION_DEBUG" }
-  | { type: "TOGGLE_SOUND" };
+  | { type: "TOGGLE_SOUND" }
+  | { type: "SELECT_SHIP"; shipVariant: ShipVariant };
 
 type GameStateListener = (state: GameState, previousState: GameState) => void;
 
 const SOUND_SETTING_KEY = "simple-asteroid-game-sound-enabled";
 const COLLISION_DEBUG_SETTING_KEY = "simple-asteroid-game-collision-debug";
+const SHIP_VARIANT_SETTING_KEY = "simple-asteroid-game-ship-variant";
 
 const readSoundSetting = () => {
   try {
@@ -73,6 +81,29 @@ const readSoundSetting = () => {
 const writeSoundSetting = (soundEnabled: boolean) => {
   try {
     window.localStorage.setItem(SOUND_SETTING_KEY, String(soundEnabled));
+  } catch (_error) {
+    // Ignore storage issues and keep the session state in memory.
+  }
+};
+
+const readShipVariantSetting = (): ShipVariant => {
+  try {
+    const storedValue = window.localStorage.getItem(SHIP_VARIANT_SETTING_KEY);
+    if (
+      storedValue !== null &&
+      MULTIPLAYER_SHIP_VARIANTS.includes(storedValue as ShipVariant)
+    ) {
+      return storedValue as ShipVariant;
+    }
+    return DEFAULT_RACE_SHIP_VARIANT;
+  } catch (_error) {
+    return DEFAULT_RACE_SHIP_VARIANT;
+  }
+};
+
+const writeShipVariantSetting = (shipVariant: ShipVariant) => {
+  try {
+    window.localStorage.setItem(SHIP_VARIANT_SETTING_KEY, shipVariant);
   } catch (_error) {
     // Ignore storage issues and keep the session state in memory.
   }
@@ -112,6 +143,7 @@ const createInitialState = (): GameState => {
     settings: {
       collisionDebugEnabled: readCollisionDebugSetting(),
       soundEnabled: readSoundSetting(),
+      shipVariant: readShipVariantSetting(),
     },
   };
 };
@@ -237,6 +269,15 @@ const transitionState = (
           soundEnabled: !currentState.settings.soundEnabled,
         },
       };
+    case "SELECT_SHIP":
+      return {
+        scene: currentState.scene,
+        overlay: currentState.overlay,
+        settings: {
+          ...currentState.settings,
+          shipVariant: event.shipVariant,
+        },
+      };
     default:
       return currentState;
   }
@@ -276,6 +317,9 @@ class GameStateMachine {
     }
     if (event.type === "TOGGLE_SOUND") {
       writeSoundSetting(nextState.settings.soundEnabled);
+    }
+    if (event.type === "SELECT_SHIP") {
+      writeShipVariantSetting(nextState.settings.shipVariant);
     }
     this.listeners.forEach((listener) => listener(nextState, previousState));
     return nextState;
