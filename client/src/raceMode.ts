@@ -1,17 +1,20 @@
 import p5 from "p5";
-import { resetPlayer } from "./player";
+import { clampPlayerToWorldBounds, player, resetPlayer } from "./player";
 import { resetExplosions } from "./explosions";
 import { resetAmmunition } from "./ammunition";
 import { resetbullets } from "./bullets";
 import { resetHearts } from "./hearts";
-import { resetAsteroids } from "./asteroids";
+import { asteroids, resetAsteroids } from "./asteroids";
 import { resetBorder } from "./border";
-import { resetGoals } from "./goals";
+import { refreshGoalsAfterResize, resetGoals } from "./goals";
 import { resetRaceStartTime } from "./raceSession";
+import { clearShipInput } from "./input";
 
 export const resetRaceMode = (p: p5) => {
   resetRaceStartTime();
+  clearShipInput();
   resetPlayer(p);
+  player.ammunition = 0;
   resetExplosions(p);
   resetAmmunition(p, {
     initialPackages: 0,
@@ -22,4 +25,11 @@ export const resetRaceMode = (p: p5) => {
   resetAsteroids(p);
   resetHearts(p);
   resetBorder(p);
+};
+
+export const refreshRaceViewport = () => {
+  clearShipInput();
+  clampPlayerToWorldBounds();
+  refreshGoalsAfterResize();
+  asteroids.refreshAfterResize();
 };

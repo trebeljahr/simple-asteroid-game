@@ -31,6 +31,9 @@ const HASH_WORLD_MARGIN = 160;
 const MAX_SPAWN_POINT_FACTOR = 1.9;
 const MIN_ASTEROID_SIZE = 70;
 const MIN_ASTEROID_COUNT = 44;
+const ASTEROID_FIELD_BUILD_ATTEMPTS = 4;
+const ASTEROID_OVERLAP_RESOLUTION_ATTEMPTS = 180;
+const ASTEROID_SPAWN_CLEARANCE = 18;
 const PLAYER_SAFE_RADIUS = 320;
 const GOAL_SAFE_RADIUS = 180;
 const POISSON_ATTEMPTS = 24;
@@ -46,7 +49,7 @@ export const resetAsteroids = (p: p5) => {
 
 export const maxAsteroids = 100;
 export const maxAsteroidSize = 190;
-const MIN_ASTEROID_SEPARATION = maxAsteroidSize + 18;
+const MIN_ASTEROID_SEPARATION = maxAsteroidSize + ASTEROID_SPAWN_CLEARANCE;
 
 const createHashKey = (column: number, row: number) => {
   return `${column}:${row}`;
@@ -80,10 +83,10 @@ class Asteroids {
     this.asteroidTargetCount = this.getAsteroidTargetCount();
     this.occupiedSpawnPointIndices = new Set<number>();
     this.spatialHash = new Map<string, Set<number>>();
-    this.routeSegments = this.createRouteSegments();
-    this.spawnPoints = this.createSpawnPoints();
+    this.routeSegments = [];
+    this.spawnPoints = [];
 
-    this.ensureAsteroidCount();
+    this.rebuildField();
   }
 
   createRouteSegments() {
@@ -364,10 +367,10 @@ class Asteroids {
         circlesOverlap(
           spawnPoint.x,
           spawnPoint.y,
-          asteroidSize + 18,
+          asteroidSize + ASTEROID_SPAWN_CLEARANCE,
           asteroid.pos.x,
           asteroid.pos.y,
-          asteroid.size + 18
+          asteroid.size + ASTEROID_SPAWN_CLEARANCE
         )
       ) {
         return false;
@@ -405,6 +408,13 @@ class Asteroids {
     return null;
   }
 
+  clearField() {
+    this.asteroids = [];
+    this.asteroidHashKeys = [];
+    this.occupiedSpawnPointIndices.clear();
+    this.spatialHash.clear();
+  }
+
   ensureAsteroidCount() {
     while (this.asteroids.length < this.asteroidTargetCount) {
       const asteroid = this.createNewAsteroid();
@@ -419,7 +429,9 @@ class Asteroids {
   }
 
   registerAsteroid(asteroidIndex: number, asteroid: Asteroid) {
-    this.occupiedSpawnPointIndices.add(asteroid.spawnPointIndex);
+    if (asteroid.spawnPointIndex !== null) {
+      this.occupiedSpawnPointIndices.add(asteroid.spawnPointIndex);
+    }
 
     const hashKey = this.hashKeyForPosition(asteroid.pos.x, asteroid.pos.y);
     const existingBucket = this.spatialHash.get(hashKey);
@@ -432,11 +444,23 @@ class Asteroids {
     this.asteroidHashKeys[asteroidIndex] = hashKey;
   }
 
+  rebuildRegistrations() {
+    this.occupiedSpawnPointIndices.clear();
+    this.spatialHash.clear();
+    this.asteroidHashKeys = new Array<string | null>(this.asteroids.length).fill(null);
+
+    for (let asteroidIndex = 0; asteroidIndex < this.asteroids.length; asteroidIndex++) {
+      this.registerAsteroid(asteroidIndex, this.asteroids[asteroidIndex]);
+    }
+  }
+
   unregisterAsteroid(asteroidIndex: number) {
     const asteroid = this.asteroids[asteroidIndex];
     const hashKey = this.asteroidHashKeys[asteroidIndex];
 
-    this.occupiedSpawnPointIndices.delete(asteroid.spawnPointIndex);
+    if (asteroid.spawnPointIndex !== null) {
+      this.occupiedSpawnPointIndices.delete(asteroid.spawnPointIndex);
+    }
 
     if (hashKey !== null && hashKey !== undefined) {
       const hashBucket = this.spatialHash.get(hashKey);
@@ -456,8 +480,6 @@ class Asteroids {
   }
 
   run(cameraBounds: CameraBounds) {
-    this.ensureAsteroidCount();
-
     for (let i = 0; i < this.asteroids.length; i++) {
       const asteroid = this.asteroids[i];
       if (
@@ -472,6 +494,16 @@ class Asteroids {
       }
       asteroid.draw();
     }
+  }
+
+  removeAsteroid(indexToRemove: number) {
+    if (indexToRemove < 0 || indexToRemove >= this.asteroids.length) {
+      return;
+    }
+
+    this.asteroids.splice(indexToRemove, 1);
+    this.asteroidTargetCount = this.asteroids.length;
+    this.rebuildRegistrations();
   }
 
   queryNearby(x: number, y: number, radius: number) {
@@ -515,15 +547,92 @@ class Asteroids {
     this.registerAsteroid(indexToChange, replacement);
   }
 
-  refreshAfterResize() {
+  findOverlappingAsteroidIndex() {
+    for (let asteroidIndex = 0; asteroidIndex < this.asteroids.length; asteroidIndex++) {
+      const asteroid = this.asteroids[asteroidIndex];
+      const nearbyAsteroids = this.queryNearby(
+        asteroid.pos.x,
+        asteroid.pos.y,
+        asteroid.size / 2
+      );
+
+      for (let i = 0; i < nearbyAsteroids.length; i++) {
+        const otherAsteroidIndex = nearbyAsteroids[i];
+        if (otherAsteroidIndex <= asteroidIndex) {
+          continue;
+        }
+
+        const otherAsteroid = this.asteroids[otherAsteroidIndex];
+        if (
+          circlesOverlap(
+            asteroid.pos.x,
+            asteroid.pos.y,
+            asteroid.size + ASTEROID_SPAWN_CLEARANCE,
+            otherAsteroid.pos.x,
+            otherAsteroid.pos.y,
+            otherAsteroid.size + ASTEROID_SPAWN_CLEARANCE
+          )
+        ) {
+          return otherAsteroidIndex;
+        }
+      }
+    }
+
+    return null;
+  }
+
+  resolveOverlappingAsteroids() {
+    for (let attempt = 0; attempt < ASTEROID_OVERLAP_RESOLUTION_ATTEMPTS; attempt++) {
+      const overlappingAsteroidIndex = this.findOverlappingAsteroidIndex();
+      if (overlappingAsteroidIndex === null) {
+        return true;
+      }
+
+      this.spawnNewAsteroid(overlappingAsteroidIndex);
+    }
+
+    return this.findOverlappingAsteroidIndex() === null;
+  }
+
+  rebuildField() {
     this.asteroidTargetCount = this.getAsteroidTargetCount();
-    this.asteroids = [];
-    this.asteroidHashKeys = [];
-    this.occupiedSpawnPointIndices.clear();
-    this.spatialHash.clear();
+
+    for (let attempt = 0; attempt < ASTEROID_FIELD_BUILD_ATTEMPTS; attempt++) {
+      this.clearField();
+      this.routeSegments = this.createRouteSegments();
+      this.spawnPoints = this.createSpawnPoints();
+      this.ensureAsteroidCount();
+
+      if (this.resolveOverlappingAsteroids()) {
+        return;
+      }
+    }
+  }
+
+  refreshAfterResize() {
     this.routeSegments = this.createRouteSegments();
     this.spawnPoints = this.createSpawnPoints();
-    this.ensureAsteroidCount();
+    const invalidAsteroidIndices: number[] = [];
+
+    for (let asteroidIndex = 0; asteroidIndex < this.asteroids.length; asteroidIndex++) {
+      this.asteroids[asteroidIndex].spawnPointIndex = null;
+      if (
+        !this.isSpawnPointAllowed({
+          x: this.asteroids[asteroidIndex].pos.x,
+          y: this.asteroids[asteroidIndex].pos.y,
+        })
+      ) {
+        invalidAsteroidIndices.push(asteroidIndex);
+      }
+    }
+
+    this.rebuildRegistrations();
+
+    for (let i = 0; i < invalidAsteroidIndices.length; i++) {
+      this.spawnNewAsteroid(invalidAsteroidIndices[i]);
+    }
+
+    this.resolveOverlappingAsteroids();
   }
 }
 
@@ -533,7 +642,7 @@ export class Asteroid extends Mover {
   id: string;
   img: Image;
   p: p5;
-  spawnPointIndex: number;
+  spawnPointIndex: number | null;
   spinSpeed: number;
 
   constructor(
@@ -542,7 +651,7 @@ export class Asteroid extends Mover {
     vel: Vector,
     r: number,
     hitPoints: number,
-    spawnPointIndex: number
+    spawnPointIndex: number | null
   ) {
     super(p, pos, vel, r);
     this.p = p;

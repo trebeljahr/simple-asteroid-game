@@ -30,7 +30,7 @@ export const showRaceVictory = () => {
   return gameStateMachine.send({
     type: "SHOW_RESULT",
     title: `Race complete in ${totalTime}`,
-    subtitle: "The course is clear. Launch again or switch to another mode.",
+    subtitle: "The course is clear. Launch again or head back to the menu.",
   });
 };
 

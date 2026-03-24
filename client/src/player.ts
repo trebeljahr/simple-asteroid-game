@@ -4,7 +4,10 @@ import {
   height,
   boardSizeX,
   boardSizeY,
+  clamp,
   playerHitsCircularTarget,
+  REFERENCE_VIEWPORT_HEIGHT,
+  REFERENCE_VIEWPORT_WIDTH,
 } from "./utils";
 import { showRaceDefeat } from "./gameUiActions";
 import { explosions } from "./explosions";
@@ -20,12 +23,40 @@ import { isShipActionActive } from "./input";
 
 export let player = {} as Player;
 export const maxSpeed = 10;
+const PLAYER_DAMAGE_RECOVERY_FRAMES = 24;
 
 export const resetPlayer = (p: p5) => {
   if (player && player.enginePlayer) {
     World.remove(engine.world, player.enginePlayer);
   }
-  player = new Player(p, p.random(width), p.random(height));
+  player = new Player(
+    p,
+    p.random(REFERENCE_VIEWPORT_WIDTH),
+    p.random(REFERENCE_VIEWPORT_HEIGHT)
+  );
+};
+
+export const clampPlayerToWorldBounds = () => {
+  if (!player || !player.enginePlayer) {
+    return;
+  }
+
+  const clampedX = clamp(player.enginePlayer.position.x, -boardSizeX, boardSizeX);
+  const clampedY = clamp(player.enginePlayer.position.y, -boardSizeY, boardSizeY);
+  const nextVelocity = Vector.create(
+    player.enginePlayer.velocity.x,
+    player.enginePlayer.velocity.y
+  );
+
+  if (clampedX !== player.enginePlayer.position.x) {
+    nextVelocity.x = 0;
+  }
+  if (clampedY !== player.enginePlayer.position.y) {
+    nextVelocity.y = 0;
+  }
+
+  Body.setVelocity(player.enginePlayer, nextVelocity);
+  Body.setPosition(player.enginePlayer, Vector.create(clampedX, clampedY));
 };
 
 const stopVerticalMotion = (body: Body, yPos: number) => {
@@ -60,12 +91,14 @@ export class Player {
   size: number;
   life: number;
   ammunition: number;
+  collisionRecoveryFrames: number;
   thruster: ThrusterExhaustSystem;
   deathCountDown: number;
   enginePlayer: Body;
   constructor(p: p5, x: number, y: number) {
     this.p = p;
     this.deathCountDown = 0;
+    this.collisionRecoveryFrames = 0;
     this.size = 60;
     this.life = MAX_PLAYER_HEALTH;
     this.ammunition = 1000;
@@ -109,7 +142,13 @@ export class Player {
     this.p.fill(255);
     this.p.imageMode(this.p.CENTER);
     this.p.rotate(this.p.PI / 2);
+    if (this.collisionRecoveryFrames > 0) {
+      const blinkAlpha =
+        Math.floor(this.collisionRecoveryFrames / 3) % 2 === 0 ? 170 : 105;
+      this.p.tint(255, blinkAlpha);
+    }
     this.p.image(assets.rocket, 0, 0, this.size, this.size * 2);
+    this.p.noTint();
     this.p.noFill();
 
     this.p.pop();
@@ -163,11 +202,13 @@ export class Player {
   }
 
   damage() {
-    if (this.life <= 0) {
-      return;
+    if (this.life <= 0 || this.collisionRecoveryFrames > 0) {
+      return false;
     }
+
     hearts.createLossEffect(this.life - 1);
     this.life--;
+    this.collisionRecoveryFrames = PLAYER_DAMAGE_RECOVERY_FRAMES;
     if (this.life <= 0) {
       explosions.createExplosion(
         this.p.createVector(
@@ -177,6 +218,7 @@ export class Player {
       );
       this.deathCountDown = 255;
     }
+    return true;
   }
 
   showHealth() {
@@ -207,6 +249,9 @@ export class Player {
       velocity,
       angle,
     } = this.enginePlayer;
+    if (this.collisionRecoveryFrames > 0) {
+      this.collisionRecoveryFrames--;
+    }
     if (x >= boardSizeX) {
       stopHorizontalMotion(this.enginePlayer, boardSizeX);
     }

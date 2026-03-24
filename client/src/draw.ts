@@ -80,14 +80,14 @@ function gameLogic(cameraBounds: ReturnType<typeof createCameraBounds>) {
   asteroids.run(cameraBounds);
   goals.run(cameraBounds);
 
-  const replacedAsteroidIndices = new Set<number>();
+  const handledAsteroidIds = new Set<string>();
 
-  handlePlayerAsteroidCollisions(replacedAsteroidIndices);
-  handleBulletAsteroidCollisions(replacedAsteroidIndices);
+  handlePlayerAsteroidCollisions(handledAsteroidIds);
+  handleBulletAsteroidCollisions(handledAsteroidIds);
   handleHeartCollection();
 }
 
-function handlePlayerAsteroidCollisions(replacedAsteroidIndices: Set<number>) {
+function handlePlayerAsteroidCollisions(handledAsteroidIds: Set<string>) {
   const nearbyAsteroids = asteroids.queryNearby(
     player.enginePlayer.position.x,
     player.enginePlayer.position.y,
@@ -96,11 +96,10 @@ function handlePlayerAsteroidCollisions(replacedAsteroidIndices: Set<number>) {
 
   for (let i = 0; i < nearbyAsteroids.length; i++) {
     const asteroidIndex = nearbyAsteroids[i];
-    if (replacedAsteroidIndices.has(asteroidIndex)) {
+    const asteroid = asteroids.asteroids[asteroidIndex];
+    if (handledAsteroidIds.has(asteroid.id)) {
       continue;
     }
-
-    const asteroid = asteroids.asteroids[asteroidIndex];
     if (
       circlesOverlap(
         asteroid.pos.x,
@@ -111,15 +110,18 @@ function handlePlayerAsteroidCollisions(replacedAsteroidIndices: Set<number>) {
         player.size
       )
     ) {
-      player.damage();
+      if (!player.damage()) {
+        break;
+      }
       explosions.createExplosion(asteroid.pos);
-      asteroids.spawnNewAsteroid(asteroidIndex);
-      replacedAsteroidIndices.add(asteroidIndex);
+      asteroids.removeAsteroid(asteroidIndex);
+      handledAsteroidIds.add(asteroid.id);
+      break;
     }
   }
 }
 
-function handleBulletAsteroidCollisions(replacedAsteroidIndices: Set<number>) {
+function handleBulletAsteroidCollisions(handledAsteroidIds: Set<string>) {
   for (let bulletIndex = bullets.bullets.length - 1; bulletIndex >= 0; bulletIndex--) {
     const bullet = bullets.bullets[bulletIndex];
     const nearbyAsteroids = asteroids.queryNearby(
@@ -130,11 +132,10 @@ function handleBulletAsteroidCollisions(replacedAsteroidIndices: Set<number>) {
 
     for (let i = 0; i < nearbyAsteroids.length; i++) {
       const asteroidIndex = nearbyAsteroids[i];
-      if (replacedAsteroidIndices.has(asteroidIndex)) {
+      const asteroid = asteroids.asteroids[asteroidIndex];
+      if (handledAsteroidIds.has(asteroid.id)) {
         continue;
       }
-
-      const asteroid = asteroids.asteroids[asteroidIndex];
       if (
         circlesOverlap(
           asteroid.pos.x,
@@ -147,8 +148,8 @@ function handleBulletAsteroidCollisions(replacedAsteroidIndices: Set<number>) {
       ) {
         asteroid.hit();
         if (asteroid.hitPoints <= 0) {
-          asteroids.spawnNewAsteroid(asteroidIndex);
-          replacedAsteroidIndices.add(asteroidIndex);
+          asteroids.removeAsteroid(asteroidIndex);
+          handledAsteroidIds.add(asteroid.id);
         }
         bullets.bullets.splice(bulletIndex, 1);
         break;

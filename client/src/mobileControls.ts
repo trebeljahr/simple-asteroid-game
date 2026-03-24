@@ -1,4 +1,4 @@
-import { gameStateMachine, getGameState } from "./gameState";
+import { GameMode, gameStateMachine, getGameState } from "./gameState";
 import { handleEscapeKey } from "./gameUiActions";
 import {
   clearShipInput,
@@ -14,6 +14,7 @@ interface MobileButtonConfig {
   action: ShipAction;
   causeId: string;
   label: string;
+  modes?: GameMode[];
   side: "left" | "right";
   variant?: "accent";
 }
@@ -42,6 +43,7 @@ const mobileButtons: MobileButtonConfig[] = [
     action: "fire",
     causeId: "mobile:fire",
     label: "Fire",
+    modes: ["multiplayer", "horde"],
     side: "right",
   },
 ];
@@ -140,10 +142,20 @@ const createControlsRoot = () => {
   const rightCluster = document.createElement("div");
   rightCluster.className = "mobileControlCluster mobileControlCluster--right";
   const resetControls: Array<() => void> = [];
+  const buttonEntries: Array<{
+    button: HTMLButtonElement;
+    config: MobileButtonConfig;
+    reset: () => void;
+  }> = [];
 
   for (let i = 0; i < mobileButtons.length; i++) {
     const { button, reset } = createActionButton(mobileButtons[i]);
     resetControls.push(reset);
+    buttonEntries.push({
+      button,
+      config: mobileButtons[i],
+      reset,
+    });
     if (mobileButtons[i].side === "left") {
       leftCluster.appendChild(button);
       continue;
@@ -154,6 +166,7 @@ const createControlsRoot = () => {
   bottomRow.append(leftCluster, rightCluster);
   root.appendChild(bottomRow);
   return {
+    buttonEntries,
     resetControls,
     root,
   };
@@ -202,12 +215,25 @@ export const initializeMobileControls = () => {
     return;
   }
 
-  const { root: controlsRoot, resetControls } = createControlsRoot();
+  const { buttonEntries, root: controlsRoot, resetControls } = createControlsRoot();
   const rotatePrompt = createRotatePrompt();
 
   const syncUi = () => {
+    const state = getGameState();
     const showControls = shouldShowTouchControls();
     const showRotatePrompt = showControls && isMobilePortrait();
+    const activeMode = state.scene.type === "mode" ? state.scene.mode : null;
+
+    for (let i = 0; i < buttonEntries.length; i++) {
+      const { button, config, reset } = buttonEntries[i];
+      const isVisible =
+        activeMode !== null &&
+        (config.modes === undefined || config.modes.includes(activeMode));
+      button.hidden = !isVisible;
+      if (!isVisible) {
+        reset();
+      }
+    }
 
     controlsRoot.classList.toggle("is-visible", showControls && !showRotatePrompt);
     rotatePrompt.classList.toggle("is-visible", showRotatePrompt);

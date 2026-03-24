@@ -13,13 +13,13 @@ import { Engine } from "matter-js";
 import { engine } from "./engine";
 import { handleEscapeKey } from "./gameUiActions";
 import { getGameState, shouldAdvanceRaceSimulation } from "./gameState";
-import { resetAsteroids } from "./asteroids";
-import { resetHearts } from "./hearts";
 import { initializeShipInput } from "./input";
 import { initializeMobileControls } from "./mobileControls";
+import { refreshRaceViewport } from "./raceMode";
 
 const MIN_SPLASH_DURATION_MS = 1000;
 const ASTEROID_TEXTURE_SIZE = 512;
+const VIEWPORT_RESIZE_SETTLE_DELAY_MS = 140;
 const appBootStartedAt = performance.now();
 
 const rasterizeImageAsset = (p: p5, source: Image, size: number) => {
@@ -35,6 +35,7 @@ const rasterizeImageAsset = (p: p5, source: Image, size: number) => {
 const sketch = (p: p5) => {
   let hasShownFirstFrame = false;
   let loadingShellDismissed = false;
+  let viewportResizeTimeoutId: number | null = null;
 
   const completeInitialLoading = () => {
     if (loadingShellDismissed) {
@@ -49,6 +50,31 @@ const sketch = (p: p5) => {
       document.body.classList.remove("app-loading");
       document.body.classList.add("app-ready");
     }, remaining);
+  };
+
+  const syncViewport = () => {
+    updateWindowSize();
+    p.resizeCanvas(width, height);
+    engine.world.bounds.min.x = -boardSizeX;
+    engine.world.bounds.min.y = -boardSizeY;
+    engine.world.bounds.max.x = boardSizeX;
+    engine.world.bounds.max.y = boardSizeY;
+
+    const state = getGameState();
+    if (state.scene.type === "mode" && state.scene.mode === "race") {
+      refreshRaceViewport();
+    }
+  };
+
+  const scheduleViewportSync = () => {
+    if (viewportResizeTimeoutId !== null) {
+      window.clearTimeout(viewportResizeTimeoutId);
+    }
+
+    viewportResizeTimeoutId = window.setTimeout(() => {
+      viewportResizeTimeoutId = null;
+      syncViewport();
+    }, VIEWPORT_RESIZE_SETTLE_DELAY_MS);
   };
 
   p.keyPressed = () => {
@@ -92,6 +118,7 @@ const sketch = (p: p5) => {
     engine.world.bounds.min.y = -boardSizeY;
     engine.world.bounds.max.x = boardSizeX;
     engine.world.bounds.max.y = boardSizeY;
+    window.addEventListener("orientationchange", scheduleViewportSync);
   };
   p.draw = () => {
     draw(p);
@@ -105,18 +132,7 @@ const sketch = (p: p5) => {
   };
 
   p.windowResized = () => {
-    updateWindowSize();
-    p.resizeCanvas(width, height);
-    engine.world.bounds.min.x = -boardSizeX;
-    engine.world.bounds.min.y = -boardSizeY;
-    engine.world.bounds.max.x = boardSizeX;
-    engine.world.bounds.max.y = boardSizeY;
-
-    const state = getGameState();
-    if (state.scene.type === "mode" && state.scene.mode === "race") {
-      resetAsteroids(p);
-      resetHearts(p);
-    }
+    scheduleViewportSync();
   };
 };
 

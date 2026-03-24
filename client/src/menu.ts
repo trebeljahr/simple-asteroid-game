@@ -242,30 +242,12 @@ const renderOptionsPanel = (state: GameState) => {
 };
 
 const renderMainMenuPanel = () => {
-  const panel = createPanel("Null Vector", undefined, "menuTitle--main-menu");
+  const panel = createPanel("Asteroids", undefined, "menuTitle--main-menu");
   const buttonRow = createButtonRow();
   buttonRow.appendChild(
     createActionButton("Race Mode", () => {
       activateGameMode("race");
     })
-  );
-  buttonRow.appendChild(
-    createActionButton(
-      "Multiplayer",
-      () => {
-        activateGameMode("multiplayer");
-      },
-      "secondary"
-    )
-  );
-  buttonRow.appendChild(
-    createActionButton(
-      "Enemy Hordes",
-      () => {
-        activateGameMode("horde");
-      },
-      "secondary"
-    )
   );
   buttonRow.appendChild(
     createActionButton(

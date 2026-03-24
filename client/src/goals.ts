@@ -7,8 +7,6 @@ import {
   circleIntersectsBounds,
   clamp,
   distSquare,
-  height,
-  width,
 } from "./utils";
 import { player, playerHitsCollectible } from "./player";
 
@@ -21,17 +19,17 @@ const GOAL_WORLD_MARGIN = 240;
 const GOAL_POSITION_ATTEMPTS = 80;
 const GOAL_SCAN_STEPS = 36;
 const GOAL_SEPARATION = 260;
+const GOAL_RANDOM_FALLBACK_ATTEMPTS = 240;
 
 const createGoalLegs = (): GoalLeg[] => {
   const worldDistance = Math.min(boardSizeX, boardSizeY);
-  const screenDiagonal = Math.sqrt(width * width + height * height);
   const worldDiagonal = Math.sqrt(
     boardSizeX * boardSizeX + boardSizeY * boardSizeY
   );
 
   return [
     {
-      distance: Math.max(screenDiagonal * 0.64, worldDistance * 0.42),
+      distance: Math.max(worldDiagonal * 0.32, worldDistance * 0.42),
       label: "Warmup Gate",
     },
     {
@@ -52,6 +50,9 @@ const createGoalLegs = (): GoalLeg[] => {
 export let goals = {} as Goals;
 export const resetGoals = (p: p5) => {
   goals = new Goals(p);
+};
+export const refreshGoalsAfterResize = () => {
+  goals.refreshAfterResize();
 };
 
 class Goals {
@@ -108,6 +109,51 @@ class Goals {
     return route;
   }
 
+  refreshAfterResize() {
+    const refreshedRoute: Goal[] = [];
+    let previousHeading: number | null = null;
+    let origin = this.p.createVector(
+      player.enginePlayer.position.x,
+      player.enginePlayer.position.y
+    );
+
+    for (let i = 0; i < this.route.length; i++) {
+      const existingGoal = this.route[i];
+      const clampedPosition = this.clampGoalPosition(existingGoal.pos);
+      let nextGoalPosition = clampedPosition;
+
+      if (!this.isGoalPositionValid(clampedPosition, refreshedRoute)) {
+        const fallbackDistance = Math.max(
+          GOAL_SEPARATION * 1.15,
+          p5.Vector.dist(origin, existingGoal.pos)
+        );
+        const nextGoal = this.createGoalPosition(
+          origin,
+          fallbackDistance,
+          refreshedRoute,
+          previousHeading
+        );
+        nextGoalPosition = nextGoal.pos;
+      }
+
+      const nextHeading = p5.Vector.sub(nextGoalPosition, origin).heading();
+      refreshedRoute.push(
+        new Goal(
+          this.p,
+          nextGoalPosition,
+          existingGoal.index,
+          existingGoal.totalGoals,
+          existingGoal.label
+        )
+      );
+      previousHeading = nextHeading;
+      origin = nextGoalPosition.copy();
+    }
+
+    this.route = refreshedRoute;
+    this.currentGoalIndex = clamp(this.currentGoalIndex, 0, this.route.length - 1);
+  }
+
   createGoalPosition(
     origin: Vector,
     distance: number,
@@ -159,21 +205,47 @@ class Goals {
       }
     }
 
+    for (let attempt = 0; attempt < GOAL_RANDOM_FALLBACK_ATTEMPTS; attempt++) {
+      const candidate = this.randomBoundedGoalPosition();
+      if (this.isGoalPositionValid(candidate, existingRoute)) {
+        return {
+          heading: p5.Vector.sub(candidate, origin).heading(),
+          pos: candidate,
+        };
+      }
+    }
+
     return {
       heading: centerHeading,
-      pos: this.p.createVector(
-        clamp(
+      pos: this.clampGoalPosition(
+        this.p.createVector(
           origin.x + this.p.cos(centerHeading) * distance,
-          -boardSizeX + GOAL_WORLD_MARGIN,
-          boardSizeX - GOAL_WORLD_MARGIN
-        ),
-        clamp(
-          origin.y + this.p.sin(centerHeading) * distance,
-          -boardSizeY + GOAL_WORLD_MARGIN,
-          boardSizeY - GOAL_WORLD_MARGIN
+          origin.y + this.p.sin(centerHeading) * distance
         )
       ),
     };
+  }
+
+  clampGoalPosition(candidate: Vector) {
+    return this.p.createVector(
+      clamp(
+        candidate.x,
+        -boardSizeX + GOAL_WORLD_MARGIN,
+        boardSizeX - GOAL_WORLD_MARGIN
+      ),
+      clamp(
+        candidate.y,
+        -boardSizeY + GOAL_WORLD_MARGIN,
+        boardSizeY - GOAL_WORLD_MARGIN
+      )
+    );
+  }
+
+  randomBoundedGoalPosition() {
+    return this.p.createVector(
+      this.p.random(-boardSizeX + GOAL_WORLD_MARGIN, boardSizeX - GOAL_WORLD_MARGIN),
+      this.p.random(-boardSizeY + GOAL_WORLD_MARGIN, boardSizeY - GOAL_WORLD_MARGIN)
+    );
   }
 
   sampleHeading(previousHeading: number | null, attempt: number) {

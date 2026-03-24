@@ -2,10 +2,13 @@ import p5 from "p5";
 import { player, Player } from "./player";
 
 export const BULLET_SPEED = 10;
+export const REFERENCE_VIEWPORT_WIDTH = 1440;
+export const REFERENCE_VIEWPORT_HEIGHT = 900;
+export const REFERENCE_PLAYER_SPAWN_SAFE_RADIUS = REFERENCE_VIEWPORT_WIDTH / 2;
 export let width = window.innerWidth;
 export let height = window.innerHeight;
-export let boardSizeX = width * 2;
-export let boardSizeY = height * 2;
+export let boardSizeX = REFERENCE_VIEWPORT_WIDTH * 2;
+export let boardSizeY = REFERENCE_VIEWPORT_HEIGHT * 2;
 export const SPACE_KEYCODE = 32;
 export const S_KEYCODE = 83;
 export const W_KEYCODE = 87;
@@ -18,8 +21,6 @@ export const ESC_KEYCODE = 27;
 export const updateWindowSize = () => {
   width = window.innerWidth;
   height = window.innerHeight;
-  boardSizeX = width * 2;
-  boardSizeY = height * 2;
 };
 
 export interface CameraBounds {
@@ -140,7 +141,7 @@ export const randomSpawnPoint = (p: p5) => {
       player.enginePlayer.position.x,
       player.enginePlayer.position.y
     ) <
-    ((width / 2) * width) / 2
+    REFERENCE_PLAYER_SPAWN_SAFE_RADIUS * REFERENCE_PLAYER_SPAWN_SAFE_RADIUS
   ) {
     pos = randomPosition(p);
   }
