@@ -66,7 +66,7 @@ body.app-loading .menuRoot {
   inset: 0;
   align-items: center;
   justify-content: center;
-  z-index: 10;
+  z-index: 40;
   overflow: hidden;
   opacity: 0;
   pointer-events: none;
@@ -203,7 +203,7 @@ body.app-loading .menuRoot {
   position: absolute;
   top: var(--menu-close-inset);
   right: var(--menu-close-inset);
-  z-index: 2;
+  z-index: 100;
   width: var(--menu-close-size);
   height: var(--menu-close-size);
   border: 1px solid rgba(173, 220, 244, 0.3);
@@ -709,7 +709,7 @@ body.app-loading .backgroundImage {
 }
 
 .shipItem.is-selected::after {
-  content: "SELECTED";
+  content: "";
   position: absolute;
   top: 0.2rem;
   right: -1.2rem;

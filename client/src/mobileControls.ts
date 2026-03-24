@@ -1,4 +1,3 @@
-import { isFullscreenActive, isFullscreenAvailable, toggleFullscreenMode } from "./fullscreen";
 import { GameMode, gameStateMachine, getGameState } from "./gameState";
 import { handleEscapeKey } from "./gameUiActions";
 import {
@@ -52,7 +51,7 @@ const mobileButtons: MobileButtonConfig[] = [
 let initialized = false;
 
 const isSupportedMobileMode = (mode: GameMode | null) => {
-  return mode === "race" || mode === "multiplayer";
+  return mode === "singleplayer" || mode === "multiplayer";
 };
 
 const shouldShowTouchControls = () => {
@@ -62,16 +61,6 @@ const shouldShowTouchControls = () => {
     state.scene.type === "mode" &&
     isSupportedMobileMode(state.scene.mode) &&
     state.overlay === null
-  );
-};
-
-const shouldShowFullscreenToggle = () => {
-  const state = getGameState();
-  return (
-    isMobileDevice() &&
-    isFullscreenAvailable() &&
-    state.scene.type === "mode" &&
-    isSupportedMobileMode(state.scene.mode)
   );
 };
 
@@ -150,12 +139,6 @@ const createControlsRoot = () => {
   });
   topBarActions.appendChild(menuButton);
 
-  const fullscreenButton = document.createElement("button");
-  fullscreenButton.type = "button";
-  fullscreenButton.className = "mobileMenuButton mobileMenuButton--secondary";
-  fullscreenButton.textContent = "Fullscreen";
-  topBarActions.appendChild(fullscreenButton);
-
   topBar.appendChild(topBarActions);
   root.appendChild(topBar);
 
@@ -193,7 +176,6 @@ const createControlsRoot = () => {
   root.appendChild(bottomRow);
   return {
     buttonEntries,
-    fullscreenButton,
     resetControls,
     root,
   };
@@ -224,12 +206,6 @@ const createRotatePrompt = () => {
   });
   card.appendChild(hint);
 
-  const fullscreenButton = document.createElement("button");
-  fullscreenButton.type = "button";
-  fullscreenButton.className = "mobileRotateButton";
-  fullscreenButton.textContent = "Fullscreen";
-  card.appendChild(fullscreenButton);
-
   const menuButton = document.createElement("button");
   menuButton.type = "button";
   menuButton.className = "mobileRotateButton mobileRotateButton--secondary";
@@ -241,7 +217,6 @@ const createRotatePrompt = () => {
 
   overlay.appendChild(card);
   return {
-    fullscreenButton,
     overlay,
   };
 };
@@ -253,28 +228,15 @@ export const initializeMobileControls = () => {
 
   const {
     buttonEntries,
-    fullscreenButton,
     root: controlsRoot,
     resetControls,
   } = createControlsRoot();
   const rotatePrompt = createRotatePrompt();
 
-  const handleFullscreenToggle = () => {
-    requestLandscapeOrientationLock();
-    void toggleFullscreenMode().finally(() => {
-      syncUi();
-    });
-  };
-
-  fullscreenButton.addEventListener("click", handleFullscreenToggle);
-  rotatePrompt.fullscreenButton.addEventListener("click", handleFullscreenToggle);
-
   const syncUi = () => {
     const state = getGameState();
     const showControls = shouldShowTouchControls();
     const showRotatePrompt = showControls && isMobilePortrait();
-    const showFullscreenToggle = shouldShowFullscreenToggle();
-    const fullscreenLabel = isFullscreenActive() ? "Exit Fullscreen" : "Fullscreen";
     const activeMode = state.scene.type === "mode" ? state.scene.mode : null;
 
     for (let i = 0; i < buttonEntries.length; i++) {
@@ -288,10 +250,6 @@ export const initializeMobileControls = () => {
       }
     }
 
-    fullscreenButton.hidden = !showFullscreenToggle;
-    fullscreenButton.textContent = fullscreenLabel;
-    rotatePrompt.fullscreenButton.hidden = !showFullscreenToggle;
-    rotatePrompt.fullscreenButton.textContent = fullscreenLabel;
     controlsRoot.classList.toggle("is-visible", showControls && !showRotatePrompt);
     rotatePrompt.overlay.classList.toggle("is-visible", showRotatePrompt);
 
@@ -310,8 +268,6 @@ export const initializeMobileControls = () => {
   window.addEventListener("resize", syncUi);
   window.addEventListener("orientationchange", syncUi);
   window.addEventListener("blur", syncUi);
-  document.addEventListener("fullscreenchange", syncUi);
-  document.addEventListener("webkitfullscreenchange", syncUi as EventListener);
   syncUi();
   initialized = true;
 };

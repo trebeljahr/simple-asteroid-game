@@ -1365,7 +1365,11 @@ class MultiplayerClientSession {
 
   private async joinQueue(socketId: string) {
     try {
-      await trpcClient.multiplayer.joinQueue.mutate({ socketId });
+      const state = getGameState();
+      await trpcClient.multiplayer.joinQueue.mutate({
+        socketId,
+        shipVariant: state.settings.shipVariant,
+      });
     } catch (_error) {
       if (!this.isMultiplayerModeActive()) {
         return;

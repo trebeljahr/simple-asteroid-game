@@ -5,7 +5,7 @@ import {
   MULTIPLAYER_SHIP_VARIANTS,
 } from "../../shared/src";
 
-export type GameMode = "race" | "multiplayer" | "horde";
+export type GameMode = "singleplayer" | "multiplayer" | "horde";
 
 export interface MainMenuScene {
   type: "main-menu";
@@ -70,11 +70,11 @@ const readSoundSetting = () => {
   try {
     const storedValue = window.localStorage.getItem(SOUND_SETTING_KEY);
     if (storedValue === null) {
-      return true;
+      return false;
     }
     return storedValue === "true";
   } catch (_error) {
-    return true;
+    return false;
   }
 };
 
@@ -332,10 +332,10 @@ export const getGameState = () => {
   return gameStateMachine.getState();
 };
 
-export const isRaceScene = (state: GameState) => {
-  return state.scene.type === "mode" && state.scene.mode === "race";
+export const isSingleplayerScene = (state: GameState) => {
+  return state.scene.type === "mode" && state.scene.mode === "singleplayer";
 };
 
 export const shouldAdvanceRaceSimulation = (state: GameState) => {
-  return isRaceScene(state) && state.overlay === null;
+  return isSingleplayerScene(state) && state.overlay === null;
 };

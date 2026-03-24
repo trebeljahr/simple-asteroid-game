@@ -25,7 +25,7 @@ import {
 } from "../../shared/src";
 
 const modeTitles: Record<GameMode, string> = {
-  race: "Racing Mode",
+  singleplayer: "Singleplayer Mode",
   multiplayer: "Multiplayer Mode",
   horde: "Enemy Hordes Mode",
 };
@@ -39,7 +39,7 @@ const shieldBlue = {
 
 export const draw = (p: p5) => {
   const state = getGameState();
-  if (state.scene.type === "mode" && state.scene.mode === "race") {
+  if (state.scene.type === "mode" && state.scene.mode === "singleplayer") {
     if (!shouldAdvanceRaceSimulation(state)) {
       return;
     }
@@ -65,7 +65,7 @@ export const draw = (p: p5) => {
     player.showHealth();
     hearts.drawHudEffects();
     drawGoalProgress(p);
-    drawHudHint(p, "Esc: menu", "Race mode");
+    drawHudHint(p, "Esc: menu", "Singleplayer mode");
     return;
   }
 

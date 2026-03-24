@@ -42,18 +42,18 @@ export const showModeResult = (
   });
 };
 
-export const showRaceVictory = () => {
+export const showSingleplayerVictory = () => {
   const totalTime = formatRaceDuration(undefined, 2);
   return showModeResult(
-    "race",
-    `Race complete in ${totalTime}`,
+    "singleplayer",
+    `Singleplayer complete in ${totalTime}`,
     "The course is clear. Launch again or head back to the menu."
   );
 };
 
-export const showRaceDefeat = () => {
+export const showSingleplayerDefeat = () => {
   return showModeResult(
-    "race",
+    "singleplayer",
     "Ship destroyed",
     "Take another run at the course or head back to the hangar."
   );

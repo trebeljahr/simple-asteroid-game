@@ -9,7 +9,7 @@ import {
   REFERENCE_VIEWPORT_HEIGHT,
   REFERENCE_VIEWPORT_WIDTH,
 } from "./utils";
-import { showRaceDefeat } from "./gameUiActions";
+import { showSingleplayerDefeat } from "./gameUiActions";
 import { explosions } from "./explosions";
 import { MAX_PLAYER_HEALTH, getHudHeartSize, getHudHeartTopLeft } from "./healthHud";
 import { ThrusterExhaustSystem } from "./thruster";
@@ -344,7 +344,7 @@ export class Player {
   run() {
     if (this.life <= 0) {
       if (this.deathCountDown < 0) {
-        showRaceDefeat();
+        showSingleplayerDefeat();
       }
       this.deathCountDown -= 15;
       return;

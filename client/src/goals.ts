@@ -1,5 +1,5 @@
 import p5, { Vector } from "p5";
-import { showRaceVictory } from "./gameUiActions";
+import { showSingleplayerVictory } from "./gameUiActions";
 import {
   boardSizeX,
   boardSizeY,
@@ -319,7 +319,7 @@ class Goals {
 
   advanceGoal() {
     if (this.currentGoalIndex >= this.route.length - 1) {
-      showRaceVictory();
+      showSingleplayerVictory();
       return;
     }
 

@@ -115,7 +115,7 @@ export class MultiplayerService {
   private socketToMatchId = new Map<string, string>();
   private sockets = new Map<string, TypedSocket>();
   private tickTimer: NodeJS.Timeout;
-  private waitingQueue: string[] = [];
+  private waitingQueue: Array<{ socketId: string; shipVariant: ShipVariant }> = [];
 
   constructor(io: Server<ClientToServerEvents, ServerToClientEvents>) {
     this.io = io;
@@ -125,7 +125,7 @@ export class MultiplayerService {
     this.tickTimer.unref?.();
   }
 
-  enqueueSocketById(socketId: string) {
+  enqueueSocketById(socketId: string, shipVariant: ShipVariant) {
     const socket = this.sockets.get(socketId);
     if (socket === undefined) {
       return { enqueued: false, reason: "socket-not-found" as const };
@@ -135,8 +135,8 @@ export class MultiplayerService {
       return { enqueued: false, reason: "already-matched" as const };
     }
 
-    if (!this.waitingQueue.includes(socketId)) {
-      this.waitingQueue.push(socketId);
+    if (!this.waitingQueue.some((item) => item.socketId === socketId)) {
+      this.waitingQueue.push({ socketId, shipVariant });
     }
 
     this.emitQueueStatus();
@@ -404,16 +404,17 @@ export class MultiplayerService {
     };
   }
 
-  private createMatch(players: [TypedSocket, TypedSocket]) {
+  private createMatch(
+    players: [
+      { socket: TypedSocket; shipVariant: ShipVariant },
+      { socket: TypedSocket; shipVariant: ShipVariant }
+    ]
+  ) {
     const matchId = `match-${++this.matchCounter}`;
     const roomId = `multiplayer:${matchId}`;
-    const shipAssignments: [ShipVariant, ShipVariant] =
-      Math.random() < 0.5
-        ? ["orbit-dart", "comet-lance"]
-        : ["comet-lance", "orbit-dart"];
     const participants: [MatchPlayer, MatchPlayer] = [
-      this.createMatchPlayer(players[0], "alpha", shipAssignments[0]),
-      this.createMatchPlayer(players[1], "beta", shipAssignments[1]),
+      this.createMatchPlayer(players[0].socket, "alpha", players[0].shipVariant),
+      this.createMatchPlayer(players[1].socket, "beta", players[1].shipVariant),
     ];
     const worldSeed = Math.floor(Math.random() * 0xffffffff);
 
@@ -461,8 +462,8 @@ export class MultiplayerService {
   }
 
   private dequeue(socketId: string) {
-    const nextQueue = this.waitingQueue.filter((queuedSocketId) => {
-      return queuedSocketId !== socketId;
+    const nextQueue = this.waitingQueue.filter((item) => {
+      return item.socketId !== socketId;
     });
 
     const removed = nextQueue.length !== this.waitingQueue.length;
@@ -891,7 +892,8 @@ export class MultiplayerService {
           continue;
         }
 
-        if (Date.now() - match.lastActivityAt >= INACTIVE_MATCH_TIMEOUT_MS) {
+        const isDev = process.env.NODE_ENV === "development";
+        if (!isDev && Date.now() - match.lastActivityAt >= INACTIVE_MATCH_TIMEOUT_MS) {
           this.finishMatch(match, {
             reason: "inactive",
             winnerId: null,
@@ -910,28 +912,34 @@ export class MultiplayerService {
 
   private tryCreateMatches() {
     while (this.waitingQueue.length > 1) {
-      const matchedSockets: TypedSocket[] = [];
+      const matchedPlayers: Array<{ socket: TypedSocket; shipVariant: ShipVariant }> = [];
 
-      while (this.waitingQueue.length > 0 && matchedSockets.length < 2) {
-        const nextSocketId = this.waitingQueue.shift();
-        if (nextSocketId === undefined) {
+      while (this.waitingQueue.length > 0 && matchedPlayers.length < 2) {
+        const queueItem = this.waitingQueue.shift();
+        if (queueItem === undefined) {
           break;
         }
 
-        const socket = this.sockets.get(nextSocketId);
+        const socket = this.sockets.get(queueItem.socketId);
         if (socket !== undefined) {
-          matchedSockets.push(socket);
+          matchedPlayers.push({ socket, shipVariant: queueItem.shipVariant });
         }
       }
 
-      if (matchedSockets.length < 2) {
-        if (matchedSockets.length === 1) {
-          this.waitingQueue.unshift(matchedSockets[0].id);
+      if (matchedPlayers.length < 2) {
+        if (matchedPlayers.length === 1) {
+          // Re-enqueue if we couldn't find a second player
+          const socketId = matchedPlayers[0].socket.id;
+          const shipVariant = matchedPlayers[0].shipVariant;
+          this.waitingQueue.unshift({ socketId, shipVariant });
         }
         break;
       }
 
-      this.createMatch(matchedSockets as [TypedSocket, TypedSocket]);
+      this.createMatch(matchedPlayers as [
+        { socket: TypedSocket; shipVariant: ShipVariant },
+        { socket: TypedSocket; shipVariant: ShipVariant }
+      ]);
     }
 
     this.emitQueueStatus();

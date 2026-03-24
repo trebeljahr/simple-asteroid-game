@@ -1,4 +1,3 @@
-import { initializeMenu } from "./menu";
 import { draw } from "./draw";
 import {
   width,
@@ -18,6 +17,7 @@ import { initializeMobileControls } from "./mobileControls";
 import { initializeMultiplayerSession } from "./multiplayerSession";
 import { refreshRaceViewport } from "./raceMode";
 import { ShipVariant, MULTIPLAYER_SHIP_VARIANTS } from "../../shared/src";
+import { configureGameModeActions } from "./gameModeActions";
 
 const MIN_SPLASH_DURATION_MS = 1000;
 const ASTEROID_TEXTURE_SIZE = 512;
@@ -63,7 +63,7 @@ const sketch = (p: p5) => {
     engine.world.bounds.max.y = boardSizeY;
 
     const state = getGameState();
-    if (state.scene.type === "mode" && state.scene.mode === "race") {
+    if (state.scene.type === "mode" && state.scene.mode === "singleplayer") {
       refreshRaceViewport();
     }
   };
@@ -121,10 +121,10 @@ const sketch = (p: p5) => {
       rasterizeImageAsset(p, assets.asteroids[1], ASTEROID_TEXTURE_SIZE),
       rasterizeImageAsset(p, assets.asteroids[2], ASTEROID_TEXTURE_SIZE),
     ];
+    configureGameModeActions(p);
     initializeShipInput();
     initializeMobileControls();
     initializeMultiplayerSession(p);
-    initializeMenu(p);
     engine.world.gravity.y = 0;
     engine.world.bounds.min.x = -boardSizeX;
     engine.world.bounds.min.y = -boardSizeY;

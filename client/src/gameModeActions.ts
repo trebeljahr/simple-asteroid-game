@@ -10,11 +10,11 @@ export const configureGameModeActions = (p: p5) => {
 };
 
 export const activateGameMode = (mode: GameMode) => {
-  if (mode === "race" || mode === "multiplayer") {
+  if (mode === "singleplayer" || mode === "multiplayer") {
     requestLandscapeOrientationLock();
   }
 
-  if (mode === "race") {
+  if (mode === "singleplayer") {
     if (activeP5Instance === null) {
       return;
     }

@@ -1,12 +1,12 @@
 import { initTRPC } from "@trpc/server";
 import { z } from "zod";
 
-import { MultiplayerRuntimeConfig } from "../../../shared/src";
+import { MultiplayerRuntimeConfig, ShipVariant, MULTIPLAYER_SHIP_VARIANTS } from "../../../shared/src";
 
 const t = initTRPC.create();
 
 interface MultiplayerController {
-  enqueueSocketById(socketId: string):
+  enqueueSocketById(socketId: string, shipVariant: ShipVariant):
     | { enqueued: false; reason: "already-matched" | "socket-not-found" }
     | { enqueued: true };
   getRuntimeConfig(): MultiplayerRuntimeConfig;
@@ -25,10 +25,11 @@ export const createAppRouter = (multiplayerService: MultiplayerController) => {
         .input(
           z.object({
             socketId: z.string().min(1),
+            shipVariant: z.enum(MULTIPLAYER_SHIP_VARIANTS as [string, ...string[]]),
           })
         )
         .mutation(({ input }) => {
-          return multiplayerService.enqueueSocketById(input.socketId);
+          return multiplayerService.enqueueSocketById(input.socketId, input.shipVariant as ShipVariant);
         }),
       leaveQueue: t.procedure
         .input(
