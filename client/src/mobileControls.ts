@@ -1,3 +1,4 @@
+import { isFullscreenActive, isFullscreenAvailable, toggleFullscreenMode } from "./fullscreen";
 import { GameMode, gameStateMachine, getGameState } from "./gameState";
 import { handleEscapeKey } from "./gameUiActions";
 import {
@@ -50,13 +51,27 @@ const mobileButtons: MobileButtonConfig[] = [
 
 let initialized = false;
 
+const isSupportedMobileMode = (mode: GameMode | null) => {
+  return mode === "race" || mode === "multiplayer";
+};
+
 const shouldShowTouchControls = () => {
   const state = getGameState();
   return (
     isMobileDevice() &&
     state.scene.type === "mode" &&
-    state.scene.mode === "race" &&
+    isSupportedMobileMode(state.scene.mode) &&
     state.overlay === null
+  );
+};
+
+const shouldShowFullscreenToggle = () => {
+  const state = getGameState();
+  return (
+    isMobileDevice() &&
+    isFullscreenAvailable() &&
+    state.scene.type === "mode" &&
+    isSupportedMobileMode(state.scene.mode)
   );
 };
 
@@ -123,6 +138,9 @@ const createControlsRoot = () => {
   const topBar = document.createElement("div");
   topBar.className = "mobileControlsTopBar";
 
+  const topBarActions = document.createElement("div");
+  topBarActions.className = "mobileControlsTopBarActions";
+
   const menuButton = document.createElement("button");
   menuButton.type = "button";
   menuButton.className = "mobileMenuButton";
@@ -130,7 +148,15 @@ const createControlsRoot = () => {
   menuButton.addEventListener("click", () => {
     handleEscapeKey();
   });
-  topBar.appendChild(menuButton);
+  topBarActions.appendChild(menuButton);
+
+  const fullscreenButton = document.createElement("button");
+  fullscreenButton.type = "button";
+  fullscreenButton.className = "mobileMenuButton mobileMenuButton--secondary";
+  fullscreenButton.textContent = "Fullscreen";
+  topBarActions.appendChild(fullscreenButton);
+
+  topBar.appendChild(topBarActions);
   root.appendChild(topBar);
 
   const bottomRow = document.createElement("div");
@@ -167,6 +193,7 @@ const createControlsRoot = () => {
   root.appendChild(bottomRow);
   return {
     buttonEntries,
+    fullscreenButton,
     resetControls,
     root,
   };
@@ -185,7 +212,7 @@ const createRotatePrompt = () => {
 
   const copy = document.createElement("p");
   copy.textContent =
-    "Race mode is built for a wide cockpit view. Turn your device sideways to continue flying.";
+    "Asteroids is built for a wide cockpit view. Turn your device sideways to keep flying.";
   card.appendChild(copy);
 
   const hint = document.createElement("button");
@@ -197,6 +224,12 @@ const createRotatePrompt = () => {
   });
   card.appendChild(hint);
 
+  const fullscreenButton = document.createElement("button");
+  fullscreenButton.type = "button";
+  fullscreenButton.className = "mobileRotateButton";
+  fullscreenButton.textContent = "Fullscreen";
+  card.appendChild(fullscreenButton);
+
   const menuButton = document.createElement("button");
   menuButton.type = "button";
   menuButton.className = "mobileRotateButton mobileRotateButton--secondary";
@@ -207,7 +240,10 @@ const createRotatePrompt = () => {
   card.appendChild(menuButton);
 
   overlay.appendChild(card);
-  return overlay;
+  return {
+    fullscreenButton,
+    overlay,
+  };
 };
 
 export const initializeMobileControls = () => {
@@ -215,13 +251,30 @@ export const initializeMobileControls = () => {
     return;
   }
 
-  const { buttonEntries, root: controlsRoot, resetControls } = createControlsRoot();
+  const {
+    buttonEntries,
+    fullscreenButton,
+    root: controlsRoot,
+    resetControls,
+  } = createControlsRoot();
   const rotatePrompt = createRotatePrompt();
+
+  const handleFullscreenToggle = () => {
+    requestLandscapeOrientationLock();
+    void toggleFullscreenMode().finally(() => {
+      syncUi();
+    });
+  };
+
+  fullscreenButton.addEventListener("click", handleFullscreenToggle);
+  rotatePrompt.fullscreenButton.addEventListener("click", handleFullscreenToggle);
 
   const syncUi = () => {
     const state = getGameState();
     const showControls = shouldShowTouchControls();
     const showRotatePrompt = showControls && isMobilePortrait();
+    const showFullscreenToggle = shouldShowFullscreenToggle();
+    const fullscreenLabel = isFullscreenActive() ? "Exit Fullscreen" : "Fullscreen";
     const activeMode = state.scene.type === "mode" ? state.scene.mode : null;
 
     for (let i = 0; i < buttonEntries.length; i++) {
@@ -235,8 +288,12 @@ export const initializeMobileControls = () => {
       }
     }
 
+    fullscreenButton.hidden = !showFullscreenToggle;
+    fullscreenButton.textContent = fullscreenLabel;
+    rotatePrompt.fullscreenButton.hidden = !showFullscreenToggle;
+    rotatePrompt.fullscreenButton.textContent = fullscreenLabel;
     controlsRoot.classList.toggle("is-visible", showControls && !showRotatePrompt);
-    rotatePrompt.classList.toggle("is-visible", showRotatePrompt);
+    rotatePrompt.overlay.classList.toggle("is-visible", showRotatePrompt);
 
     if (!showControls || showRotatePrompt) {
       clearShipInput();
@@ -246,13 +303,15 @@ export const initializeMobileControls = () => {
     }
   };
 
-  document.body.append(controlsRoot, rotatePrompt);
+  document.body.append(controlsRoot, rotatePrompt.overlay);
   gameStateMachine.subscribe(() => {
     syncUi();
   });
   window.addEventListener("resize", syncUi);
   window.addEventListener("orientationchange", syncUi);
   window.addEventListener("blur", syncUi);
+  document.addEventListener("fullscreenchange", syncUi);
+  document.addEventListener("webkitfullscreenchange", syncUi as EventListener);
   syncUi();
   initialized = true;
 };

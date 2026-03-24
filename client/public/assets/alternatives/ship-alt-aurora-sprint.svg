@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 1024" fill="none">
+  <defs>
+    <linearGradient id="auroraHull" x1="256" y1="72" x2="256" y2="884" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#eefeff"/>
+      <stop offset="0.38" stop-color="#8cebd8"/>
+      <stop offset="1" stop-color="#1f4b67"/>
+    </linearGradient>
+    <linearGradient id="auroraCore" x1="256" y1="180" x2="256" y2="760" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#f7ffcb"/>
+      <stop offset="0.48" stop-color="#5ff0d0"/>
+      <stop offset="1" stop-color="#2a6de0"/>
+    </linearGradient>
+    <radialGradient id="auroraGlass" cx="0" cy="0" r="1" gradientTransform="translate(256 372) rotate(90) scale(116 88)" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="0.5" stop-color="#95fff5"/>
+      <stop offset="1" stop-color="#19589b"/>
+    </radialGradient>
+  </defs>
+  <g stroke="#071723" stroke-linejoin="round">
+    <path d="M160 654 60 852l120-28 74-122-94-48Z" fill="#143445" stroke-width="16"/>
+    <path d="m352 654 100 198-120-28-74-122 94-48Z" fill="#143445" stroke-width="16"/>
+    <path d="M256 72c-72 54-134 184-134 342v174l94 136h80l94-136V414C390 256 328 126 256 72Z" fill="url(#auroraHull)" stroke-width="18"/>
+    <path d="m170 436 86-230 86 230-86 84-86-84Z" fill="url(#auroraCore)" stroke-width="14"/>
+    <path d="M206 704h100v148H206z" fill="#17415a" stroke-width="14"/>
+    <path d="M180 852h152l26 54H154l26-54Z" fill="#49b8ba" stroke-width="14"/>
+    <path d="m122 484-46 90 114 18 24-82-92-26ZM390 484l46 90-114 18-24-82 92-26Z" fill="#5ad7c4" stroke-width="12"/>
+    <ellipse cx="256" cy="372" rx="84" ry="108" fill="url(#auroraGlass)" stroke-width="16"/>
+    <path d="M226 292c16-20 34-38 60-50" stroke="#fff" stroke-linecap="round" stroke-width="14"/>
+    <path d="M256 430v222" stroke="#143445" stroke-linecap="round" stroke-width="18"/>
+    <circle cx="220" cy="914" r="22" fill="#b7ffe4" stroke-width="12"/>
+    <circle cx="292" cy="914" r="22" fill="#7ed7ff" stroke-width="12"/>
+  </g>
+</svg>

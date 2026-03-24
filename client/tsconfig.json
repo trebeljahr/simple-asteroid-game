@@ -13,5 +13,5 @@
     "strict": true,
     "skipLibCheck": true
   },
-  "include": ["src", "vite.config.mts"]
+  "include": ["src", "vite.config.mts", "../shared/src/**/*.ts", "../server/src/trpc/**/*.ts"]
 }

@@ -396,11 +396,18 @@ body.app-loading .backgroundImage {
   top: calc(env(safe-area-inset-top, 0px) + 0.9rem);
   left: 50%;
   transform: translateX(-50%);
+  display: flex;
+  justify-content: center;
   pointer-events: none;
 }
 
-.mobileMenuButton {
+.mobileControlsTopBarActions {
+  display: flex;
+  gap: 0.65rem;
   pointer-events: auto;
+}
+
+.mobileMenuButton {
   min-width: 5.3rem;
   min-height: 2.6rem;
   border: 1px solid rgba(145, 215, 255, 0.42);
@@ -414,6 +421,11 @@ body.app-loading .backgroundImage {
   text-transform: uppercase;
   backdrop-filter: blur(10px);
   box-shadow: 0 0.75rem 1.6rem rgba(2, 7, 15, 0.34);
+}
+
+.mobileMenuButton--secondary {
+  background: rgba(11, 24, 38, 0.7);
+  border-color: rgba(141, 203, 235, 0.3);
 }
 
 .mobileControlsBottomRow {
@@ -606,6 +618,10 @@ body.app-loading .backgroundImage {
     padding: 0 0.75rem;
   }
 
+  .mobileControlsTopBarActions {
+    gap: 0.45rem;
+  }
+
   .mobileControlCluster {
     gap: 0.55rem;
   }
@@ -615,6 +631,12 @@ body.app-loading .backgroundImage {
     min-height: 4.4rem;
     border-radius: 1.15rem;
     font-size: 0.82rem;
+  }
+
+  .mobileMenuButton {
+    min-width: 4.7rem;
+    min-height: 2.45rem;
+    font-size: 0.8rem;
   }
 
   .menuButton {

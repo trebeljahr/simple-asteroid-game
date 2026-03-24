@@ -2,15 +2,19 @@ import p5 from "p5";
 import { asteroids, maxAsteroidSize } from "./asteroids";
 import { border } from "./border";
 import { bullets } from "./bullets";
+import { drawCollisionCircle, drawShipCollisionBox, isCollisionDebugAvailable } from "./collisionDebug";
 import { explosions } from "./explosions";
 import { GameMode, getGameState, shouldAdvanceRaceSimulation } from "./gameState";
 import { goals } from "./goals";
 import { hearts } from "./hearts";
 import { MAX_PLAYER_HEALTH } from "./healthHud";
 import { isMobileDevice } from "./input";
+import { drawMultiplayerMode } from "./multiplayerSession";
 import { player, playerHitsCollectible } from "./player";
 import { formatRaceDuration } from "./raceSession";
+import { shipDebris } from "./shipDebris";
 import { circlesOverlap, createCameraBounds, width, height } from "./utils";
+import { circleOverlapsShipCollider } from "../../shared/src";
 
 const modeTitles: Record<GameMode, string> = {
   race: "Racing Mode",
@@ -46,11 +50,19 @@ export const draw = (p: p5) => {
     p.noStroke();
     player.run();
     gameLogic(cameraBounds);
+    if (state.settings.collisionDebugEnabled && isCollisionDebugAvailable()) {
+      drawRaceCollisionDebug(p);
+    }
     p.pop();
     player.showHealth();
     hearts.drawHudEffects();
     drawGoalProgress(p);
     drawHudHint(p, "Esc: menu", "Race mode");
+    return;
+  }
+
+  if (state.scene.type === "mode" && state.scene.mode === "multiplayer") {
+    drawMultiplayerMode(p);
     return;
   }
 
@@ -77,6 +89,7 @@ function gameLogic(cameraBounds: ReturnType<typeof createCameraBounds>) {
   bullets.update(cameraBounds);
   hearts.run(cameraBounds);
   explosions.run(cameraBounds);
+  shipDebris.run(cameraBounds);
   asteroids.run(cameraBounds);
   goals.run(cameraBounds);
 
@@ -88,10 +101,11 @@ function gameLogic(cameraBounds: ReturnType<typeof createCameraBounds>) {
 }
 
 function handlePlayerAsteroidCollisions(handledAsteroidIds: Set<string>) {
+  const playerCollider = player.getCollider();
   const nearbyAsteroids = asteroids.queryNearby(
     player.enginePlayer.position.x,
     player.enginePlayer.position.y,
-    player.size / 2
+    player.getCollisionSearchDiameter() / 2
   );
 
   for (let i = 0; i < nearbyAsteroids.length; i++) {
@@ -105,11 +119,21 @@ function handlePlayerAsteroidCollisions(handledAsteroidIds: Set<string>) {
         asteroid.pos.x,
         asteroid.pos.y,
         asteroid.size,
-        player.enginePlayer.position.x,
-        player.enginePlayer.position.y,
-        player.size
+        playerCollider.centerX,
+        playerCollider.centerY,
+        player.getCollisionSearchDiameter()
       )
     ) {
+      if (
+        !circleOverlapsShipCollider(
+          asteroid.pos.x,
+          asteroid.pos.y,
+          asteroid.size,
+          playerCollider
+        )
+      ) {
+        continue;
+      }
       if (!player.damage()) {
         break;
       }
@@ -118,6 +142,30 @@ function handlePlayerAsteroidCollisions(handledAsteroidIds: Set<string>) {
       handledAsteroidIds.add(asteroid.id);
       break;
     }
+  }
+}
+
+function drawRaceCollisionDebug(p: p5) {
+  drawShipCollisionBox(p, player.getCollider());
+
+  for (let i = 0; i < asteroids.asteroids.length; i++) {
+    const asteroid = asteroids.asteroids[i];
+    drawCollisionCircle(p, asteroid.pos.x, asteroid.pos.y, asteroid.size);
+  }
+
+  for (let i = 0; i < bullets.bullets.length; i++) {
+    const bullet = bullets.bullets[i];
+    drawCollisionCircle(p, bullet.pos.x, bullet.pos.y, bullet.size);
+  }
+
+  for (let i = 0; i < hearts.hearts.length; i++) {
+    const heart = hearts.hearts[i];
+    drawCollisionCircle(p, heart.pos.x, heart.pos.y, heart.size);
+  }
+
+  for (let i = 0; i < goals.route.length; i++) {
+    const goal = goals.route[i];
+    drawCollisionCircle(p, goal.pos.x, goal.pos.y, goal.size);
   }
 }
 

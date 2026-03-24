@@ -8,7 +8,7 @@ export const resetExplosions = (p: p5) => {
   explosions = new ExplosionSystem(p);
 };
 
-class ExplosionSystem {
+export class ExplosionSystem {
   particles: ExplosionParticle[];
   p: p5;
   constructor(p: p5) {

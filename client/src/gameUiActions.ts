@@ -1,4 +1,4 @@
-import { gameStateMachine, getGameState } from "./gameState";
+import { GameMode, gameStateMachine, getGameState } from "./gameState";
 import { formatRaceDuration } from "./raceSession";
 
 export const openPauseMenu = () => {
@@ -25,21 +25,42 @@ export const toggleSoundEnabled = () => {
   return gameStateMachine.send({ type: "TOGGLE_SOUND" });
 };
 
-export const showRaceVictory = () => {
-  const totalTime = formatRaceDuration(undefined, 2);
+export const toggleCollisionDebug = () => {
+  return gameStateMachine.send({ type: "TOGGLE_COLLISION_DEBUG" });
+};
+
+export const showModeResult = (
+  mode: GameMode,
+  title: string,
+  subtitle: string
+) => {
   return gameStateMachine.send({
     type: "SHOW_RESULT",
-    title: `Race complete in ${totalTime}`,
-    subtitle: "The course is clear. Launch again or head back to the menu.",
+    mode,
+    title,
+    subtitle,
   });
 };
 
+export const showRaceVictory = () => {
+  const totalTime = formatRaceDuration(undefined, 2);
+  return showModeResult(
+    "race",
+    `Race complete in ${totalTime}`,
+    "The course is clear. Launch again or head back to the menu."
+  );
+};
+
 export const showRaceDefeat = () => {
-  return gameStateMachine.send({
-    type: "SHOW_RESULT",
-    title: "Ship destroyed",
-    subtitle: "Take another run at the course or head back to the hangar.",
-  });
+  return showModeResult(
+    "race",
+    "Ship destroyed",
+    "Take another run at the course or head back to the hangar."
+  );
+};
+
+export const showMultiplayerResult = (title: string, subtitle: string) => {
+  return showModeResult("multiplayer", title, subtitle);
 };
 
 export const handleEscapeKey = () => {

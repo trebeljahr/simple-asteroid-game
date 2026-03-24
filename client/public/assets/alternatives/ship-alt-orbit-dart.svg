@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 1024" fill="none">
+  <defs>
+    <linearGradient id="orbitHull" x1="256" y1="60" x2="256" y2="846" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#f8fbff"/>
+      <stop offset="0.48" stop-color="#c9d8f2"/>
+      <stop offset="1" stop-color="#6d84b6"/>
+    </linearGradient>
+    <linearGradient id="orbitAccent" x1="256" y1="152" x2="256" y2="724" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#7af7ff"/>
+      <stop offset="1" stop-color="#3a6df0"/>
+    </linearGradient>
+    <linearGradient id="orbitFin" x1="132" y1="324" x2="380" y2="780" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#223455"/>
+      <stop offset="1" stop-color="#0e172a"/>
+    </linearGradient>
+    <radialGradient id="orbitGlass" cx="0" cy="0" r="1" gradientTransform="translate(256 404) rotate(90) scale(124 96)" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ebfeff"/>
+      <stop offset="0.5" stop-color="#8cf6ff"/>
+      <stop offset="1" stop-color="#2450ac"/>
+    </radialGradient>
+  </defs>
+  <g stroke="#0b1120" stroke-linejoin="round">
+    <path d="M162 672 70 874l116-44 54-132-78-26Z" fill="url(#orbitFin)" stroke-width="16"/>
+    <path d="m350 672 92 202-116-44-54-132 78-26Z" fill="url(#orbitFin)" stroke-width="16"/>
+    <path d="M256 56c-52 54-108 164-116 332v268c0 112 56 210 116 258 60-48 116-146 116-258V388C364 220 308 110 256 56Z" fill="url(#orbitHull)" stroke-width="18"/>
+    <path d="M256 108c-24 30-52 96-58 190l58-34 58 34c-6-94-34-160-58-190Z" fill="#edf7ff" stroke-width="14"/>
+    <path d="M226 214 154 352l102 74 102-74-72-138-30-24-30 24Z" fill="url(#orbitAccent)" stroke-width="14"/>
+    <path d="M186 466h140v86c0 54-32 98-70 98s-70-44-70-98v-86Z" fill="#dde7fb" stroke-width="14"/>
+    <path d="M214 674h84v162h-84z" fill="#243349" stroke-width="14"/>
+    <path d="M214 742h84l46 108H168l46-108Z" fill="#516b9b" stroke-width="14"/>
+    <path d="M224 168 176 290l80-40 80 40-48-122-32-30-32 30Z" fill="#dbe7ff" opacity=".9" stroke-width="10"/>
+    <ellipse cx="256" cy="404" rx="92" ry="118" fill="url(#orbitGlass)" stroke-width="16"/>
+    <path d="M228 310c18-28 34-44 66-60" stroke="#fff" stroke-linecap="round" stroke-width="16"/>
+    <path d="M256 452v250" stroke="#273650" stroke-linecap="round" stroke-width="18"/>
+    <path d="M162 560h-54l18 72h42M350 560h54l-18 72h-42" fill="#6b80a8" stroke-width="14"/>
+    <circle cx="226" cy="890" r="26" fill="#ffb55f" stroke-width="12"/>
+    <circle cx="286" cy="890" r="26" fill="#ff8b52" stroke-width="12"/>
+  </g>
+</svg>

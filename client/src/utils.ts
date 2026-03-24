@@ -1,5 +1,6 @@
 import p5 from "p5";
 import { player, Player } from "./player";
+import { circleOverlapsShipCollider } from "../../shared/src";
 
 export const BULLET_SPEED = 10;
 export const REFERENCE_VIEWPORT_WIDTH = 1440;
@@ -109,17 +110,15 @@ export const circlesOverlap = (
 };
 
 export const playerHitsCircularTarget = (target: any, player: Player) => {
-  const distance = distSquare(
-    target.pos.x,
-    target.pos.y,
-    player.enginePlayer.position.x,
-    player.enginePlayer.position.y
-  );
-  const radiusSum = target.size / 2 + player.size / 2;
   if (player.life <= 0) {
     return false;
   }
-  return distance <= radiusSum * radiusSum;
+  return circleOverlapsShipCollider(
+    target.pos.x,
+    target.pos.y,
+    target.size,
+    player.getCollider()
+  );
 };
 
 export const randomPositionNotHittingPlayer = (p: p5, size: number) => {

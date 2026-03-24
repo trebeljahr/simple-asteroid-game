@@ -9,6 +9,7 @@ import { resetBorder } from "./border";
 import { refreshGoalsAfterResize, resetGoals } from "./goals";
 import { resetRaceStartTime } from "./raceSession";
 import { clearShipInput } from "./input";
+import { resetShipDebris } from "./shipDebris";
 
 export const resetRaceMode = (p: p5) => {
   resetRaceStartTime();
@@ -16,6 +17,7 @@ export const resetRaceMode = (p: p5) => {
   resetPlayer(p);
   player.ammunition = 0;
   resetExplosions(p);
+  resetShipDebris(p);
   resetAmmunition(p, {
     initialPackages: 0,
     spawnEnabled: false,

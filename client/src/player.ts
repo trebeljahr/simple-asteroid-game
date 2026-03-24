@@ -20,6 +20,15 @@ import { World, Body, Bodies, Vector } from "matter-js";
 import { engine } from "./engine";
 import { goals } from "./goals";
 import { isShipActionActive } from "./input";
+import { shipDebris } from "./shipDebris";
+import {
+  DEFAULT_RACE_SHIP_VARIANT,
+  getShipCollider,
+  getShipColliderSpec,
+  getShipCollisionBoundingDiameter,
+  ShipCollider,
+  ShipVariant,
+} from "../../shared/src";
 
 export let player = {} as Player;
 export const maxSpeed = 10;
@@ -89,6 +98,7 @@ const drawHeartOutline = (p: p5, x: number, y: number, size: number) => {
 export class Player {
   p: p5;
   size: number;
+  shipVariant: ShipVariant;
   life: number;
   ammunition: number;
   collisionRecoveryFrames: number;
@@ -100,6 +110,7 @@ export class Player {
     this.deathCountDown = 0;
     this.collisionRecoveryFrames = 0;
     this.size = 60;
+    this.shipVariant = DEFAULT_RACE_SHIP_VARIANT;
     this.life = MAX_PLAYER_HEALTH;
     this.ammunition = 1000;
     this.thruster = new ThrusterExhaustSystem(
@@ -107,11 +118,25 @@ export class Player {
       this.p.createVector(width / 2, height),
       0
     );
-    this.enginePlayer = Bodies.rectangle(x, y, this.size, this.size * 2, {
+    const colliderSpec = getShipColliderSpec(this.shipVariant);
+    this.enginePlayer = Bodies.rectangle(x, y, colliderSpec.length, colliderSpec.width, {
       frictionAir: 0,
       angle: 0,
     });
     World.add(engine.world, [this.enginePlayer]);
+  }
+
+  getCollider(): ShipCollider {
+    return getShipCollider(
+      this.enginePlayer.position.x,
+      this.enginePlayer.position.y,
+      this.enginePlayer.angle,
+      this.shipVariant
+    );
+  }
+
+  getCollisionSearchDiameter() {
+    return getShipCollisionBoundingDiameter(this.shipVariant);
   }
 
   draw() {
@@ -147,7 +172,7 @@ export class Player {
         Math.floor(this.collisionRecoveryFrames / 3) % 2 === 0 ? 170 : 105;
       this.p.tint(255, blinkAlpha);
     }
-    this.p.image(assets.rocket, 0, 0, this.size, this.size * 2);
+    this.p.image(assets.raceShip, 0, 0, this.size, this.size * 2);
     this.p.noTint();
     this.p.noFill();
 
@@ -215,6 +240,12 @@ export class Player {
           this.enginePlayer.position.x,
           this.enginePlayer.position.y
         )
+      );
+      shipDebris.createShipBreakup(
+        this.enginePlayer.position.x,
+        this.enginePlayer.position.y,
+        this.enginePlayer.angle,
+        this.shipVariant
       );
       this.deathCountDown = 255;
     }

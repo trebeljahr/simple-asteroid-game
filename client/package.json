@@ -11,8 +11,10 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@trpc/client": "^11.15.0",
     "matter-js": "^0.14.2",
     "p5": "^1.1.9",
+    "socket.io-client": "^4.8.3",
     "uuid": "^7.0.3"
   },
   "devDependencies": {

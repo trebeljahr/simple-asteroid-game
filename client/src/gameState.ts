@@ -1,3 +1,5 @@
+import { isCollisionDebugAvailable } from "./collisionDebug";
+
 export type GameMode = "race" | "multiplayer" | "horde";
 
 export interface MainMenuScene {
@@ -11,7 +13,7 @@ export interface ModeScene {
 
 export interface ResultScene {
   type: "result";
-  mode: "race";
+  mode: GameMode;
   title: string;
   subtitle: string;
 }
@@ -30,6 +32,7 @@ export interface OptionsOverlay {
 export type OverlayState = PauseOverlay | OptionsOverlay;
 
 export interface SettingsState {
+  collisionDebugEnabled: boolean;
   soundEnabled: boolean;
 }
 
@@ -46,12 +49,14 @@ export type GameStateEvent =
   | { type: "OPEN_OPTIONS" }
   | { type: "CLOSE_OPTIONS" }
   | { type: "RETURN_TO_MAIN_MENU" }
-  | { type: "SHOW_RESULT"; title: string; subtitle: string }
+  | { type: "SHOW_RESULT"; mode: GameMode; title: string; subtitle: string }
+  | { type: "TOGGLE_COLLISION_DEBUG" }
   | { type: "TOGGLE_SOUND" };
 
 type GameStateListener = (state: GameState, previousState: GameState) => void;
 
 const SOUND_SETTING_KEY = "simple-asteroid-game-sound-enabled";
+const COLLISION_DEBUG_SETTING_KEY = "simple-asteroid-game-collision-debug";
 
 const readSoundSetting = () => {
   try {
@@ -73,11 +78,39 @@ const writeSoundSetting = (soundEnabled: boolean) => {
   }
 };
 
+const readCollisionDebugSetting = () => {
+  if (!isCollisionDebugAvailable()) {
+    return false;
+  }
+
+  try {
+    return window.localStorage.getItem(COLLISION_DEBUG_SETTING_KEY) === "true";
+  } catch (_error) {
+    return false;
+  }
+};
+
+const writeCollisionDebugSetting = (collisionDebugEnabled: boolean) => {
+  if (!isCollisionDebugAvailable()) {
+    return;
+  }
+
+  try {
+    window.localStorage.setItem(
+      COLLISION_DEBUG_SETTING_KEY,
+      String(collisionDebugEnabled)
+    );
+  } catch (_error) {
+    // Ignore storage issues and keep the session state in memory.
+  }
+};
+
 const createInitialState = (): GameState => {
   return {
     scene: { type: "main-menu" },
     overlay: null,
     settings: {
+      collisionDebugEnabled: readCollisionDebugSetting(),
       soundEnabled: readSoundSetting(),
     },
   };
@@ -176,18 +209,31 @@ const transitionState = (
       return {
         scene: {
           type: "result",
-          mode: "race",
+          mode: event.mode,
           title: event.title,
           subtitle: event.subtitle,
         },
         overlay: null,
         settings: currentState.settings,
       };
+    case "TOGGLE_COLLISION_DEBUG":
+      if (!isCollisionDebugAvailable()) {
+        return currentState;
+      }
+      return {
+        scene: currentState.scene,
+        overlay: currentState.overlay,
+        settings: {
+          ...currentState.settings,
+          collisionDebugEnabled: !currentState.settings.collisionDebugEnabled,
+        },
+      };
     case "TOGGLE_SOUND":
       return {
         scene: currentState.scene,
         overlay: currentState.overlay,
         settings: {
+          ...currentState.settings,
           soundEnabled: !currentState.settings.soundEnabled,
         },
       };
@@ -225,6 +271,9 @@ class GameStateMachine {
       return previousState;
     }
     this.state = nextState;
+    if (event.type === "TOGGLE_COLLISION_DEBUG") {
+      writeCollisionDebugSetting(nextState.settings.collisionDebugEnabled);
+    }
     if (event.type === "TOGGLE_SOUND") {
       writeSoundSetting(nextState.settings.soundEnabled);
     }

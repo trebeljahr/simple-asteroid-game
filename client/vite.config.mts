@@ -6,6 +6,7 @@ export default defineConfig({
     port: 5173,
     proxy: {
       "/socket.io": "http://127.0.0.1:9777",
+      "/trpc": "http://127.0.0.1:9777",
     },
   },
   preview: {

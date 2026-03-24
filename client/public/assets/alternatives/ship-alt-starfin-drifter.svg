@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 1024" fill="none">
+  <defs>
+    <linearGradient id="starfinHull" x1="256" y1="76" x2="256" y2="890" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#f8f8ff"/>
+      <stop offset="0.4" stop-color="#c9c5ff"/>
+      <stop offset="1" stop-color="#2c355b"/>
+    </linearGradient>
+    <linearGradient id="starfinCore" x1="256" y1="194" x2="256" y2="770" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#f3d7ff"/>
+      <stop offset="0.52" stop-color="#79b7ff"/>
+      <stop offset="1" stop-color="#1dc8d5"/>
+    </linearGradient>
+    <radialGradient id="starfinGlass" cx="0" cy="0" r="1" gradientTransform="translate(256 366) rotate(90) scale(116 92)" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="0.45" stop-color="#c7f4ff"/>
+      <stop offset="1" stop-color="#3457ae"/>
+    </radialGradient>
+  </defs>
+  <g stroke="#10162a" stroke-linejoin="round">
+    <path d="M146 642 46 820l124-18 86-124-110-36Z" fill="#273254" stroke-width="16"/>
+    <path d="m366 642 100 178-124-18-86-124 110-36Z" fill="#273254" stroke-width="16"/>
+    <path d="M256 76c-62 48-130 168-130 316v228c0 122 70 226 130 276 60-50 130-154 130-276V392C386 244 318 124 256 76Z" fill="url(#starfinHull)" stroke-width="18"/>
+    <path d="M164 364 256 198l92 166-92 138-92-138Z" fill="url(#starfinCore)" stroke-width="14"/>
+    <path d="M208 656h96v154h-96z" fill="#33477a" stroke-width="14"/>
+    <path d="M178 810h156l24 66H154l24-66Z" fill="#6dc7de" stroke-width="14"/>
+    <path d="M126 458 76 600h76l42-116-68-26ZM386 458l50 142h-76l-42-116 68-26Z" fill="#8f9cff" stroke-width="12"/>
+    <ellipse cx="256" cy="366" rx="86" ry="108" fill="url(#starfinGlass)" stroke-width="16"/>
+    <path d="M226 286c16-20 34-36 60-52" stroke="#fff" stroke-linecap="round" stroke-width="14"/>
+    <path d="M256 432v214" stroke="#273254" stroke-linecap="round" stroke-width="18"/>
+    <circle cx="220" cy="892" r="22" fill="#d8c5ff" stroke-width="12"/>
+    <circle cx="292" cy="892" r="22" fill="#6be8ff" stroke-width="12"/>
+  </g>
+</svg>

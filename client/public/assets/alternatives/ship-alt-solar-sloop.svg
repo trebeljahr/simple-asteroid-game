@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 1024" fill="none">
+  <defs>
+    <linearGradient id="solarHull" x1="256" y1="80" x2="256" y2="850" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#fff7df"/>
+      <stop offset="0.44" stop-color="#ffc98f"/>
+      <stop offset="1" stop-color="#c4584f"/>
+    </linearGradient>
+    <linearGradient id="solarWing" x1="112" y1="252" x2="404" y2="774" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ffecb8"/>
+      <stop offset="0.5" stop-color="#ff9d5f"/>
+      <stop offset="1" stop-color="#8e2c49"/>
+    </linearGradient>
+    <radialGradient id="solarGlass" cx="0" cy="0" r="1" gradientTransform="translate(256 382) rotate(90) scale(130 100)" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#fff8ef"/>
+      <stop offset="0.46" stop-color="#9bf6ff"/>
+      <stop offset="1" stop-color="#20547f"/>
+    </radialGradient>
+  </defs>
+  <g stroke="#30111f" stroke-linejoin="round">
+    <path d="M154 624 54 802l120-24 86-138-106-16Z" fill="url(#solarWing)" stroke-width="16"/>
+    <path d="M358 624 458 802l-120-24-86-138 106-16Z" fill="url(#solarWing)" stroke-width="16"/>
+    <path d="M256 82c-66 44-130 162-130 310v238c0 128 66 228 130 282 64-54 130-154 130-282V392C386 244 322 126 256 82Z" fill="url(#solarHull)" stroke-width="18"/>
+    <path d="M256 128c-36 32-76 110-82 198l82-22 82 22c-6-88-46-166-82-198Z" fill="#fff3d4" stroke-width="12"/>
+    <path d="M184 348c12 162 18 290 72 290s60-128 72-290l-72-28-72 28Z" fill="#f6dbc0" stroke-width="14"/>
+    <ellipse cx="256" cy="382" rx="96" ry="126" fill="url(#solarGlass)" stroke-width="16"/>
+    <path d="M216 292c22-30 40-46 78-60" stroke="#fff9e8" stroke-linecap="round" stroke-width="16"/>
+    <path d="M214 654h84v150h-84z" fill="#7f2b45" stroke-width="14"/>
+    <path d="M190 804h132l34 72H156l34-72Z" fill="#f08d49" stroke-width="14"/>
+    <path d="M128 492 92 590h64l32-82-60-16Z" fill="#ffbe66" stroke-width="12"/>
+    <path d="m384 492 36 98h-64l-32-82 60-16Z" fill="#ffbe66" stroke-width="12"/>
+    <path d="M256 462v224" stroke="#7f2b45" stroke-linecap="round" stroke-width="18"/>
+    <circle cx="216" cy="892" r="28" fill="#ffe27a" stroke-width="12"/>
+    <circle cx="296" cy="892" r="28" fill="#ff7f51" stroke-width="12"/>
+    <path d="m174 202 82-90 82 90-82 38-82-38Z" fill="#ff826f" stroke-width="14"/>
+  </g>
+</svg>

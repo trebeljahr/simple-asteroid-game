@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 1024" fill="none">
+  <defs>
+    <linearGradient id="cometHull" x1="256" y1="68" x2="256" y2="886" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#f1f6ff"/>
+      <stop offset="0.4" stop-color="#a7b6d4"/>
+      <stop offset="1" stop-color="#34425e"/>
+    </linearGradient>
+    <linearGradient id="cometAccent" x1="256" y1="172" x2="256" y2="748" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#b8ffde"/>
+      <stop offset="0.52" stop-color="#4ec7b0"/>
+      <stop offset="1" stop-color="#2360a9"/>
+    </linearGradient>
+    <radialGradient id="cometGlass" cx="0" cy="0" r="1" gradientTransform="translate(256 364) rotate(90) scale(112 84)" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#edffff"/>
+      <stop offset="0.5" stop-color="#84faff"/>
+      <stop offset="1" stop-color="#2756b2"/>
+    </radialGradient>
+  </defs>
+  <g stroke="#08111d" stroke-linejoin="round">
+    <path d="M176 684 92 918l88-36 56-132-60-66Z" fill="#142338" stroke-width="16"/>
+    <path d="m336 684 84 234-88-36-56-132 60-66Z" fill="#142338" stroke-width="16"/>
+    <path d="M256 66c-76 48-136 174-136 318v188l82 112h108l82-112V384C392 240 332 114 256 66Z" fill="url(#cometHull)" stroke-width="18"/>
+    <path d="M256 106c-42 26-86 92-102 198l102-26 102 26c-16-106-60-172-102-198Z" fill="#d9e8ff" stroke-width="12"/>
+    <path d="M152 462h208l-40 156H192l-40-156Z" fill="url(#cometAccent)" stroke-width="14"/>
+    <path d="M208 684h96v144h-96z" fill="#223250" stroke-width="14"/>
+    <path d="M180 828h152l30 60H150l30-60Z" fill="#556e98" stroke-width="14"/>
+    <path d="m120 466-60 86 118 24 20-82-78-28Z" fill="#45b7a8" stroke-width="14"/>
+    <path d="m392 466 60 86-118 24-20-82 78-28Z" fill="#45b7a8" stroke-width="14"/>
+    <ellipse cx="256" cy="364" rx="80" ry="104" fill="url(#cometGlass)" stroke-width="16"/>
+    <path d="M224 282c12-18 28-36 56-52" stroke="#fff" stroke-linecap="round" stroke-width="14"/>
+    <path d="M256 432v214" stroke="#15233b" stroke-linecap="round" stroke-width="18"/>
+    <path d="M198 146h116l-58 78-58-78Z" fill="#7de3cc" stroke-width="12"/>
+    <circle cx="222" cy="902" r="22" fill="#c7ffb8" stroke-width="12"/>
+    <circle cx="290" cy="902" r="22" fill="#74d4ff" stroke-width="12"/>
+  </g>
+</svg>

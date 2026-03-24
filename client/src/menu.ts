@@ -5,6 +5,7 @@ import {
   openOptionsMenu,
   resumeGameplay,
   returnToMainMenu,
+  toggleCollisionDebug,
   toggleSoundEnabled,
 } from "./gameUiActions";
 import {
@@ -12,6 +13,7 @@ import {
   configureGameModeActions,
   restartCurrentMode,
 } from "./gameModeActions";
+import { isCollisionDebugAvailable } from "./collisionDebug";
 
 interface MenuRockConfig {
   delay: string;
@@ -228,6 +230,16 @@ const renderOptionsPanel = (state: GameState) => {
       toggleSoundEnabled();
     })
   );
+  if (isCollisionDebugAvailable()) {
+    const collisionDebugLabel = state.settings.collisionDebugEnabled
+      ? "Collision Debug: On"
+      : "Collision Debug: Off";
+    buttonRow.appendChild(
+      createActionButton(collisionDebugLabel, () => {
+        toggleCollisionDebug();
+      })
+    );
+  }
   buttonRow.appendChild(
     createActionButton(
       "Back",
@@ -242,12 +254,25 @@ const renderOptionsPanel = (state: GameState) => {
 };
 
 const renderMainMenuPanel = () => {
-  const panel = createPanel("Asteroids", undefined, "menuTitle--main-menu");
+  const panel = createPanel(
+    "Asteroids",
+    "Race the force-field route or queue for a live two-ship duel.",
+    "menuTitle--main-menu"
+  );
   const buttonRow = createButtonRow();
   buttonRow.appendChild(
     createActionButton("Race Mode", () => {
       activateGameMode("race");
     })
+  );
+  buttonRow.appendChild(
+    createActionButton(
+      "Multiplayer Battle",
+      () => {
+        activateGameMode("multiplayer");
+      },
+      "secondary"
+    )
   );
   buttonRow.appendChild(
     createActionButton(
@@ -306,8 +331,8 @@ const renderPausePanel = (state: GameState) => {
   return panel;
 };
 
-const renderResultPanel = (title: string) => {
-  const panel = createPanel(title);
+const renderResultPanel = (title: string, subtitle: string) => {
+  const panel = createPanel(title, subtitle);
   const buttonRow = createButtonRow();
   buttonRow.appendChild(
     createActionButton("Try Again", () => {
@@ -384,7 +409,7 @@ const renderMenu = (state: GameState) => {
   }
 
   if (state.scene.type === "result") {
-    panelMount.appendChild(renderResultPanel(state.scene.title));
+    panelMount.appendChild(renderResultPanel(state.scene.title, state.scene.subtitle));
   }
 };
 
