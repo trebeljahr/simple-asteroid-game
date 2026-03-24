@@ -43,13 +43,13 @@ const SHIP_COLLIDER_SPECS: Record<ShipVariant, ShipColliderSpec> = {
 const SHIP_COLLISION_BOUNDING_DIAMETERS: Record<ShipVariant, number> = {
   "comet-lance": getCollisionShapeBoundingDiameter(
     SHIP_COLLISION_SHAPES["comet-lance"],
-    SHIP_COLLIDER_SPECS["comet-lance"].renderWidth,
-    SHIP_COLLIDER_SPECS["comet-lance"].renderHeight
+    SHIP_COLLIDER_SPECS["comet-lance"].renderHeight,
+    SHIP_COLLIDER_SPECS["comet-lance"].renderWidth
   ),
   "orbit-dart": getCollisionShapeBoundingDiameter(
     SHIP_COLLISION_SHAPES["orbit-dart"],
-    SHIP_COLLIDER_SPECS["orbit-dart"].renderWidth,
-    SHIP_COLLIDER_SPECS["orbit-dart"].renderHeight
+    SHIP_COLLIDER_SPECS["orbit-dart"].renderHeight,
+    SHIP_COLLIDER_SPECS["orbit-dart"].renderWidth
   ),
 };
 
@@ -78,8 +78,8 @@ export const getShipCollider = (
       x,
       y,
       angle,
-      spec.renderWidth,
-      spec.renderHeight
+      spec.renderHeight,
+      spec.renderWidth
     ),
     shipVariant,
   };
