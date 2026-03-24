@@ -1,5 +1,10 @@
 import p5, { Image, Vector } from "p5";
 import { v4 } from "uuid";
+import {
+  ASTEROID_COLLISION_SHAPES,
+  TransformedCollisionShape,
+  transformCollisionShape,
+} from "../../shared/src";
 
 import { goals } from "./goals";
 import { Mover } from "./mover";
@@ -638,12 +643,15 @@ class Asteroids {
 
 export class Asteroid extends Mover {
   baseRotation: number;
+  collisionShapeCache: TransformedCollisionShape | null;
+  collisionShapeFrame: number;
   hitPoints: number;
   id: string;
   img: Image;
   p: p5;
   spawnPointIndex: number | null;
   spinSpeed: number;
+  variant: number;
 
   constructor(
     p: p5,
@@ -656,18 +664,45 @@ export class Asteroid extends Mover {
     super(p, pos, vel, r);
     this.p = p;
     this.hitPoints = hitPoints;
-    this.img = p.random(assets.asteroids);
+    this.variant = Math.floor(p.random(assets.asteroids.length));
+    this.img = assets.asteroids[this.variant];
     this.baseRotation = p.random(p.TWO_PI);
+    this.collisionShapeCache = null;
+    this.collisionShapeFrame = -1;
     this.spinSpeed = p.random(-0.0045, 0.0045);
     this.spawnPointIndex = spawnPointIndex;
     this.id = v4();
+  }
+
+  getRotation(frameCount: number = this.p.frameCount) {
+    return this.baseRotation + frameCount * this.spinSpeed;
+  }
+
+  getCollisionShape(frameCount: number = this.p.frameCount) {
+    if (
+      this.collisionShapeCache !== null &&
+      this.collisionShapeFrame === frameCount
+    ) {
+      return this.collisionShapeCache;
+    }
+
+    this.collisionShapeCache = transformCollisionShape(
+      ASTEROID_COLLISION_SHAPES[this.variant],
+      this.pos.x,
+      this.pos.y,
+      this.getRotation(frameCount),
+      this.size,
+      this.size
+    );
+    this.collisionShapeFrame = frameCount;
+    return this.collisionShapeCache;
   }
 
   draw() {
     this.p.push();
     this.p.imageMode(this.p.CENTER);
     this.p.translate(this.pos.x, this.pos.y);
-    this.p.rotate(this.baseRotation + this.p.frameCount * this.spinSpeed);
+    this.p.rotate(this.getRotation());
     this.p.image(this.img, 0, 0, this.size, this.size);
     this.p.pop();
   }

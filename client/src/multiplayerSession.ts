@@ -27,6 +27,7 @@ import {
   ClientToServerEvents,
   createInitialMatchWorld,
   getShipCollider,
+  getShipCollisionBoundingDiameter,
   getAmmoPacketsInBounds,
   getAsteroidsInBounds,
   getHeartsInBounds,
@@ -44,7 +45,6 @@ import {
   MatchWorldRuntime,
   MatchmakingStatusPayload,
   MultiplayerRuntimeConfig,
-  PLAYER_COLLISION_DIAMETER,
   PLAYER_MAX_AMMO,
   PlayerSlot,
   projectBulletSnapshot,
@@ -951,7 +951,7 @@ class MultiplayerClientSession {
         match.world,
         selfPlayer.x,
         selfPlayer.y,
-        PLAYER_COLLISION_DIAMETER,
+        getShipCollisionBoundingDiameter(selfPlayer.shipVariant),
         match.arena
       )
         .filter((heart) => {
@@ -970,7 +970,7 @@ class MultiplayerClientSession {
         match.world,
         selfPlayer.x,
         selfPlayer.y,
-        PLAYER_COLLISION_DIAMETER,
+        getShipCollisionBoundingDiameter(selfPlayer.shipVariant),
         match.arena
       )
         .filter((ammoPacket) => {

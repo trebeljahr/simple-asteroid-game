@@ -19,6 +19,7 @@ import {
   createSeededRandom,
   FIRE_COOLDOWN_TICKS,
   getShipCollider,
+  getShipCollisionBoundingDiameter,
   getNearbyAsteroids,
   getNearbyAmmoPackets,
   getNearbyHearts,
@@ -38,7 +39,6 @@ import {
   MAX_HEART_COUNT,
   MultiplayerRuntimeConfig,
   MULTIPLAYER_ARENA,
-  PLAYER_COLLISION_DIAMETER,
   PLAYER_DAMAGE_RECOVERY_TICKS,
   PLAYER_MAX_AMMO,
   PLAYER_MAX_HEALTH,
@@ -235,7 +235,7 @@ export class MultiplayerService {
         match.world.runtime,
         participant.state.x,
         participant.state.y,
-        PLAYER_COLLISION_DIAMETER,
+        getShipCollisionBoundingDiameter(participant.state.shipVariant),
         MULTIPLAYER_ARENA
       );
 
@@ -294,7 +294,7 @@ export class MultiplayerService {
         match.world.runtime,
         participant.state.x,
         participant.state.y,
-        PLAYER_COLLISION_DIAMETER,
+        getShipCollisionBoundingDiameter(participant.state.shipVariant),
         MULTIPLAYER_ARENA
       );
 
@@ -715,7 +715,7 @@ export class MultiplayerService {
         match.world.runtime,
         participant.state.x,
         participant.state.y,
-        PLAYER_COLLISION_DIAMETER,
+        getShipCollisionBoundingDiameter(participant.state.shipVariant),
         MULTIPLAYER_ARENA
       );
 

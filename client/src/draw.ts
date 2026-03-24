@@ -2,7 +2,12 @@ import p5 from "p5";
 import { asteroids, maxAsteroidSize } from "./asteroids";
 import { border } from "./border";
 import { bullets } from "./bullets";
-import { drawCollisionCircle, drawShipCollisionBox, isCollisionDebugAvailable } from "./collisionDebug";
+import {
+  drawCollisionCircle,
+  drawCollisionShapeDebug,
+  drawShipCollisionBox,
+  isCollisionDebugAvailable,
+} from "./collisionDebug";
 import { explosions } from "./explosions";
 import { GameMode, getGameState, shouldAdvanceRaceSimulation } from "./gameState";
 import { goals } from "./goals";
@@ -13,8 +18,11 @@ import { drawMultiplayerMode } from "./multiplayerSession";
 import { player, playerHitsCollectible } from "./player";
 import { formatRaceDuration } from "./raceSession";
 import { shipDebris } from "./shipDebris";
-import { circlesOverlap, createCameraBounds, width, height } from "./utils";
-import { circleOverlapsShipCollider } from "../../shared/src";
+import { createCameraBounds, width, height } from "./utils";
+import {
+  circleOverlapsCollisionShape,
+  collisionShapesOverlap,
+} from "../../shared/src";
 
 const modeTitles: Record<GameMode, string> = {
   race: "Racing Mode",
@@ -115,33 +123,17 @@ function handlePlayerAsteroidCollisions(handledAsteroidIds: Set<string>) {
       continue;
     }
     if (
-      circlesOverlap(
-        asteroid.pos.x,
-        asteroid.pos.y,
-        asteroid.size,
-        playerCollider.centerX,
-        playerCollider.centerY,
-        player.getCollisionSearchDiameter()
-      )
+      !collisionShapesOverlap(playerCollider.shape, asteroid.getCollisionShape())
     ) {
-      if (
-        !circleOverlapsShipCollider(
-          asteroid.pos.x,
-          asteroid.pos.y,
-          asteroid.size,
-          playerCollider
-        )
-      ) {
-        continue;
-      }
-      if (!player.damage()) {
-        break;
-      }
-      explosions.createExplosion(asteroid.pos);
-      asteroids.removeAsteroid(asteroidIndex);
-      handledAsteroidIds.add(asteroid.id);
+      continue;
+    }
+    if (!player.damage()) {
       break;
     }
+    explosions.createExplosion(asteroid.pos);
+    asteroids.removeAsteroid(asteroidIndex);
+    handledAsteroidIds.add(asteroid.id);
+    break;
   }
 }
 
@@ -150,7 +142,7 @@ function drawRaceCollisionDebug(p: p5) {
 
   for (let i = 0; i < asteroids.asteroids.length; i++) {
     const asteroid = asteroids.asteroids[i];
-    drawCollisionCircle(p, asteroid.pos.x, asteroid.pos.y, asteroid.size);
+    drawCollisionShapeDebug(p, asteroid.getCollisionShape());
   }
 
   for (let i = 0; i < bullets.bullets.length; i++) {
@@ -185,23 +177,22 @@ function handleBulletAsteroidCollisions(handledAsteroidIds: Set<string>) {
         continue;
       }
       if (
-        circlesOverlap(
-          asteroid.pos.x,
-          asteroid.pos.y,
-          asteroid.size,
+        !circleOverlapsCollisionShape(
           bullet.pos.x,
           bullet.pos.y,
-          bullet.size
+          bullet.size,
+          asteroid.getCollisionShape()
         )
       ) {
-        asteroid.hit();
-        if (asteroid.hitPoints <= 0) {
-          asteroids.removeAsteroid(asteroidIndex);
-          handledAsteroidIds.add(asteroid.id);
-        }
-        bullets.bullets.splice(bulletIndex, 1);
-        break;
+        continue;
       }
+      asteroid.hit();
+      if (asteroid.hitPoints <= 0) {
+        asteroids.removeAsteroid(asteroidIndex);
+        handledAsteroidIds.add(asteroid.id);
+      }
+      bullets.bullets.splice(bulletIndex, 1);
+      break;
     }
   }
 }

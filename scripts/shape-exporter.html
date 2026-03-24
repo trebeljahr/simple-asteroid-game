@@ -1,0 +1,577 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Collision Shape Exporter</title>
+    <style>
+      body {
+        background: #07111f;
+        color: #d9f3ff;
+        font-family: Menlo, Monaco, Consolas, monospace;
+        margin: 0;
+        padding: 24px;
+      }
+
+      pre {
+        white-space: pre-wrap;
+        word-break: break-word;
+      }
+    </style>
+  </head>
+  <body>
+    <pre id="output">Preparing collision shapes...</pre>
+    <script type="module">
+      const SHAPE_CONFIGS = [
+        {
+          id: "orbit-dart",
+          src: "/client/public/assets/alternatives/ship-alt-orbit-dart.svg",
+          rasterWidth: 192,
+          rasterHeight: 384,
+          alphaThreshold: 12,
+          minLoopArea: 0.00012,
+          minPixels: 10,
+          preRotation: Math.PI / 2,
+          simplificationEpsilon: 1.8,
+        },
+        {
+          id: "comet-lance",
+          src: "/client/public/assets/alternatives/ship-alt-comet-lance.svg",
+          rasterWidth: 192,
+          rasterHeight: 384,
+          alphaThreshold: 12,
+          minLoopArea: 0.00012,
+          minPixels: 10,
+          preRotation: Math.PI / 2,
+          simplificationEpsilon: 1.8,
+        },
+        {
+          id: "asteroid-1",
+          src: "/client/public/assets/asteroid1.svg",
+          rasterWidth: 192,
+          rasterHeight: 192,
+          alphaThreshold: 12,
+          minLoopArea: 0.00012,
+          minPixels: 10,
+          preRotation: 0,
+          simplificationEpsilon: 1.45,
+        },
+        {
+          id: "asteroid-2",
+          src: "/client/public/assets/asteroid2.svg",
+          rasterWidth: 192,
+          rasterHeight: 192,
+          alphaThreshold: 12,
+          minLoopArea: 0.00012,
+          minPixels: 10,
+          preRotation: 0,
+          simplificationEpsilon: 1.45,
+        },
+        {
+          id: "asteroid-3",
+          src: "/client/public/assets/asteroid3.svg",
+          rasterWidth: 192,
+          rasterHeight: 192,
+          alphaThreshold: 12,
+          minLoopArea: 0.00012,
+          minPixels: 10,
+          preRotation: 0,
+          simplificationEpsilon: 1.45,
+        },
+      ];
+
+      const output = document.getElementById("output");
+
+      const keyForPoint = (x, y) => `${x},${y}`;
+
+      const getDirection = (start, end) => {
+        if (end.x > start.x) {
+          return 0;
+        }
+        if (end.y > start.y) {
+          return 1;
+        }
+        if (end.x < start.x) {
+          return 2;
+        }
+        return 3;
+      };
+
+      const distanceToSegment = (point, start, end) => {
+        const dx = end.x - start.x;
+        const dy = end.y - start.y;
+        const lengthSquared = dx * dx + dy * dy;
+        if (lengthSquared === 0) {
+          return Math.hypot(point.x - start.x, point.y - start.y);
+        }
+
+        const projection = Math.max(
+          0,
+          Math.min(
+            1,
+            ((point.x - start.x) * dx + (point.y - start.y) * dy) / lengthSquared
+          )
+        );
+        const nearestX = start.x + dx * projection;
+        const nearestY = start.y + dy * projection;
+        return Math.hypot(point.x - nearestX, point.y - nearestY);
+      };
+
+      const simplifyOpen = (points, epsilon) => {
+        if (points.length <= 2) {
+          return points.slice();
+        }
+
+        const keep = new Uint8Array(points.length);
+        keep[0] = 1;
+        keep[points.length - 1] = 1;
+
+        const recurse = (startIndex, endIndex) => {
+          let farthestDistance = 0;
+          let farthestIndex = -1;
+
+          for (let index = startIndex + 1; index < endIndex; index++) {
+            const distance = distanceToSegment(
+              points[index],
+              points[startIndex],
+              points[endIndex]
+            );
+            if (distance > farthestDistance) {
+              farthestDistance = distance;
+              farthestIndex = index;
+            }
+          }
+
+          if (farthestIndex !== -1 && farthestDistance > epsilon) {
+            keep[farthestIndex] = 1;
+            recurse(startIndex, farthestIndex);
+            recurse(farthestIndex, endIndex);
+          }
+        };
+
+        recurse(0, points.length - 1);
+        return points.filter((_, index) => keep[index] === 1);
+      };
+
+      const removeCollinearPoints = (points) => {
+        if (points.length <= 3) {
+          return points.slice();
+        }
+
+        const nextPoints = [];
+        for (let index = 0; index < points.length; index++) {
+          const previous = points[(index - 1 + points.length) % points.length];
+          const current = points[index];
+          const next = points[(index + 1) % points.length];
+          const cross =
+            (current.x - previous.x) * (next.y - current.y) -
+            (current.y - previous.y) * (next.x - current.x);
+          if (Math.abs(cross) > 1e-6) {
+            nextPoints.push(current);
+          }
+        }
+        return nextPoints;
+      };
+
+      const simplifyClosedLoop = (points, epsilon) => {
+        if (points.length <= 4) {
+          return removeCollinearPoints(points);
+        }
+
+        let startIndex = 0;
+        for (let index = 1; index < points.length; index++) {
+          const candidate = points[index];
+          const current = points[startIndex];
+          if (
+            candidate.x < current.x ||
+            (candidate.x === current.x && candidate.y < current.y)
+          ) {
+            startIndex = index;
+          }
+        }
+
+        let oppositeIndex = startIndex;
+        let maxDistanceSquared = -1;
+        const startPoint = points[startIndex];
+        for (let index = 0; index < points.length; index++) {
+          const dx = points[index].x - startPoint.x;
+          const dy = points[index].y - startPoint.y;
+          const distanceSquared = dx * dx + dy * dy;
+          if (distanceSquared > maxDistanceSquared) {
+            maxDistanceSquared = distanceSquared;
+            oppositeIndex = index;
+          }
+        }
+
+        if (oppositeIndex === startIndex) {
+          return removeCollinearPoints(points);
+        }
+
+        const pathForward = [];
+        let index = startIndex;
+        while (true) {
+          pathForward.push(points[index]);
+          if (index === oppositeIndex) {
+            break;
+          }
+          index = (index + 1) % points.length;
+        }
+
+        const pathBackward = [];
+        index = oppositeIndex;
+        while (true) {
+          pathBackward.push(points[index]);
+          if (index === startIndex) {
+            break;
+          }
+          index = (index + 1) % points.length;
+        }
+
+        const simplifiedForward = simplifyOpen(pathForward, epsilon);
+        const simplifiedBackward = simplifyOpen(pathBackward, epsilon);
+        const merged = simplifiedForward.concat(simplifiedBackward.slice(1, -1));
+        return removeCollinearPoints(merged);
+      };
+
+      const rotatePoint = (point, angle) => {
+        const cosine = Math.cos(angle);
+        const sine = Math.sin(angle);
+        return {
+          x: point.x * cosine - point.y * sine,
+          y: point.x * sine + point.y * cosine,
+        };
+      };
+
+      const createMask = (context, width, height, threshold) => {
+        const { data } = context.getImageData(0, 0, width, height);
+        const mask = new Uint8Array(width * height);
+
+        for (let y = 0; y < height; y++) {
+          for (let x = 0; x < width; x++) {
+            const alpha = data[(y * width + x) * 4 + 3];
+            if (alpha >= threshold) {
+              mask[y * width + x] = 1;
+            }
+          }
+        }
+
+        return mask;
+      };
+
+      const collectComponents = (mask, width, height, minPixels) => {
+        const visited = new Uint8Array(mask.length);
+        const components = [];
+        const neighborOffsets = [
+          { x: 1, y: 0 },
+          { x: -1, y: 0 },
+          { x: 0, y: 1 },
+          { x: 0, y: -1 },
+        ];
+
+        for (let y = 0; y < height; y++) {
+          for (let x = 0; x < width; x++) {
+            const startIndex = y * width + x;
+            if (mask[startIndex] === 0 || visited[startIndex] === 1) {
+              continue;
+            }
+
+            const queue = [{ x, y }];
+            const cells = [];
+            visited[startIndex] = 1;
+
+            for (let queueIndex = 0; queueIndex < queue.length; queueIndex++) {
+              const cell = queue[queueIndex];
+              cells.push(cell);
+
+              for (let offsetIndex = 0; offsetIndex < neighborOffsets.length; offsetIndex++) {
+                const offset = neighborOffsets[offsetIndex];
+                const neighborX = cell.x + offset.x;
+                const neighborY = cell.y + offset.y;
+                if (
+                  neighborX < 0 ||
+                  neighborX >= width ||
+                  neighborY < 0 ||
+                  neighborY >= height
+                ) {
+                  continue;
+                }
+
+                const neighborIndex = neighborY * width + neighborX;
+                if (mask[neighborIndex] === 0 || visited[neighborIndex] === 1) {
+                  continue;
+                }
+
+                visited[neighborIndex] = 1;
+                queue.push({ x: neighborX, y: neighborY });
+              }
+            }
+
+            if (cells.length >= minPixels) {
+              components.push(cells);
+            }
+          }
+        }
+
+        return components;
+      };
+
+      const buildComponentLoops = (component, mask, width, height) => {
+        const edges = [];
+
+        const isFilled = (x, y) => {
+          if (x < 0 || x >= width || y < 0 || y >= height) {
+            return false;
+          }
+          return mask[y * width + x] === 1;
+        };
+
+        for (let index = 0; index < component.length; index++) {
+          const cell = component[index];
+          const { x, y } = cell;
+
+          if (!isFilled(x, y - 1)) {
+            edges.push({
+              start: { x, y },
+              end: { x: x + 1, y },
+            });
+          }
+          if (!isFilled(x + 1, y)) {
+            edges.push({
+              start: { x: x + 1, y },
+              end: { x: x + 1, y: y + 1 },
+            });
+          }
+          if (!isFilled(x, y + 1)) {
+            edges.push({
+              start: { x: x + 1, y: y + 1 },
+              end: { x, y: y + 1 },
+            });
+          }
+          if (!isFilled(x - 1, y)) {
+            edges.push({
+              start: { x, y: y + 1 },
+              end: { x, y },
+            });
+          }
+        }
+
+        const outgoing = new Map();
+        for (let index = 0; index < edges.length; index++) {
+          const edge = edges[index];
+          const key = keyForPoint(edge.start.x, edge.start.y);
+          const bucket = outgoing.get(key);
+          if (bucket === undefined) {
+            outgoing.set(key, [index]);
+          } else {
+            bucket.push(index);
+          }
+        }
+
+        const visited = new Uint8Array(edges.length);
+        const loops = [];
+        const turnPreference = [1, 0, 3, 2];
+
+        const pickNextEdge = (candidateIndices, previousDirection) => {
+          if (candidateIndices.length === 1 || previousDirection === null) {
+            return candidateIndices[0];
+          }
+
+          let fallbackIndex = candidateIndices[0];
+          let fallbackScore = Number.POSITIVE_INFINITY;
+
+          for (let index = 0; index < candidateIndices.length; index++) {
+            const candidateEdgeIndex = candidateIndices[index];
+            const candidateDirection = getDirection(
+              edges[candidateEdgeIndex].start,
+              edges[candidateEdgeIndex].end
+            );
+            const turn =
+              (candidateDirection - previousDirection + 4) % 4;
+            const score = turnPreference.indexOf(turn);
+            if (score < fallbackScore) {
+              fallbackScore = score;
+              fallbackIndex = candidateEdgeIndex;
+            }
+          }
+
+          return fallbackIndex;
+        };
+
+        for (let edgeIndex = 0; edgeIndex < edges.length; edgeIndex++) {
+          if (visited[edgeIndex] === 1) {
+            continue;
+          }
+
+          const startEdge = edges[edgeIndex];
+          const loop = [{ x: startEdge.start.x, y: startEdge.start.y }];
+          let currentEdgeIndex = edgeIndex;
+          let previousDirection = null;
+
+          while (true) {
+            visited[currentEdgeIndex] = 1;
+            const currentEdge = edges[currentEdgeIndex];
+            loop.push({ x: currentEdge.end.x, y: currentEdge.end.y });
+            previousDirection = getDirection(currentEdge.start, currentEdge.end);
+
+            if (
+              currentEdge.end.x === startEdge.start.x &&
+              currentEdge.end.y === startEdge.start.y
+            ) {
+              break;
+            }
+
+            const candidates = (outgoing.get(keyForPoint(currentEdge.end.x, currentEdge.end.y)) ??
+              []).filter((candidateIndex) => visited[candidateIndex] === 0);
+
+            if (candidates.length === 0) {
+              break;
+            }
+
+            currentEdgeIndex = pickNextEdge(candidates, previousDirection);
+          }
+
+          if (loop.length > 3) {
+            loop.pop();
+            loops.push(loop);
+          }
+        }
+
+        return loops;
+      };
+
+      const normalizeLoop = (loop, width, height, preRotation) => {
+        const normalized = loop.map((point) => {
+          const centered = {
+            x: point.x / width - 0.5,
+            y: point.y / height - 0.5,
+          };
+          return preRotation === 0 ? centered : rotatePoint(centered, preRotation);
+        });
+
+        return normalized;
+      };
+
+      const formatNumber = (value) => {
+        return Number(value.toFixed(5));
+      };
+
+      const getLoopArea = (loop) => {
+        let area = 0;
+        for (let index = 0; index < loop.length; index++) {
+          const current = loop[index];
+          const next = loop[(index + 1) % loop.length];
+          area += current.x * next.y - next.x * current.y;
+        }
+        return Math.abs(area) / 2;
+      };
+
+      const summarizeShape = (shape) => {
+        let minX = Number.POSITIVE_INFINITY;
+        let minY = Number.POSITIVE_INFINITY;
+        let maxX = Number.NEGATIVE_INFINITY;
+        let maxY = Number.NEGATIVE_INFINITY;
+
+        for (let loopIndex = 0; loopIndex < shape.loops.length; loopIndex++) {
+          const loop = shape.loops[loopIndex];
+          for (let pointIndex = 0; pointIndex < loop.length; pointIndex++) {
+            const point = loop[pointIndex];
+            minX = Math.min(minX, point[0]);
+            minY = Math.min(minY, point[1]);
+            maxX = Math.max(maxX, point[0]);
+            maxY = Math.max(maxY, point[1]);
+          }
+        }
+
+        return {
+          bounds: {
+            maxX: formatNumber(maxX),
+            maxY: formatNumber(maxY),
+            minX: formatNumber(minX),
+            minY: formatNumber(minY),
+          },
+          loops: shape.loops,
+        };
+      };
+
+      const loadImage = (src) => {
+        return new Promise((resolve, reject) => {
+          const image = new Image();
+          image.onload = () => resolve(image);
+          image.onerror = reject;
+          image.src = src;
+        });
+      };
+
+      const extractShape = async (config) => {
+        const image = await loadImage(config.src);
+        const canvas = document.createElement("canvas");
+        canvas.width = config.rasterWidth;
+        canvas.height = config.rasterHeight;
+        const context = canvas.getContext("2d", { willReadFrequently: true });
+        context.clearRect(0, 0, canvas.width, canvas.height);
+        context.drawImage(image, 0, 0, canvas.width, canvas.height);
+
+        const mask = createMask(
+          context,
+          canvas.width,
+          canvas.height,
+          config.alphaThreshold
+        );
+        const components = collectComponents(
+          mask,
+          canvas.width,
+          canvas.height,
+          config.minPixels
+        );
+        const loops = [];
+
+        for (let componentIndex = 0; componentIndex < components.length; componentIndex++) {
+          const componentLoops = buildComponentLoops(
+            components[componentIndex],
+            mask,
+            canvas.width,
+            canvas.height
+          );
+
+          for (let loopIndex = 0; loopIndex < componentLoops.length; loopIndex++) {
+            const simplified = simplifyClosedLoop(
+              componentLoops[loopIndex],
+              config.simplificationEpsilon
+            );
+            if (simplified.length < 3) {
+              continue;
+            }
+
+            const normalized = normalizeLoop(
+              simplified,
+              canvas.width,
+              canvas.height,
+              config.preRotation
+            );
+            if (getLoopArea(normalized) < config.minLoopArea) {
+              continue;
+            }
+            loops.push(
+              normalized.map((point) => [formatNumber(point.x), formatNumber(point.y)])
+            );
+          }
+        }
+
+        return summarizeShape({ loops });
+      };
+
+      const exportShapes = async () => {
+        const shapes = {};
+        for (let index = 0; index < SHAPE_CONFIGS.length; index++) {
+          const config = SHAPE_CONFIGS[index];
+          shapes[config.id] = await extractShape(config);
+        }
+
+        output.textContent = JSON.stringify(shapes, null, 2);
+      };
+
+      exportShapes().catch((error) => {
+        output.textContent = `Failed to export collision shapes:\n${error?.stack ?? error}`;
+      });
+    </script>
+  </body>
+</html>
