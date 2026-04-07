@@ -46,9 +46,12 @@ import {
   MatchmakingStatusPayload,
   MultiplayerRuntimeConfig,
   PLAYER_MAX_AMMO,
+  PLAYER_MAX_HEALTH,
   PlayerSlot,
   projectBulletSnapshot,
   projectPlayerSnapshot,
+  removeAmmoFromWorld,
+  removeHeartFromWorld,
   ServerToClientEvents,
   ShipCollider,
   ShipVariant,
@@ -1720,6 +1723,77 @@ class MultiplayerClientSession {
 
     // Step local prediction
     stepPlayerState(this.predictedSelf, currentInput, match.arena);
+
+    // Optimistic pickup collection — detect overlap using the same
+    // collision logic as the server so hearts and ammo disappear and
+    // update the HUD immediately instead of waiting for the next
+    // server snapshot.  The server remains authoritative; reconciliation
+    // overwrites predictedSelf.health/ammo with the server value.
+    const selfCollider = getShipCollider(
+      this.predictedSelf.x,
+      this.predictedSelf.y,
+      this.predictedSelf.angle,
+      this.predictedSelf.shipVariant
+    );
+    const broadDiameter = getShipCollisionBoundingDiameter(
+      this.predictedSelf.shipVariant
+    );
+
+    if (this.predictedSelf.health < match.maxHealth) {
+      const nearbyHearts = getNearbyHearts(
+        match.world,
+        this.predictedSelf.x,
+        this.predictedSelf.y,
+        broadDiameter,
+        match.arena
+      );
+      for (let i = 0; i < nearbyHearts.length; i++) {
+        const heart = nearbyHearts[i];
+        if (
+          circleOverlapsShipCollider(
+            heart.x,
+            heart.y,
+            heart.size,
+            selfCollider
+          )
+        ) {
+          this.predictedSelf.health = Math.min(
+            PLAYER_MAX_HEALTH,
+            this.predictedSelf.health + 1
+          );
+          removeHeartFromWorld(match.world, heart.id, match.arena);
+          break;
+        }
+      }
+    }
+
+    if (this.predictedSelf.ammo < PLAYER_MAX_AMMO) {
+      const nearbyAmmo = getNearbyAmmoPackets(
+        match.world,
+        this.predictedSelf.x,
+        this.predictedSelf.y,
+        broadDiameter,
+        match.arena
+      );
+      for (let i = 0; i < nearbyAmmo.length; i++) {
+        const ammoPacket = nearbyAmmo[i];
+        if (
+          circleOverlapsShipCollider(
+            ammoPacket.x,
+            ammoPacket.y,
+            ammoPacket.size,
+            selfCollider
+          )
+        ) {
+          this.predictedSelf.ammo = Math.min(
+            PLAYER_MAX_AMMO,
+            this.predictedSelf.ammo + ammoPacket.amount
+          );
+          removeAmmoFromWorld(match.world, ammoPacket.id, match.arena);
+          break;
+        }
+      }
+    }
 
     // Send every tick's input so the server can process them
     // one-per-tick from its input queue.  This 1-to-1 mapping between
