@@ -209,6 +209,9 @@ class MultiplayerClientSession {
   };
   private pendingResult: PendingResultState | null = null;
   private predictedSelf: RuntimePlayerState | null = null;
+  private correctionOffsetX = 0;
+  private correctionOffsetY = 0;
+  private correctionOffsetAngle = 0;
   private p: p5 | null = null;
   private playerArrivals = new Map<string, PlayerArrivalState>();
   private playerDestructions = new Map<string, PlayerDestructionState>();
@@ -1551,6 +1554,9 @@ class MultiplayerClientSession {
   private reconcilePredictedSelf(serverState: MatchPlayerSnapshot) {
     if (this.predictedSelf === null) {
       this.predictedSelf = { ...serverState, fireCooldownTicks: 0 };
+      this.correctionOffsetX = 0;
+      this.correctionOffsetY = 0;
+      this.correctionOffsetAngle = 0;
       return;
     }
 
@@ -1561,22 +1567,26 @@ class MultiplayerClientSession {
     if (positionError > 100) {
       this.predictedSelf.x = serverState.x;
       this.predictedSelf.y = serverState.y;
-      this.predictedSelf.vx = serverState.vx;
-      this.predictedSelf.vy = serverState.vy;
-      this.predictedSelf.angle = serverState.angle;
+      this.correctionOffsetX = 0;
+      this.correctionOffsetY = 0;
+      this.correctionOffsetAngle = 0;
     } else {
-      const blendFactor = 0.3;
-      this.predictedSelf.x += dx * blendFactor;
-      this.predictedSelf.y += dy * blendFactor;
-      this.predictedSelf.vx += (serverState.vx - this.predictedSelf.vx) * blendFactor;
-      this.predictedSelf.vy += (serverState.vy - this.predictedSelf.vy) * blendFactor;
-
-      let angleDiff = serverState.angle - this.predictedSelf.angle;
-      while (angleDiff > Math.PI) angleDiff -= 2 * Math.PI;
-      while (angleDiff < -Math.PI) angleDiff += 2 * Math.PI;
-      this.predictedSelf.angle += angleDiff * blendFactor;
+      this.correctionOffsetX += dx;
+      this.correctionOffsetY += dy;
     }
 
+    let angleDiff = serverState.angle - this.predictedSelf.angle;
+    while (angleDiff > Math.PI) angleDiff -= 2 * Math.PI;
+    while (angleDiff < -Math.PI) angleDiff += 2 * Math.PI;
+    if (positionError <= 100) {
+      this.correctionOffsetAngle += angleDiff;
+    } else {
+      this.predictedSelf.angle = serverState.angle;
+      this.correctionOffsetAngle = 0;
+    }
+
+    this.predictedSelf.vx = serverState.vx;
+    this.predictedSelf.vy = serverState.vy;
     this.predictedSelf.health = serverState.health;
     this.predictedSelf.ammo = serverState.ammo;
     this.predictedSelf.damageRecoveryTicks = serverState.damageRecoveryTicks;
@@ -1602,6 +1612,14 @@ class MultiplayerClientSession {
     };
 
     stepPlayerState(this.predictedSelf, currentInput, match.arena);
+
+    const drainRate = 0.1;
+    this.predictedSelf.x += this.correctionOffsetX * drainRate;
+    this.predictedSelf.y += this.correctionOffsetY * drainRate;
+    this.predictedSelf.angle += this.correctionOffsetAngle * drainRate;
+    this.correctionOffsetX *= 1 - drainRate;
+    this.correctionOffsetY *= 1 - drainRate;
+    this.correctionOffsetAngle *= 1 - drainRate;
   }
 
   private clearPendingResult() {
@@ -1610,6 +1628,9 @@ class MultiplayerClientSession {
 
   private resetClientEffects() {
     this.predictedSelf = null;
+    this.correctionOffsetX = 0;
+    this.correctionOffsetY = 0;
+    this.correctionOffsetAngle = 0;
     this.ammoHudEffects = [];
     this.playerArrivals.clear();
     this.playerDestructions.clear();
