@@ -53,6 +53,8 @@ import {
   ShipCollider,
   ShipVariant,
   ShipInputState,
+  RuntimePlayerState,
+  stepPlayerState,
   WorldEvent,
 } from "../../shared/src";
 
@@ -206,6 +208,7 @@ class MultiplayerClientSession {
     turnRight: false,
   };
   private pendingResult: PendingResultState | null = null;
+  private predictedSelf: RuntimePlayerState | null = null;
   private p: p5 | null = null;
   private playerArrivals = new Map<string, PlayerArrivalState>();
   private playerDestructions = new Map<string, PlayerDestructionState>();
@@ -429,6 +432,13 @@ class MultiplayerClientSession {
       this.viewState.match.snapshot = payload;
       this.viewState.match.snapshotReceivedAt = performance.now();
       this.viewState.status = "matched";
+
+      const serverSelf = payload.players.find(
+        (player) => player.id === this.viewState.match?.playerId
+      );
+      if (serverSelf !== undefined) {
+        this.reconcilePredictedSelf(serverSelf);
+      }
     });
 
     socket.on("match:ended", (payload: MatchEndedPayload) => {
@@ -907,20 +917,43 @@ class MultiplayerClientSession {
       return;
     }
 
+    this.stepPredictedSelf(match);
+
     const predictedTicks = Math.min(
       4,
       (performance.now() - match.snapshotReceivedAt) / SNAPSHOT_TICK_MS
     );
-    const renderedPlayers = match.snapshot.players.map((player) => {
-      return projectPlayerSnapshot(player, predictedTicks, match.arena);
-    });
     const renderedBullets = match.snapshot.bullets.map((bullet) => {
       return projectBulletSnapshot(bullet, predictedTicks);
     });
-    const selfPlayer =
-      renderedPlayers.find((player) => player.id === match.playerId) ?? null;
-    const opponentPlayer =
-      renderedPlayers.find((player) => player.id === match.opponentId) ?? null;
+
+    const selfPlayer: MatchPlayerSnapshot | null =
+      this.predictedSelf !== null
+        ? {
+            id: this.predictedSelf.id,
+            slot: this.predictedSelf.slot,
+            x: this.predictedSelf.x,
+            y: this.predictedSelf.y,
+            vx: this.predictedSelf.vx,
+            vy: this.predictedSelf.vy,
+            angle: this.predictedSelf.angle,
+            health: this.predictedSelf.health,
+            ammo: this.predictedSelf.ammo,
+            damageRecoveryTicks: this.predictedSelf.damageRecoveryTicks,
+            thrusting: this.predictedSelf.thrusting,
+            shipVariant: this.predictedSelf.shipVariant,
+          }
+        : match.snapshot.players.find((player) => player.id === match.playerId) ?? null;
+
+    const opponentSnapshot =
+      match.snapshot.players.find((player) => player.id === match.opponentId) ?? null;
+    const opponentPlayer = opponentSnapshot !== null
+      ? projectPlayerSnapshot(opponentSnapshot, predictedTicks, match.arena)
+      : null;
+
+    const renderedPlayers: MatchPlayerSnapshot[] = [];
+    if (selfPlayer !== null) renderedPlayers.push(selfPlayer);
+    if (opponentPlayer !== null) renderedPlayers.push(opponentPlayer);
 
     if (selfPlayer === null) {
       this.drawBackdrop(p);
@@ -1515,11 +1548,68 @@ class MultiplayerClientSession {
     this.lastSentAt = now;
   }
 
+  private reconcilePredictedSelf(serverState: MatchPlayerSnapshot) {
+    if (this.predictedSelf === null) {
+      this.predictedSelf = { ...serverState, fireCooldownTicks: 0 };
+      return;
+    }
+
+    const dx = serverState.x - this.predictedSelf.x;
+    const dy = serverState.y - this.predictedSelf.y;
+    const positionError = Math.hypot(dx, dy);
+
+    if (positionError > 100) {
+      this.predictedSelf.x = serverState.x;
+      this.predictedSelf.y = serverState.y;
+      this.predictedSelf.vx = serverState.vx;
+      this.predictedSelf.vy = serverState.vy;
+      this.predictedSelf.angle = serverState.angle;
+    } else {
+      const blendFactor = 0.3;
+      this.predictedSelf.x += dx * blendFactor;
+      this.predictedSelf.y += dy * blendFactor;
+      this.predictedSelf.vx += (serverState.vx - this.predictedSelf.vx) * blendFactor;
+      this.predictedSelf.vy += (serverState.vy - this.predictedSelf.vy) * blendFactor;
+
+      let angleDiff = serverState.angle - this.predictedSelf.angle;
+      while (angleDiff > Math.PI) angleDiff -= 2 * Math.PI;
+      while (angleDiff < -Math.PI) angleDiff += 2 * Math.PI;
+      this.predictedSelf.angle += angleDiff * blendFactor;
+    }
+
+    this.predictedSelf.health = serverState.health;
+    this.predictedSelf.ammo = serverState.ammo;
+    this.predictedSelf.damageRecoveryTicks = serverState.damageRecoveryTicks;
+    this.predictedSelf.thrusting = serverState.thrusting;
+    this.predictedSelf.slot = serverState.slot;
+    this.predictedSelf.shipVariant = serverState.shipVariant;
+  }
+
+  private stepPredictedSelf(match: ActiveMatchState) {
+    if (this.predictedSelf === null || match.snapshot === null) {
+      return;
+    }
+
+    if (this.predictedSelf.health <= 0) {
+      return;
+    }
+
+    const currentInput: ShipInputState = {
+      fire: isShipActionActive("fire"),
+      thrust: isShipActionActive("thrust"),
+      turnLeft: isShipActionActive("turnLeft"),
+      turnRight: isShipActionActive("turnRight"),
+    };
+
+    stepPlayerState(this.predictedSelf, currentInput, match.arena);
+  }
+
   private clearPendingResult() {
     this.pendingResult = null;
   }
 
   private resetClientEffects() {
+    this.predictedSelf = null;
     this.ammoHudEffects = [];
     this.playerArrivals.clear();
     this.playerDestructions.clear();
