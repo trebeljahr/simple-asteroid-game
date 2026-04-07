@@ -477,7 +477,7 @@ export class MultiplayerService {
 
   private emitQueueStatus() {
     for (let queueIndex = 0; queueIndex < this.waitingQueue.length; queueIndex++) {
-      const socket = this.sockets.get(this.waitingQueue[queueIndex]);
+      const socket = this.sockets.get(this.waitingQueue[queueIndex].socketId);
       if (socket === undefined) {
         continue;
       }

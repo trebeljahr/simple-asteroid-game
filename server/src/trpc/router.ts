@@ -25,7 +25,7 @@ export const createAppRouter = (multiplayerService: MultiplayerController) => {
         .input(
           z.object({
             socketId: z.string().min(1),
-            shipVariant: z.enum(MULTIPLAYER_SHIP_VARIANTS as [string, ...string[]]),
+            shipVariant: z.enum(MULTIPLAYER_SHIP_VARIANTS as unknown as [string, ...string[]]),
           })
         )
         .mutation(({ input }) => {
