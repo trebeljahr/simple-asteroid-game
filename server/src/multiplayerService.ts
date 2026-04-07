@@ -67,6 +67,7 @@ type TypedSocket = Socket<ClientToServerEvents, ServerToClientEvents>;
 
 interface MatchPlayer {
   input: ShipInputState;
+  inputQueue: ShipInputState[];
   socket: TypedSocket;
   state: RuntimePlayerState;
 }
@@ -394,6 +395,7 @@ export class MultiplayerService {
   ): MatchPlayer {
     return {
       input: createEmptyInputState(),
+      inputQueue: [],
       socket,
       state: createRuntimePlayerState(
         socket.id,
@@ -958,13 +960,31 @@ export class MultiplayerService {
       return;
     }
 
-    participant.input = payload;
-    participant.state.lastInputSeq = payload.inputSeq;
+    // Queue the input for ordered, one-per-tick processing.
+    // This prevents intermediate inputs from being skipped when
+    // multiple arrive between server ticks (due to network batching).
+    participant.inputQueue.push(payload);
+    if (participant.inputQueue.length > 120) {
+      participant.inputQueue.shift();
+    }
   }
 
   private updatePlayers(match: Match) {
     for (let playerIndex = 0; playerIndex < match.players.length; playerIndex++) {
       const participant = match.players[playerIndex];
+
+      // Dequeue the next input from the queue (one per tick), or reuse
+      // the last applied input when the queue is empty.  This maintains
+      // a 1-to-1 correspondence between client prediction ticks and
+      // server physics ticks — the key requirement for jitter-free
+      // reconciliation.  lastInputSeq is only advanced when a queued
+      // input is consumed so the client knows exactly which inputs
+      // the server has stepped.
+      if (participant.inputQueue.length > 0) {
+        participant.input = participant.inputQueue.shift()!;
+        participant.state.lastInputSeq = participant.input.inputSeq;
+      }
+
       stepPlayerState(participant.state, participant.input, MULTIPLAYER_ARENA);
 
       if (

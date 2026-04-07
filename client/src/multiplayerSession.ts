@@ -421,6 +421,11 @@ class MultiplayerClientSession {
 
       const previousSnapshot = this.viewState.match.snapshot;
 
+      // Reject stale or duplicate snapshots.
+      if (previousSnapshot !== null && payload.sequence <= previousSnapshot.sequence) {
+        return;
+      }
+
       if (previousSnapshot !== null) {
         this.playSnapshotEffects(previousSnapshot, payload);
       }
@@ -438,13 +443,21 @@ class MultiplayerClientSession {
       this.viewState.match.snapshotReceivedAt = performance.now();
       this.viewState.status = "matched";
 
+      // Only run prediction and reconciliation during the active phase.
+      // During countdown the server does not step player physics, so
+      // predicting locally would accumulate a buffer that can never be
+      // correctly reconciled.
+      if (payload.phase !== "active") {
+        return;
+      }
+
       const serverSelf = payload.players.find(
         (player) => player.id === this.viewState.match?.playerId
       );
       if (serverSelf !== undefined) {
-        const wasFirstSnapshot = this.predictedSelf === null;
+        const wasFirstActiveSnapshot = this.predictedSelf === null;
         this.reconcilePredictedSelf(serverSelf, this.viewState.match.arena);
-        if (wasFirstSnapshot) {
+        if (wasFirstActiveSnapshot) {
           this.startPredictionLoop();
         }
       }
@@ -1565,17 +1578,12 @@ class MultiplayerClientSession {
     // Step local prediction
     stepPlayerState(this.predictedSelf, currentInput, match.arena);
 
-    // Send to server (throttled — not every tick needs a network send,
-    // but the buffer captures every tick for accurate replay)
-    if (
-      this.socket !== null &&
-      this.socket.connected &&
-      (!sameInputState(currentInput, this.lastSentInput) ||
-        performance.now() - this.lastSentAt >= this.inputPushIntervalMs)
-    ) {
+    // Send every tick's input so the server can process them
+    // one-per-tick from its input queue.  This 1-to-1 mapping between
+    // client ticks and server physics steps is what makes reconciliation
+    // produce the same result as local prediction, eliminating jitter.
+    if (this.socket !== null && this.socket.connected) {
       this.socket.emit("match:input", currentInput);
-      this.lastSentInput = currentInput;
-      this.lastSentAt = performance.now();
     }
   }
 
