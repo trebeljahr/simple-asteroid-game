@@ -908,7 +908,7 @@ class MultiplayerClientSession {
     }
 
     const predictedTicks = Math.min(
-      2.5,
+      4,
       (performance.now() - match.snapshotReceivedAt) / SNAPSHOT_TICK_MS
     );
     const renderedPlayers = match.snapshot.players.map((player) => {
