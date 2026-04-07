@@ -209,9 +209,8 @@ class MultiplayerClientSession {
   };
   private pendingResult: PendingResultState | null = null;
   private predictedSelf: RuntimePlayerState | null = null;
-  private correctionOffsetX = 0;
-  private correctionOffsetY = 0;
-  private correctionOffsetAngle = 0;
+  private serverSelfBase: RuntimePlayerState | null = null;
+  private predictionStepCount = 0;
   private p: p5 | null = null;
   private playerArrivals = new Map<string, PlayerArrivalState>();
   private playerDestructions = new Map<string, PlayerDestructionState>();
@@ -1552,55 +1551,12 @@ class MultiplayerClientSession {
   }
 
   private reconcilePredictedSelf(serverState: MatchPlayerSnapshot) {
-    if (this.predictedSelf === null) {
-      this.predictedSelf = { ...serverState, fireCooldownTicks: 0 };
-      this.correctionOffsetX = 0;
-      this.correctionOffsetY = 0;
-      this.correctionOffsetAngle = 0;
-      return;
-    }
-
-    const dx = serverState.x - this.predictedSelf.x;
-    const dy = serverState.y - this.predictedSelf.y;
-    const positionError = Math.hypot(dx, dy);
-
-    if (positionError > 100) {
-      this.predictedSelf.x = serverState.x;
-      this.predictedSelf.y = serverState.y;
-      this.predictedSelf.vx = serverState.vx;
-      this.predictedSelf.vy = serverState.vy;
-      this.correctionOffsetX = 0;
-      this.correctionOffsetY = 0;
-      this.correctionOffsetAngle = 0;
-    } else {
-      this.correctionOffsetX += dx;
-      this.correctionOffsetY += dy;
-    }
-
-    let angleDiff = serverState.angle - this.predictedSelf.angle;
-    while (angleDiff > Math.PI) angleDiff -= 2 * Math.PI;
-    while (angleDiff < -Math.PI) angleDiff += 2 * Math.PI;
-    if (positionError <= 100) {
-      this.correctionOffsetAngle += angleDiff;
-    } else {
-      this.predictedSelf.angle = serverState.angle;
-      this.correctionOffsetAngle = 0;
-    }
-
-    this.predictedSelf.health = serverState.health;
-    this.predictedSelf.ammo = serverState.ammo;
-    this.predictedSelf.damageRecoveryTicks = serverState.damageRecoveryTicks;
-    this.predictedSelf.thrusting = serverState.thrusting;
-    this.predictedSelf.slot = serverState.slot;
-    this.predictedSelf.shipVariant = serverState.shipVariant;
+    this.serverSelfBase = { ...serverState, fireCooldownTicks: 0 };
+    this.predictionStepCount = 0;
   }
 
   private stepPredictedSelf(match: ActiveMatchState) {
-    if (this.predictedSelf === null || match.snapshot === null) {
-      return;
-    }
-
-    if (this.predictedSelf.health <= 0) {
+    if (this.serverSelfBase === null || match.snapshot === null) {
       return;
     }
 
@@ -1611,15 +1567,18 @@ class MultiplayerClientSession {
       turnRight: isShipActionActive("turnRight"),
     };
 
-    stepPlayerState(this.predictedSelf, currentInput, match.arena);
+    // Re-predict from server base state each frame
+    const predicted = { ...this.serverSelfBase };
 
-    const drainRate = 0.1;
-    this.predictedSelf.x += this.correctionOffsetX * drainRate;
-    this.predictedSelf.y += this.correctionOffsetY * drainRate;
-    this.predictedSelf.angle += this.correctionOffsetAngle * drainRate;
-    this.correctionOffsetX *= 1 - drainRate;
-    this.correctionOffsetY *= 1 - drainRate;
-    this.correctionOffsetAngle *= 1 - drainRate;
+    if (predicted.health > 0) {
+      const stepsToSimulate = this.predictionStepCount + 1;
+      for (let i = 0; i < stepsToSimulate; i++) {
+        stepPlayerState(predicted, currentInput, match.arena);
+      }
+    }
+
+    this.predictedSelf = predicted;
+    this.predictionStepCount++;
   }
 
   private clearPendingResult() {
@@ -1628,9 +1587,8 @@ class MultiplayerClientSession {
 
   private resetClientEffects() {
     this.predictedSelf = null;
-    this.correctionOffsetX = 0;
-    this.correctionOffsetY = 0;
-    this.correctionOffsetAngle = 0;
+    this.serverSelfBase = null;
+    this.predictionStepCount = 0;
     this.ammoHudEffects = [];
     this.playerArrivals.clear();
     this.playerDestructions.clear();
