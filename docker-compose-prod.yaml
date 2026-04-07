@@ -10,6 +10,7 @@ services:
 
   server:
     image: ghcr.io/trebeljahr/asteroid-game-server:main
+    pull_policy: always
     restart: unless-stopped
     environment:
       PORT: "9777"
@@ -21,6 +22,7 @@ services:
 
   client:
     image: ghcr.io/trebeljahr/asteroid-game-client:main
+    pull_policy: always
     restart: unless-stopped
     ports:
       - "80:80"
