@@ -24,8 +24,6 @@ services:
     image: ghcr.io/trebeljahr/asteroid-game-client:main
     pull_policy: always
     restart: unless-stopped
-    ports:
-      - "80:80"
     environment:
       PORT: "80"
       BACKEND_URL: http://server:9777
