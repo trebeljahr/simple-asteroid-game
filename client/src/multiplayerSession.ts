@@ -1505,10 +1505,8 @@ class MultiplayerClientSession {
           };
 
     const now = performance.now();
-    if (
-      sameInputState(nextInput, this.lastSentInput) &&
-      now - this.lastSentAt < this.inputPushIntervalMs
-    ) {
+    const inputChanged = !sameInputState(nextInput, this.lastSentInput);
+    if (!inputChanged && now - this.lastSentAt < this.inputPushIntervalMs) {
       return;
     }
 
