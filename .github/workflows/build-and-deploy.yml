@@ -1,0 +1,118 @@
+name: build-and-deploy
+
+on:
+  push:
+    branches:
+      - master
+
+concurrency:
+  group: asteroid-game-deploy
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build-client:
+    runs-on: ubuntu-latest
+    env:
+      COOLIFY_BASE_URL: ${{ secrets.COOLIFY_BASE_URL }}
+      COOLIFY_API_TOKEN: ${{ secrets.COOLIFY_API_TOKEN }}
+      COOLIFY_RESOURCE_UUID: ${{ secrets.COOLIFY_CLIENT_RESOURCE_UUID }}
+      COOLIFY_DEPLOY_WEBHOOK: ${{ secrets.COOLIFY_CLIENT_DEPLOY_WEBHOOK }}
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v6
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract image metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository_owner }}/asteroid-game-client
+          tags: |
+            type=raw,value=main
+            type=sha
+
+      - name: Build and push client image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./client/Dockerfile
+          push: true
+          no-cache: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+      - name: Trigger client deployment via API
+        if: ${{ env.COOLIFY_BASE_URL != '' && env.COOLIFY_API_TOKEN != '' && env.COOLIFY_RESOURCE_UUID != '' }}
+        run: |
+          curl -fsS \
+            -H "Authorization: Bearer $COOLIFY_API_TOKEN" \
+            -X POST \
+            "$COOLIFY_BASE_URL/api/v1/deploy?uuid=$COOLIFY_RESOURCE_UUID"
+
+      - name: Trigger legacy client deployment webhook
+        if: ${{ (env.COOLIFY_BASE_URL == '' || env.COOLIFY_API_TOKEN == '' || env.COOLIFY_RESOURCE_UUID == '') && env.COOLIFY_DEPLOY_WEBHOOK != '' }}
+        run: curl -fsS -X POST "$COOLIFY_DEPLOY_WEBHOOK"
+
+  build-server:
+    runs-on: ubuntu-latest
+    env:
+      COOLIFY_BASE_URL: ${{ secrets.COOLIFY_BASE_URL }}
+      COOLIFY_API_TOKEN: ${{ secrets.COOLIFY_API_TOKEN }}
+      COOLIFY_RESOURCE_UUID: ${{ secrets.COOLIFY_SERVER_RESOURCE_UUID }}
+      COOLIFY_DEPLOY_WEBHOOK: ${{ secrets.COOLIFY_SERVER_DEPLOY_WEBHOOK }}
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v6
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract image metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository_owner }}/asteroid-game-server
+          tags: |
+            type=raw,value=main
+            type=sha
+
+      - name: Build and push server image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./server/Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+      - name: Trigger server deployment via API
+        if: ${{ env.COOLIFY_BASE_URL != '' && env.COOLIFY_API_TOKEN != '' && env.COOLIFY_RESOURCE_UUID != '' }}
+        run: |
+          curl -fsS \
+            -H "Authorization: Bearer $COOLIFY_API_TOKEN" \
+            -X POST \
+            "$COOLIFY_BASE_URL/api/v1/deploy?uuid=$COOLIFY_RESOURCE_UUID"
+
+      - name: Trigger legacy server deployment webhook
+        if: ${{ (env.COOLIFY_BASE_URL == '' || env.COOLIFY_API_TOKEN == '' || env.COOLIFY_RESOURCE_UUID == '') && env.COOLIFY_DEPLOY_WEBHOOK != '' }}
+        run: curl -fsS -X POST "$COOLIFY_DEPLOY_WEBHOOK"
