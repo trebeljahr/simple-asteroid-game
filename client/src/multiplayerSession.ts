@@ -921,8 +921,6 @@ class MultiplayerClientSession {
       return;
     }
 
-    this.stepPredictedSelf(match);
-
     const predictedTicks = Math.min(
       4,
       (performance.now() - match.snapshotReceivedAt) / SNAPSHOT_TICK_MS
@@ -932,23 +930,9 @@ class MultiplayerClientSession {
     });
 
     const selfPlayer: MatchPlayerSnapshot | null =
-      this.predictedSelf !== null
-        ? {
-            id: this.predictedSelf.id,
-            slot: this.predictedSelf.slot,
-            x: this.predictedSelf.x,
-            y: this.predictedSelf.y,
-            vx: this.predictedSelf.vx,
-            vy: this.predictedSelf.vy,
-            angle: this.predictedSelf.angle,
-            health: this.predictedSelf.health,
-            ammo: this.predictedSelf.ammo,
-            damageRecoveryTicks: this.predictedSelf.damageRecoveryTicks,
-            lastInputSeq: this.predictedSelf.lastInputSeq,
-            thrusting: this.predictedSelf.thrusting,
-            shipVariant: this.predictedSelf.shipVariant,
-          }
-        : match.snapshot.players.find((player) => player.id === match.playerId) ?? null;
+      this.getPredictedSelfSnapshot(match)
+      ?? match.snapshot.players.find((player) => player.id === match.playerId)
+      ?? null;
 
     const opponentSnapshot =
       match.snapshot.players.find((player) => player.id === match.opponentId) ?? null;
@@ -1529,29 +1513,30 @@ class MultiplayerClientSession {
       return;
     }
 
-    const seq = ++this.inputSeqCounter;
-    const nextInput: ShipInputState =
-      state.overlay === null
-        ? {
-            fire: isShipActionActive("fire"),
-            inputSeq: seq,
-            thrust: isShipActionActive("thrust"),
-            turnLeft: isShipActionActive("turnLeft"),
-            turnRight: isShipActionActive("turnRight"),
-          }
-        : {
-            fire: false,
-            inputSeq: seq,
-            thrust: false,
-            turnLeft: false,
-            turnRight: false,
-          };
+    const nextInput = state.overlay === null
+      ? {
+          fire: isShipActionActive("fire"),
+          inputSeq: 0,
+          thrust: isShipActionActive("thrust"),
+          turnLeft: isShipActionActive("turnLeft"),
+          turnRight: isShipActionActive("turnRight"),
+        }
+      : {
+          fire: false,
+          inputSeq: 0,
+          thrust: false,
+          turnLeft: false,
+          turnRight: false,
+        };
 
     const now = performance.now();
     const inputChanged = !sameInputState(nextInput, this.lastSentInput);
     if (!inputChanged && now - this.lastSentAt < this.inputPushIntervalMs) {
       return;
     }
+
+    const seq = ++this.inputSeqCounter;
+    nextInput.inputSeq = seq;
 
     // Buffer for replay during server reconciliation
     this.inputBuffer.push({ seq, input: nextInput });
@@ -1573,10 +1558,9 @@ class MultiplayerClientSession {
       (entry) => entry.seq > serverState.lastInputSeq
     );
 
-    // Replay unacknowledged inputs on top of server state
-    // Each buffered entry represents the input that was active for one
-    // server tick, so we step once per entry to match what the server
-    // will do when it processes these inputs.
+    // Replay unacknowledged inputs on top of server state.
+    // The server applies one input per tick — each buffered entry
+    // corresponds to one server tick worth of simulation.
     for (const entry of this.inputBuffer) {
       if (this.predictedSelf.health > 0) {
         stepPlayerState(this.predictedSelf, entry.input, arena);
@@ -1584,25 +1568,22 @@ class MultiplayerClientSession {
     }
   }
 
-  private stepPredictedSelf(match: ActiveMatchState) {
-    if (this.predictedSelf === null || match.snapshot === null) {
-      return;
+  private getPredictedSelfSnapshot(match: ActiveMatchState): MatchPlayerSnapshot | null {
+    if (this.predictedSelf === null) {
+      return null;
     }
 
-    if (this.predictedSelf.health <= 0) {
-      return;
-    }
+    // Extrapolate from the reconciled state using current velocity
+    // to cover the time between the last reconciliation and now.
+    // This is purely visual — the actual predicted state only advances
+    // during reconciliation replay.
+    const ticksSinceSnapshot =
+      (performance.now() - match.snapshotReceivedAt) / SNAPSHOT_TICK_MS;
+    // Only extrapolate for the fraction of a tick since reconciliation,
+    // capped to avoid over-shooting between snapshots.
+    const extrapolateTicks = Math.min(ticksSinceSnapshot, 3);
 
-    // Use the current input (same as what will be sent to server)
-    const currentInput: ShipInputState = {
-      fire: isShipActionActive("fire"),
-      inputSeq: this.inputSeqCounter,
-      thrust: isShipActionActive("thrust"),
-      turnLeft: isShipActionActive("turnLeft"),
-      turnRight: isShipActionActive("turnRight"),
-    };
-
-    stepPlayerState(this.predictedSelf, currentInput, match.arena);
+    return projectPlayerSnapshot(this.predictedSelf, extrapolateTicks, match.arena);
   }
 
   private clearPendingResult() {
