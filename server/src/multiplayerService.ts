@@ -885,15 +885,34 @@ export class MultiplayerService {
         const healingByPlayerId = new Map<string, number>();
         const asteroidDamageById = new Map<string, number>();
 
+        // World spawns are time-based — run once per real tick.
         this.updateWorldSpawns(match, worldEvents);
-        this.updatePlayers(match);
-        this.handlePlayerShipCollision(match, playerDamageById);
-        this.handlePlayerAsteroidCollisions(match, playerDamageById, worldEvents);
-        this.handleBulletCollisions(match, playerDamageById, asteroidDamageById);
-        this.applyAsteroidDamage(match, asteroidDamageById, worldEvents);
-        this.applyHeartCollections(match, healingByPlayerId, worldEvents);
-        this.applyAmmoCollections(match, worldEvents);
-        this.applyPlayerDamageAndHealing(match, playerDamageById, healingByPlayerId);
+
+        // Run sub-steps to drain each player's input queue.  On a good
+        // connection this is 1 step.  On high latency, inputs arrive in
+        // bursts and we need to step the FULL simulation (players +
+        // bullets + collisions) for each queued input so that collision
+        // detection stays synchronised with intermediate positions.
+        const subSteps = Math.max(
+          1,
+          match.players[0].inputQueue.length,
+          match.players[1].inputQueue.length
+        );
+        for (let subStep = 0; subStep < subSteps; subStep++) {
+          this.stepPlayersOnce(match);
+          this.handlePlayerShipCollision(match, playerDamageById);
+          this.handlePlayerAsteroidCollisions(match, playerDamageById, worldEvents);
+          this.handleBulletCollisions(match, playerDamageById, asteroidDamageById);
+          this.applyAsteroidDamage(match, asteroidDamageById, worldEvents);
+          this.applyHeartCollections(match, healingByPlayerId, worldEvents);
+          this.applyAmmoCollections(match, worldEvents);
+          this.applyPlayerDamageAndHealing(match, playerDamageById, healingByPlayerId);
+
+          // Reset per-step accumulators for the next sub-step.
+          playerDamageById.clear();
+          healingByPlayerId.clear();
+          asteroidDamageById.clear();
+        }
 
         if (this.hasMeaningfulActivity(match, previousStates, previousBulletCount)) {
           match.lastActivityAt = Date.now();
@@ -978,41 +997,35 @@ export class MultiplayerService {
     }
   }
 
-  private updatePlayers(match: Match) {
+  private stepPlayersOnce(match: Match) {
     for (let playerIndex = 0; playerIndex < match.players.length; playerIndex++) {
       const participant = match.players[playerIndex];
 
-      // Drain the input queue: process every queued input with its own
-      // physics step so the server catches up to the client's prediction.
-      // On a good connection the queue has 0-1 entries per tick, so this
-      // is usually a single step.  On high latency, inputs arrive in
-      // bursts and the queue can back up — processing them all here
-      // keeps the server in sync with the client's prediction tick count,
-      // which is the key requirement for jitter-free reconciliation.
-      const stepsToRun = Math.max(1, participant.inputQueue.length);
-      for (let step = 0; step < stepsToRun; step++) {
-        if (participant.inputQueue.length > 0) {
-          participant.input = participant.inputQueue.shift()!;
-          participant.state.lastInputSeq = participant.input.inputSeq;
-        }
+      // Pop one input from the queue (if available), or reuse the last
+      // applied input.  The caller runs this in a sub-step loop so that
+      // all queued inputs are consumed — one physics step per input,
+      // matching the client's prediction tick count.
+      if (participant.inputQueue.length > 0) {
+        participant.input = participant.inputQueue.shift()!;
+        participant.state.lastInputSeq = participant.input.inputSeq;
+      }
 
-        stepPlayerState(participant.state, participant.input, MULTIPLAYER_ARENA);
+      stepPlayerState(participant.state, participant.input, MULTIPLAYER_ARENA);
 
-        if (
-          participant.state.health > 0 &&
-          participant.input.fire &&
-          participant.state.fireCooldownTicks === 0 &&
-          participant.state.ammo > 0
-        ) {
-          match.bullets.push(
-            createRuntimeBulletState(
-              participant.state,
-              `bullet-${++this.bulletCounter}`
-            )
-          );
-          participant.state.ammo--;
-          participant.state.fireCooldownTicks = FIRE_COOLDOWN_TICKS;
-        }
+      if (
+        participant.state.health > 0 &&
+        participant.input.fire &&
+        participant.state.fireCooldownTicks === 0 &&
+        participant.state.ammo > 0
+      ) {
+        match.bullets.push(
+          createRuntimeBulletState(
+            participant.state,
+            `bullet-${++this.bulletCounter}`
+          )
+        );
+        participant.state.ammo--;
+        participant.state.fireCooldownTicks = FIRE_COOLDOWN_TICKS;
       }
     }
   }
