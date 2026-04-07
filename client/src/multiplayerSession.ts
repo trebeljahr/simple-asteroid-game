@@ -55,6 +55,7 @@ import {
   ShipInputState,
   RuntimePlayerState,
   stepPlayerState,
+  TICK_INTERVAL_MS,
   WorldEvent,
 } from "../../shared/src";
 
@@ -212,6 +213,7 @@ class MultiplayerClientSession {
   private inputSeqCounter = 0;
   private pendingResult: PendingResultState | null = null;
   private predictedSelf: RuntimePlayerState | null = null;
+  private predictionTickTimer: ReturnType<typeof setInterval> | null = null;
   private p: p5 | null = null;
   private playerArrivals = new Map<string, PlayerArrivalState>();
   private playerDestructions = new Map<string, PlayerDestructionState>();
@@ -249,7 +251,6 @@ class MultiplayerClientSession {
   }
 
   draw(p: p5) {
-    this.pushLatestInput();
     if (this.flushPendingResultIfReady()) {
       return;
     }
@@ -441,7 +442,11 @@ class MultiplayerClientSession {
         (player) => player.id === this.viewState.match?.playerId
       );
       if (serverSelf !== undefined) {
+        const wasFirstSnapshot = this.predictedSelf === null;
         this.reconcilePredictedSelf(serverSelf, this.viewState.match.arena);
+        if (wasFirstSnapshot) {
+          this.startPredictionLoop();
+        }
       }
     });
 
@@ -929,8 +934,10 @@ class MultiplayerClientSession {
       return projectBulletSnapshot(bullet, predictedTicks);
     });
 
+    // Use locally predicted state for self (updated by tick loop),
+    // fall back to server snapshot if prediction hasn't started yet
     const selfPlayer: MatchPlayerSnapshot | null =
-      this.getPredictedSelfSnapshot(match)
+      this.predictedSelf
       ?? match.snapshot.players.find((player) => player.id === match.playerId)
       ?? null;
 
@@ -1501,54 +1508,6 @@ class MultiplayerClientSession {
     }
   }
 
-  private pushLatestInput() {
-    const state = getGameState();
-    if (
-      state.scene.type !== "mode" ||
-      state.scene.mode !== "multiplayer" ||
-      this.socket === null ||
-      !this.socket.connected ||
-      this.viewState.match === null
-    ) {
-      return;
-    }
-
-    const nextInput = state.overlay === null
-      ? {
-          fire: isShipActionActive("fire"),
-          inputSeq: 0,
-          thrust: isShipActionActive("thrust"),
-          turnLeft: isShipActionActive("turnLeft"),
-          turnRight: isShipActionActive("turnRight"),
-        }
-      : {
-          fire: false,
-          inputSeq: 0,
-          thrust: false,
-          turnLeft: false,
-          turnRight: false,
-        };
-
-    const now = performance.now();
-    const inputChanged = !sameInputState(nextInput, this.lastSentInput);
-    if (!inputChanged && now - this.lastSentAt < this.inputPushIntervalMs) {
-      return;
-    }
-
-    const seq = ++this.inputSeqCounter;
-    nextInput.inputSeq = seq;
-
-    // Buffer for replay during server reconciliation
-    this.inputBuffer.push({ seq, input: nextInput });
-    if (this.inputBuffer.length > 120) {
-      this.inputBuffer.shift();
-    }
-
-    this.socket.emit("match:input", nextInput);
-    this.lastSentInput = nextInput;
-    this.lastSentAt = now;
-  }
-
   private reconcilePredictedSelf(serverState: MatchPlayerSnapshot, arena: ActiveMatchState["arena"]) {
     // Accept authoritative server state as base
     this.predictedSelf = { ...serverState, fireCooldownTicks: 0 };
@@ -1559,8 +1518,8 @@ class MultiplayerClientSession {
     );
 
     // Replay unacknowledged inputs on top of server state.
-    // The server applies one input per tick — each buffered entry
-    // corresponds to one server tick worth of simulation.
+    // Each buffered entry was produced by one tick of the client
+    // simulation, matching one server tick.
     for (const entry of this.inputBuffer) {
       if (this.predictedSelf.health > 0) {
         stepPlayerState(this.predictedSelf, entry.input, arena);
@@ -1568,22 +1527,70 @@ class MultiplayerClientSession {
     }
   }
 
-  private getPredictedSelfSnapshot(match: ActiveMatchState): MatchPlayerSnapshot | null {
-    if (this.predictedSelf === null) {
-      return null;
+  private predictionTick() {
+    const match = this.viewState.match;
+    if (match === null || this.predictedSelf === null) {
+      return;
     }
 
-    // Extrapolate from the reconciled state using current velocity
-    // to cover the time between the last reconciliation and now.
-    // This is purely visual — the actual predicted state only advances
-    // during reconciliation replay.
-    const ticksSinceSnapshot =
-      (performance.now() - match.snapshotReceivedAt) / SNAPSHOT_TICK_MS;
-    // Only extrapolate for the fraction of a tick since reconciliation,
-    // capped to avoid over-shooting between snapshots.
-    const extrapolateTicks = Math.min(ticksSinceSnapshot, 3);
+    if (this.predictedSelf.health <= 0) {
+      return;
+    }
 
-    return projectPlayerSnapshot(this.predictedSelf, extrapolateTicks, match.arena);
+    const state = getGameState();
+    const seq = ++this.inputSeqCounter;
+    const currentInput: ShipInputState =
+      state.overlay === null
+        ? {
+            fire: isShipActionActive("fire"),
+            inputSeq: seq,
+            thrust: isShipActionActive("thrust"),
+            turnLeft: isShipActionActive("turnLeft"),
+            turnRight: isShipActionActive("turnRight"),
+          }
+        : {
+            fire: false,
+            inputSeq: seq,
+            thrust: false,
+            turnLeft: false,
+            turnRight: false,
+          };
+
+    // Buffer for reconciliation replay
+    this.inputBuffer.push({ seq, input: currentInput });
+    if (this.inputBuffer.length > 180) {
+      this.inputBuffer.shift();
+    }
+
+    // Step local prediction
+    stepPlayerState(this.predictedSelf, currentInput, match.arena);
+
+    // Send to server (throttled — not every tick needs a network send,
+    // but the buffer captures every tick for accurate replay)
+    if (
+      this.socket !== null &&
+      this.socket.connected &&
+      (!sameInputState(currentInput, this.lastSentInput) ||
+        performance.now() - this.lastSentAt >= this.inputPushIntervalMs)
+    ) {
+      this.socket.emit("match:input", currentInput);
+      this.lastSentInput = currentInput;
+      this.lastSentAt = performance.now();
+    }
+  }
+
+  private startPredictionLoop() {
+    this.stopPredictionLoop();
+    this.predictionTickTimer = setInterval(() => {
+      this.predictionTick();
+    }, TICK_INTERVAL_MS);
+  }
+
+  private stopPredictionLoop() {
+    if (this.predictionTickTimer !== null) {
+      clearInterval(this.predictionTickTimer);
+      this.predictionTickTimer = null;
+    }
   }
 
   private clearPendingResult() {
@@ -1591,6 +1598,7 @@ class MultiplayerClientSession {
   }
 
   private resetClientEffects() {
+    this.stopPredictionLoop();
     this.predictedSelf = null;
     this.inputBuffer = [];
     this.inputSeqCounter = 0;
