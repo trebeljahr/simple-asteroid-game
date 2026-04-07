@@ -367,6 +367,14 @@ export class MultiplayerService {
         ? Math.max(0, MATCH_COUNTDOWN_MS - (Date.now() - match.createdAt))
         : 0;
 
+    const debug: Record<string, { inputQueueDepth: number }> = {};
+    for (let i = 0; i < match.players.length; i++) {
+      const participant = match.players[i];
+      debug[participant.socket.id] = {
+        inputQueueDepth: participant.inputQueue.length,
+      };
+    }
+
     return {
       bullets: match.bullets.map((bullet) => {
         return {
@@ -379,6 +387,7 @@ export class MultiplayerService {
         };
       }),
       countdownMs,
+      debug,
       matchId: match.id,
       phase: match.phase,
       players: match.players.map((participant): MatchPlayerSnapshot => {

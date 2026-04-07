@@ -130,9 +130,14 @@ export interface MatchWorldEventsPayload {
   worldVersion: number;
 }
 
+export interface MatchSnapshotPlayerDebug {
+  inputQueueDepth: number;
+}
+
 export interface MatchSnapshotPayload {
   bullets: MatchBulletSnapshot[];
   countdownMs: number;
+  debug?: Record<string, MatchSnapshotPlayerDebug>;
   matchId: string;
   phase: MatchPhase;
   players: MatchPlayerSnapshot[];

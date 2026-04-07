@@ -83,6 +83,7 @@ interface MultiplayerViewState {
   status: MultiplayerStatus;
 }
 
+const NETCODE_DEBUG_KEY = "simple-asteroid-game-netcode-debug";
 const SNAPSHOT_TICK_MS = 1000 / 60;
 const SHIP_WIDTH = 60;
 const SHIP_HEIGHT = 120;
@@ -195,9 +196,24 @@ const drawHeartOutline = (p: p5, x: number, y: number, size: number) => {
   p.pop();
 };
 
+interface NetcodeDebugSample {
+  bufferSize: number;
+  dx: number;
+  dy: number;
+  inputQueueDepth: number;
+  lastInputSeq: number;
+  serverSequence: number;
+  snapshotIntervalMs: number;
+  timestamp: number;
+}
+
+const NETCODE_DEBUG_HISTORY = 120;
+
 class MultiplayerClientSession {
   private ammoHudEffects: AmmoHudEffect[] = [];
   private collisionExplosions: ExplosionSystem | null = null;
+  private debugHistory: NetcodeDebugSample[] = [];
+  private debugEnabled = false;
   private initialized = false;
   private inputPushIntervalMs = LOCAL_INPUT_PUSH_INTERVAL_MS;
   private isLeavingMode = false;
@@ -229,6 +245,16 @@ class MultiplayerClientSession {
 
     this.p = p;
     this.resetClientEffects();
+    this.debugEnabled = window.localStorage.getItem(NETCODE_DEBUG_KEY) === "true";
+
+    window.addEventListener("keydown", (event) => {
+      if (event.key === "F2") {
+        this.debugEnabled = !this.debugEnabled;
+        try {
+          window.localStorage.setItem(NETCODE_DEBUG_KEY, String(this.debugEnabled));
+        } catch (_error) { /* ignore */ }
+      }
+    });
 
     gameStateMachine.subscribe((state, previousState) => {
       const wasMultiplayerMode =
@@ -439,8 +465,11 @@ class MultiplayerClientSession {
         this.triggerPlayerArrivals(payload.players);
       }
 
+      const now = performance.now();
+      const prevSnapshotReceivedAt = this.viewState.match.snapshotReceivedAt;
+
       this.viewState.match.snapshot = payload;
-      this.viewState.match.snapshotReceivedAt = performance.now();
+      this.viewState.match.snapshotReceivedAt = now;
       this.viewState.status = "matched";
 
       // Only run prediction and reconciliation during the active phase.
@@ -456,9 +485,33 @@ class MultiplayerClientSession {
       );
       if (serverSelf !== undefined) {
         const wasFirstActiveSnapshot = this.predictedSelf === null;
+        const prevX = this.predictedSelf?.x ?? serverSelf.x;
+        const prevY = this.predictedSelf?.y ?? serverSelf.y;
+
         this.reconcilePredictedSelf(serverSelf, this.viewState.match.arena);
+
         if (wasFirstActiveSnapshot) {
           this.startPredictionLoop();
+        }
+
+        if (this.debugEnabled) {
+          const snapshotInterval = previousSnapshot !== null
+            ? now - prevSnapshotReceivedAt
+            : 0;
+          const playerDebug = payload.debug?.[this.viewState.match.playerId];
+          this.debugHistory.push({
+            bufferSize: this.inputBuffer.length,
+            dx: this.predictedSelf!.x - prevX,
+            dy: this.predictedSelf!.y - prevY,
+            inputQueueDepth: playerDebug?.inputQueueDepth ?? -1,
+            lastInputSeq: serverSelf.lastInputSeq,
+            serverSequence: payload.sequence,
+            snapshotIntervalMs: snapshotInterval,
+            timestamp: now,
+          });
+          if (this.debugHistory.length > NETCODE_DEBUG_HISTORY) {
+            this.debugHistory.shift();
+          }
         }
       }
     });
@@ -1101,6 +1154,108 @@ class MultiplayerClientSession {
     this.drawAmmoHud(p, selfPlayer.ammo);
     this.drawAmmoHudEffects(p);
     this.drawRadarHud(p, selfPlayer, opponentPlayer, match.arena);
+
+    if (this.debugEnabled && isCollisionDebugAvailable()) {
+      this.drawNetcodeDebugOverlay(p, match);
+    }
+  }
+
+  private drawNetcodeDebugOverlay(p: p5, match: ActiveMatchState) {
+    const history = this.debugHistory;
+    if (history.length === 0) {
+      return;
+    }
+
+    const panelX = 10;
+    const panelY = 10;
+    const panelW = 340;
+    const lineH = 15;
+    const graphH = 50;
+    const graphGap = 6;
+    const latest = history[history.length - 1];
+
+    // --- text stats ---
+    const lines = [
+      `[F2] Netcode debug  (${history.length} samples)`,
+      `buffer size: ${latest.bufferSize}`,
+      `recon dx: ${latest.dx.toFixed(2)}  dy: ${latest.dy.toFixed(2)}  dist: ${Math.hypot(latest.dx, latest.dy).toFixed(2)}`,
+      `server seq: ${latest.serverSequence}  lastInputSeq: ${latest.lastInputSeq}`,
+      `server queue depth: ${latest.inputQueueDepth === -1 ? "n/a" : latest.inputQueueDepth}`,
+      `client inputSeq: ${this.inputSeqCounter}`,
+      `snapshot interval: ${latest.snapshotIntervalMs.toFixed(1)} ms`,
+    ];
+    const textBlockH = lines.length * lineH + 4;
+
+    // Three graphs: reconciliation distance, buffer size, queue depth
+    const totalH = textBlockH + (graphH + graphGap) * 3 + 8;
+
+    p.push();
+    p.fill(0, 0, 0, 180);
+    p.noStroke();
+    p.rect(panelX, panelY, panelW, totalH, 4);
+
+    p.fill(255);
+    p.textSize(11);
+    p.textFont("monospace");
+    p.textAlign(p.LEFT, p.TOP);
+    for (let i = 0; i < lines.length; i++) {
+      p.text(lines[i], panelX + 8, panelY + 4 + i * lineH);
+    }
+
+    // --- helper to draw a mini graph ---
+    const drawGraph = (
+      yOffset: number,
+      label: string,
+      values: number[],
+      color: [number, number, number],
+      fixedMax?: number
+    ) => {
+      const gx = panelX + 8;
+      const gy = panelY + textBlockH + yOffset;
+      const gw = panelW - 16;
+
+      p.fill(20, 20, 30, 200);
+      p.noStroke();
+      p.rect(gx, gy, gw, graphH, 2);
+
+      if (values.length < 2) {
+        return;
+      }
+
+      const maxVal = fixedMax ?? Math.max(...values, 1);
+
+      p.stroke(color[0], color[1], color[2], 220);
+      p.strokeWeight(1.5);
+      p.noFill();
+      p.beginShape();
+      for (let i = 0; i < values.length; i++) {
+        const vx = gx + (i / (values.length - 1)) * gw;
+        const vy = gy + graphH - (Math.min(values[i], maxVal) / maxVal) * (graphH - 4) - 2;
+        p.vertex(vx, vy);
+      }
+      p.endShape();
+
+      // Zero line
+      p.stroke(255, 255, 255, 40);
+      p.strokeWeight(0.5);
+      const zeroY = gy + graphH - 2;
+      p.line(gx, zeroY, gx + gw, zeroY);
+
+      p.noStroke();
+      p.fill(color[0], color[1], color[2], 200);
+      p.textSize(9);
+      p.text(`${label}  max: ${maxVal.toFixed(1)}`, gx + 4, gy + 2);
+    };
+
+    const reconDist = history.map((s) => Math.hypot(s.dx, s.dy));
+    const bufferSizes = history.map((s) => s.bufferSize);
+    const queueDepths = history.map((s) => Math.max(0, s.inputQueueDepth));
+
+    drawGraph(0, "recon distance (px)", reconDist, [255, 100, 100]);
+    drawGraph(graphH + graphGap, "input buffer size", bufferSizes, [100, 200, 255]);
+    drawGraph((graphH + graphGap) * 2, "server queue depth", queueDepths, [100, 255, 140]);
+
+    p.pop();
   }
 
   private drawQueueState(p: p5) {
@@ -1610,6 +1765,7 @@ class MultiplayerClientSession {
     this.predictedSelf = null;
     this.inputBuffer = [];
     this.inputSeqCounter = 0;
+    this.debugHistory = [];
     this.ammoHudEffects = [];
     this.playerArrivals.clear();
     this.playerDestructions.clear();
