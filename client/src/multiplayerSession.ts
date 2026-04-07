@@ -201,12 +201,15 @@ class MultiplayerClientSession {
   private inputPushIntervalMs = LOCAL_INPUT_PUSH_INTERVAL_MS;
   private isLeavingMode = false;
   private lastSentAt = 0;
-  private lastSentInput = {
+  private lastSentInput: ShipInputState = {
     fire: false,
+    inputSeq: 0,
     thrust: false,
     turnLeft: false,
     turnRight: false,
   };
+  private inputBuffer: Array<{ seq: number; input: ShipInputState }> = [];
+  private inputSeqCounter = 0;
   private pendingResult: PendingResultState | null = null;
   private predictedSelf: RuntimePlayerState | null = null;
   private p: p5 | null = null;
@@ -379,6 +382,7 @@ class MultiplayerClientSession {
       this.lastSentAt = 0;
       this.lastSentInput = {
         fire: false,
+        inputSeq: 0,
         thrust: false,
         turnLeft: false,
         turnRight: false,
@@ -437,7 +441,7 @@ class MultiplayerClientSession {
         (player) => player.id === this.viewState.match?.playerId
       );
       if (serverSelf !== undefined) {
-        this.reconcilePredictedSelf(serverSelf);
+        this.reconcilePredictedSelf(serverSelf, this.viewState.match.arena);
       }
     });
 
@@ -940,6 +944,7 @@ class MultiplayerClientSession {
             health: this.predictedSelf.health,
             ammo: this.predictedSelf.ammo,
             damageRecoveryTicks: this.predictedSelf.damageRecoveryTicks,
+            lastInputSeq: this.predictedSelf.lastInputSeq,
             thrusting: this.predictedSelf.thrusting,
             shipVariant: this.predictedSelf.shipVariant,
           }
@@ -1383,6 +1388,7 @@ class MultiplayerClientSession {
     this.lastSentAt = 0;
     this.lastSentInput = {
       fire: false,
+      inputSeq: 0,
       thrust: false,
       turnLeft: false,
       turnRight: false,
@@ -1433,6 +1439,7 @@ class MultiplayerClientSession {
     this.lastSentAt = 0;
     this.lastSentInput = {
       fire: false,
+      inputSeq: 0,
       thrust: false,
       turnLeft: false,
       turnRight: false,
@@ -1522,16 +1529,19 @@ class MultiplayerClientSession {
       return;
     }
 
-    const nextInput =
+    const seq = ++this.inputSeqCounter;
+    const nextInput: ShipInputState =
       state.overlay === null
         ? {
             fire: isShipActionActive("fire"),
+            inputSeq: seq,
             thrust: isShipActionActive("thrust"),
             turnLeft: isShipActionActive("turnLeft"),
             turnRight: isShipActionActive("turnRight"),
           }
         : {
             fire: false,
+            inputSeq: seq,
             thrust: false,
             turnLeft: false,
             turnRight: false,
@@ -1543,33 +1553,34 @@ class MultiplayerClientSession {
       return;
     }
 
+    // Buffer for replay during server reconciliation
+    this.inputBuffer.push({ seq, input: nextInput });
+    if (this.inputBuffer.length > 120) {
+      this.inputBuffer.shift();
+    }
+
     this.socket.emit("match:input", nextInput);
     this.lastSentInput = nextInput;
     this.lastSentAt = now;
   }
 
-  private reconcilePredictedSelf(serverState: MatchPlayerSnapshot) {
-    if (this.predictedSelf === null) {
-      this.predictedSelf = { ...serverState, fireCooldownTicks: 0 };
-      return;
-    }
+  private reconcilePredictedSelf(serverState: MatchPlayerSnapshot, arena: ActiveMatchState["arena"]) {
+    // Accept authoritative server state as base
+    this.predictedSelf = { ...serverState, fireCooldownTicks: 0 };
 
-    // Accept server authority for all non-predicted state
-    this.predictedSelf.health = serverState.health;
-    this.predictedSelf.ammo = serverState.ammo;
-    this.predictedSelf.damageRecoveryTicks = serverState.damageRecoveryTicks;
-    this.predictedSelf.slot = serverState.slot;
-    this.predictedSelf.shipVariant = serverState.shipVariant;
+    // Discard inputs the server has already processed
+    this.inputBuffer = this.inputBuffer.filter(
+      (entry) => entry.seq > serverState.lastInputSeq
+    );
 
-    // Snap to server if too far off
-    const dx = serverState.x - this.predictedSelf.x;
-    const dy = serverState.y - this.predictedSelf.y;
-    if (Math.hypot(dx, dy) > 150) {
-      this.predictedSelf.x = serverState.x;
-      this.predictedSelf.y = serverState.y;
-      this.predictedSelf.vx = serverState.vx;
-      this.predictedSelf.vy = serverState.vy;
-      this.predictedSelf.angle = serverState.angle;
+    // Replay unacknowledged inputs on top of server state
+    // Each buffered entry represents the input that was active for one
+    // server tick, so we step once per entry to match what the server
+    // will do when it processes these inputs.
+    for (const entry of this.inputBuffer) {
+      if (this.predictedSelf.health > 0) {
+        stepPlayerState(this.predictedSelf, entry.input, arena);
+      }
     }
   }
 
@@ -1582,8 +1593,10 @@ class MultiplayerClientSession {
       return;
     }
 
+    // Use the current input (same as what will be sent to server)
     const currentInput: ShipInputState = {
       fire: isShipActionActive("fire"),
+      inputSeq: this.inputSeqCounter,
       thrust: isShipActionActive("thrust"),
       turnLeft: isShipActionActive("turnLeft"),
       turnRight: isShipActionActive("turnRight"),
@@ -1598,6 +1611,8 @@ class MultiplayerClientSession {
 
   private resetClientEffects() {
     this.predictedSelf = null;
+    this.inputBuffer = [];
+    this.inputSeqCounter = 0;
     this.ammoHudEffects = [];
     this.playerArrivals.clear();
     this.playerDestructions.clear();

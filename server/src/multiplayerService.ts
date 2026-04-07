@@ -959,6 +959,7 @@ export class MultiplayerService {
     }
 
     participant.input = payload;
+    participant.state.lastInputSeq = payload.inputSeq;
   }
 
   private updatePlayers(match: Match) {

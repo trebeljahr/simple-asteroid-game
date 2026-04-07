@@ -17,6 +17,7 @@ export interface ArenaConfig {
 
 export interface ShipInputState {
   fire: boolean;
+  inputSeq: number;
   thrust: boolean;
   turnLeft: boolean;
   turnRight: boolean;
@@ -28,6 +29,7 @@ export interface MatchPlayerSnapshot {
   damageRecoveryTicks: number;
   health: number;
   id: string;
+  lastInputSeq: number;
   shipVariant: ShipVariant;
   slot: PlayerSlot;
   thrusting: boolean;
@@ -243,6 +245,7 @@ export const AMMO_PACKET_MAX_SIZE =
 export const createEmptyInputState = (): ShipInputState => {
   return {
     fire: false,
+    inputSeq: 0,
     thrust: false,
     turnLeft: false,
     turnRight: false,
@@ -345,6 +348,7 @@ export const createRuntimePlayerState = (
     fireCooldownTicks: 0,
     health: PLAYER_MAX_HEALTH,
     id,
+    lastInputSeq: 0,
     shipVariant,
     slot,
     thrusting: false,
@@ -397,6 +401,7 @@ export const snapshotPlayerState = (state: RuntimePlayerState): MatchPlayerSnaps
     damageRecoveryTicks: state.damageRecoveryTicks,
     health: state.health,
     id: state.id,
+    lastInputSeq: state.lastInputSeq,
     shipVariant: state.shipVariant,
     slot: state.slot,
     thrusting: state.thrusting,
