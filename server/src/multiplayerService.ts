@@ -982,34 +982,37 @@ export class MultiplayerService {
     for (let playerIndex = 0; playerIndex < match.players.length; playerIndex++) {
       const participant = match.players[playerIndex];
 
-      // Dequeue the next input from the queue (one per tick), or reuse
-      // the last applied input when the queue is empty.  This maintains
-      // a 1-to-1 correspondence between client prediction ticks and
-      // server physics ticks — the key requirement for jitter-free
-      // reconciliation.  lastInputSeq is only advanced when a queued
-      // input is consumed so the client knows exactly which inputs
-      // the server has stepped.
-      if (participant.inputQueue.length > 0) {
-        participant.input = participant.inputQueue.shift()!;
-        participant.state.lastInputSeq = participant.input.inputSeq;
-      }
+      // Drain the input queue: process every queued input with its own
+      // physics step so the server catches up to the client's prediction.
+      // On a good connection the queue has 0-1 entries per tick, so this
+      // is usually a single step.  On high latency, inputs arrive in
+      // bursts and the queue can back up — processing them all here
+      // keeps the server in sync with the client's prediction tick count,
+      // which is the key requirement for jitter-free reconciliation.
+      const stepsToRun = Math.max(1, participant.inputQueue.length);
+      for (let step = 0; step < stepsToRun; step++) {
+        if (participant.inputQueue.length > 0) {
+          participant.input = participant.inputQueue.shift()!;
+          participant.state.lastInputSeq = participant.input.inputSeq;
+        }
 
-      stepPlayerState(participant.state, participant.input, MULTIPLAYER_ARENA);
+        stepPlayerState(participant.state, participant.input, MULTIPLAYER_ARENA);
 
-      if (
-        participant.state.health > 0 &&
-        participant.input.fire &&
-        participant.state.fireCooldownTicks === 0 &&
-        participant.state.ammo > 0
-      ) {
-        match.bullets.push(
-          createRuntimeBulletState(
-            participant.state,
-            `bullet-${++this.bulletCounter}`
-          )
-        );
-        participant.state.ammo--;
-        participant.state.fireCooldownTicks = FIRE_COOLDOWN_TICKS;
+        if (
+          participant.state.health > 0 &&
+          participant.input.fire &&
+          participant.state.fireCooldownTicks === 0 &&
+          participant.state.ammo > 0
+        ) {
+          match.bullets.push(
+            createRuntimeBulletState(
+              participant.state,
+              `bullet-${++this.bulletCounter}`
+            )
+          );
+          participant.state.ammo--;
+          participant.state.fireCooldownTicks = FIRE_COOLDOWN_TICKS;
+        }
       }
     }
   }
