@@ -32,6 +32,7 @@ import {
   getAsteroidsInBounds,
   getHeartsInBounds,
   getNearbyAmmoPackets,
+  getNearbyAsteroids,
   getNearbyHearts,
   LOCAL_INPUT_PUSH_INTERVAL_MS,
   MatchEndedPayload,
@@ -45,12 +46,14 @@ import {
   MatchWorldRuntime,
   MatchmakingStatusPayload,
   MultiplayerRuntimeConfig,
+  PLAYER_DAMAGE_RECOVERY_TICKS,
   PLAYER_MAX_AMMO,
   PLAYER_MAX_HEALTH,
   PlayerSlot,
   projectBulletSnapshot,
   projectPlayerSnapshot,
   removeAmmoFromWorld,
+  removeAsteroidFromWorld,
   removeHeartFromWorld,
   ServerToClientEvents,
   ShipCollider,
@@ -1790,6 +1793,35 @@ class MultiplayerClientSession {
             this.predictedSelf.ammo + ammoPacket.amount
           );
           removeAmmoFromWorld(match.world, ammoPacket.id, match.arena);
+          break;
+        }
+      }
+    }
+
+    if (this.predictedSelf.damageRecoveryTicks === 0) {
+      const nearbyAsteroids = getNearbyAsteroids(
+        match.world,
+        this.predictedSelf.x,
+        this.predictedSelf.y,
+        broadDiameter,
+        match.arena
+      );
+      for (let i = 0; i < nearbyAsteroids.length; i++) {
+        const asteroid = nearbyAsteroids[i];
+        if (
+          circleOverlapsShipCollider(
+            asteroid.x,
+            asteroid.y,
+            asteroid.size,
+            selfCollider
+          )
+        ) {
+          this.predictedSelf.health = Math.max(
+            0,
+            this.predictedSelf.health - 1
+          );
+          this.predictedSelf.damageRecoveryTicks = PLAYER_DAMAGE_RECOVERY_TICKS;
+          removeAsteroidFromWorld(match.world, asteroid.id, match.arena);
           break;
         }
       }
