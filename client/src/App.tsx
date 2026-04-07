@@ -6,6 +6,7 @@ import {
   resumeGameplay,
   returnToMainMenu,
   toggleCollisionDebug,
+  toggleNetcodeDebug,
   toggleSoundEnabled,
 } from "./gameUiActions";
 import {
@@ -97,6 +98,12 @@ const OptionsPanel: React.FC<{ state: GameState }> = ({ state }) => (
         <ActionButton
           label={state.settings.collisionDebugEnabled ? "Collision Debug: On" : "Collision Debug: Off"}
           onClick={toggleCollisionDebug}
+        />
+      )}
+      {isCollisionDebugAvailable() && (
+        <ActionButton
+          label={state.settings.netcodeDebugEnabled ? "Netcode Debug: On" : "Netcode Debug: Off"}
+          onClick={toggleNetcodeDebug}
         />
       )}
       <ActionButton label="Back" onClick={closeOptionsMenu} variant="secondary" />

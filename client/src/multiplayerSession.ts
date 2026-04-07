@@ -83,7 +83,6 @@ interface MultiplayerViewState {
   status: MultiplayerStatus;
 }
 
-const NETCODE_DEBUG_KEY = "simple-asteroid-game-netcode-debug";
 const SNAPSHOT_TICK_MS = 1000 / 60;
 const SHIP_WIDTH = 60;
 const SHIP_HEIGHT = 120;
@@ -213,7 +212,6 @@ class MultiplayerClientSession {
   private ammoHudEffects: AmmoHudEffect[] = [];
   private collisionExplosions: ExplosionSystem | null = null;
   private debugHistory: NetcodeDebugSample[] = [];
-  private debugEnabled = false;
   private initialized = false;
   private inputPushIntervalMs = LOCAL_INPUT_PUSH_INTERVAL_MS;
   private isLeavingMode = false;
@@ -245,16 +243,6 @@ class MultiplayerClientSession {
 
     this.p = p;
     this.resetClientEffects();
-    this.debugEnabled = window.localStorage.getItem(NETCODE_DEBUG_KEY) === "true";
-
-    window.addEventListener("keydown", (event) => {
-      if (event.key === "F2") {
-        this.debugEnabled = !this.debugEnabled;
-        try {
-          window.localStorage.setItem(NETCODE_DEBUG_KEY, String(this.debugEnabled));
-        } catch (_error) { /* ignore */ }
-      }
-    });
 
     gameStateMachine.subscribe((state, previousState) => {
       const wasMultiplayerMode =
@@ -494,7 +482,7 @@ class MultiplayerClientSession {
           this.startPredictionLoop();
         }
 
-        if (this.debugEnabled) {
+        if (getGameState().settings.netcodeDebugEnabled) {
           const snapshotInterval = previousSnapshot !== null
             ? now - prevSnapshotReceivedAt
             : 0;
@@ -1155,7 +1143,7 @@ class MultiplayerClientSession {
     this.drawAmmoHudEffects(p);
     this.drawRadarHud(p, selfPlayer, opponentPlayer, match.arena);
 
-    if (this.debugEnabled && isCollisionDebugAvailable()) {
+    if (getGameState().settings.netcodeDebugEnabled && isCollisionDebugAvailable()) {
       this.drawNetcodeDebugOverlay(p, match);
     }
   }
@@ -1176,7 +1164,7 @@ class MultiplayerClientSession {
 
     // --- text stats ---
     const lines = [
-      `[F2] Netcode debug  (${history.length} samples)`,
+      `Netcode debug  (${history.length} samples)`,
       `buffer size: ${latest.bufferSize}`,
       `recon dx: ${latest.dx.toFixed(2)}  dy: ${latest.dy.toFixed(2)}  dist: ${Math.hypot(latest.dx, latest.dy).toFixed(2)}`,
       `server seq: ${latest.serverSequence}  lastInputSeq: ${latest.lastInputSeq}`,

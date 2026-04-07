@@ -29,6 +29,10 @@ export const toggleCollisionDebug = () => {
   return gameStateMachine.send({ type: "TOGGLE_COLLISION_DEBUG" });
 };
 
+export const toggleNetcodeDebug = () => {
+  return gameStateMachine.send({ type: "TOGGLE_NETCODE_DEBUG" });
+};
+
 export const showModeResult = (
   mode: GameMode,
   title: string,

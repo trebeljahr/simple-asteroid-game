@@ -38,6 +38,7 @@ export type OverlayState = PauseOverlay | OptionsOverlay;
 
 export interface SettingsState {
   collisionDebugEnabled: boolean;
+  netcodeDebugEnabled: boolean;
   soundEnabled: boolean;
   shipVariant: ShipVariant;
 }
@@ -57,6 +58,7 @@ export type GameStateEvent =
   | { type: "RETURN_TO_MAIN_MENU" }
   | { type: "SHOW_RESULT"; mode: GameMode; title: string; subtitle: string }
   | { type: "TOGGLE_COLLISION_DEBUG" }
+  | { type: "TOGGLE_NETCODE_DEBUG" }
   | { type: "TOGGLE_SOUND" }
   | { type: "SELECT_SHIP"; shipVariant: ShipVariant };
 
@@ -64,6 +66,7 @@ type GameStateListener = (state: GameState, previousState: GameState) => void;
 
 const SOUND_SETTING_KEY = "simple-asteroid-game-sound-enabled";
 const COLLISION_DEBUG_SETTING_KEY = "simple-asteroid-game-collision-debug";
+const NETCODE_DEBUG_SETTING_KEY = "simple-asteroid-game-netcode-debug";
 const SHIP_VARIANT_SETTING_KEY = "simple-asteroid-game-ship-variant";
 
 const readSoundSetting = () => {
@@ -136,12 +139,40 @@ const writeCollisionDebugSetting = (collisionDebugEnabled: boolean) => {
   }
 };
 
+const readNetcodeDebugSetting = () => {
+  if (!isCollisionDebugAvailable()) {
+    return false;
+  }
+
+  try {
+    return window.localStorage.getItem(NETCODE_DEBUG_SETTING_KEY) === "true";
+  } catch (_error) {
+    return false;
+  }
+};
+
+const writeNetcodeDebugSetting = (netcodeDebugEnabled: boolean) => {
+  if (!isCollisionDebugAvailable()) {
+    return;
+  }
+
+  try {
+    window.localStorage.setItem(
+      NETCODE_DEBUG_SETTING_KEY,
+      String(netcodeDebugEnabled)
+    );
+  } catch (_error) {
+    // Ignore storage issues and keep the session state in memory.
+  }
+};
+
 const createInitialState = (): GameState => {
   return {
     scene: { type: "main-menu" },
     overlay: null,
     settings: {
       collisionDebugEnabled: readCollisionDebugSetting(),
+      netcodeDebugEnabled: readNetcodeDebugSetting(),
       soundEnabled: readSoundSetting(),
       shipVariant: readShipVariantSetting(),
     },
@@ -260,6 +291,18 @@ const transitionState = (
           collisionDebugEnabled: !currentState.settings.collisionDebugEnabled,
         },
       };
+    case "TOGGLE_NETCODE_DEBUG":
+      if (!isCollisionDebugAvailable()) {
+        return currentState;
+      }
+      return {
+        scene: currentState.scene,
+        overlay: currentState.overlay,
+        settings: {
+          ...currentState.settings,
+          netcodeDebugEnabled: !currentState.settings.netcodeDebugEnabled,
+        },
+      };
     case "TOGGLE_SOUND":
       return {
         scene: currentState.scene,
@@ -314,6 +357,9 @@ class GameStateMachine {
     this.state = nextState;
     if (event.type === "TOGGLE_COLLISION_DEBUG") {
       writeCollisionDebugSetting(nextState.settings.collisionDebugEnabled);
+    }
+    if (event.type === "TOGGLE_NETCODE_DEBUG") {
+      writeNetcodeDebugSetting(nextState.settings.netcodeDebugEnabled);
     }
     if (event.type === "TOGGLE_SOUND") {
       writeSoundSetting(nextState.settings.soundEnabled);
