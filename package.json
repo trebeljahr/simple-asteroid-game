@@ -10,7 +10,9 @@
   ],
   "scripts": {
     "setup": "node ./scripts/setup.mjs",
-    "dev": "concurrently -k -n client,server -c cyan,green \"npm run dev --workspace @simple-asteroid-game/client\" \"npm run dev --workspace @simple-asteroid-game/server\"",
+    "dev": "node scripts/dev.mjs",
+    "dev:fixed": "node scripts/dev.mjs --fixed",
+    "dev:lan": "node scripts/dev.mjs --fixed --lan",
     "start": "npm run dev",
     "dev:client": "npm run dev --workspace @simple-asteroid-game/client",
     "dev:server": "npm run dev --workspace @simple-asteroid-game/server",
