@@ -58,10 +58,36 @@ const ShipSelection: React.FC<{ currentVariant: ShipVariant }> = ({ currentVaria
   </div>
 );
 
+const CreditsSection: React.FC = () => (
+  <div className="creditsSection">
+    <h2 className="creditsSectionTitle">Credits</h2>
+    <p className="creditsLine">
+      Made by{" "}
+      <a href="https://ricotrebeljahr.de" target="_blank" rel="noopener noreferrer">
+        Rico Trebeljahr
+      </a>
+    </p>
+    <p className="creditsLine">
+      Icons by{" "}
+      <a href="https://www.flaticon.com/authors/freepik" target="_blank" rel="noopener noreferrer">
+        Freepik
+      </a>{" "}
+      and{" "}
+      <a href="https://www.flaticon.com/authors/smashicons" target="_blank" rel="noopener noreferrer">
+        Smashicons
+      </a>{" "}
+      from{" "}
+      <a href="https://www.flaticon.com/" target="_blank" rel="noopener noreferrer">
+        Flaticon
+      </a>
+    </p>
+  </div>
+);
+
 const OptionsPanel: React.FC<{ state: GameState }> = ({ state }) => (
   <section className="menuPanel">
     <h1 className="menuTitle">Options</h1>
-    
+
     <div className="menuActions">
       <ActionButton
         label={state.settings.soundEnabled ? "Sound: On" : "Sound: Off"}
@@ -75,6 +101,8 @@ const OptionsPanel: React.FC<{ state: GameState }> = ({ state }) => (
       )}
       <ActionButton label="Back" onClick={closeOptionsMenu} variant="secondary" />
     </div>
+
+    <CreditsSection />
   </section>
 );
 
