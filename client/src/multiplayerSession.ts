@@ -1567,6 +1567,8 @@ class MultiplayerClientSession {
     if (positionError > 100) {
       this.predictedSelf.x = serverState.x;
       this.predictedSelf.y = serverState.y;
+      this.predictedSelf.vx = serverState.vx;
+      this.predictedSelf.vy = serverState.vy;
       this.correctionOffsetX = 0;
       this.correctionOffsetY = 0;
       this.correctionOffsetAngle = 0;
@@ -1585,8 +1587,6 @@ class MultiplayerClientSession {
       this.correctionOffsetAngle = 0;
     }
 
-    this.predictedSelf.vx = serverState.vx;
-    this.predictedSelf.vy = serverState.vy;
     this.predictedSelf.health = serverState.health;
     this.predictedSelf.ammo = serverState.ammo;
     this.predictedSelf.damageRecoveryTicks = serverState.damageRecoveryTicks;
