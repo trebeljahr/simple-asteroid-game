@@ -4,10 +4,12 @@ import { existsSync } from "fs";
 import { createServer } from "http";
 import path from "path";
 import { Server } from "socket.io";
+import { createAdapter } from "@socket.io/redis-adapter";
 import * as trpcExpress from "@trpc/server/adapters/express";
 import { MultiplayerService } from "./multiplayerService";
 import { ClientToServerEvents, ServerToClientEvents } from "../../shared/src";
 import { createAppRouter } from "./trpc/router";
+import { getRedisClient } from "./redis";
 
 const app = express();
 const httpServer = createServer(app);
@@ -17,6 +19,15 @@ const io = new Server<ClientToServerEvents, ServerToClientEvents>(httpServer, {
     credentials: true,
   },
 });
+
+const redisClient = getRedisClient();
+if (redisClient) {
+  const pubClient = redisClient;
+  const subClient = pubClient.duplicate();
+  io.adapter(createAdapter(pubClient, subClient));
+  console.log("[socket.io] Using Redis adapter for horizontal scaling");
+}
+
 const multiplayerService = new MultiplayerService(io);
 const appRouter = createAppRouter(multiplayerService);
 
