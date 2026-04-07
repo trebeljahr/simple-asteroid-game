@@ -1,4 +1,4 @@
-FROM node:22-bookworm-slim AS build
+FROM node:24-bookworm-slim AS build
 WORKDIR /app
 
 COPY client/package*.json client/
@@ -13,7 +13,7 @@ COPY package*.json ./
 
 RUN npm run build:client
 
-FROM node:22-bookworm-slim AS runtime
+FROM node:24-bookworm-slim AS runtime
 WORKDIR /app
 
 COPY --from=build /app/client/dist ./dist
