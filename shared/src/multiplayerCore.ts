@@ -232,7 +232,7 @@ export const MAX_AMMO_PACKET_COUNT = 8;
 export const AMMO_PACKET_SPAWN_INTERVAL_MS = 9000;
 export const SPATIAL_CELL_SIZE = 280;
 export const SPATIAL_QUERY_PADDING = 36;
-export const LOCAL_INPUT_PUSH_INTERVAL_MS = 90;
+export const LOCAL_INPUT_PUSH_INTERVAL_MS = 33;
 export const AMMO_PACKET_AMOUNTS = [3, 3, 4, 4, 5, 5, 6] as const;
 const getAmmoPacketSize = (amount: number) => {
   return 48 + amount * 4;
