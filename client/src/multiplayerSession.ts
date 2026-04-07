@@ -209,8 +209,6 @@ class MultiplayerClientSession {
   };
   private pendingResult: PendingResultState | null = null;
   private predictedSelf: RuntimePlayerState | null = null;
-  private serverSelfBase: RuntimePlayerState | null = null;
-  private predictionStepCount = 0;
   private p: p5 | null = null;
   private playerArrivals = new Map<string, PlayerArrivalState>();
   private playerDestructions = new Map<string, PlayerDestructionState>();
@@ -1551,12 +1549,36 @@ class MultiplayerClientSession {
   }
 
   private reconcilePredictedSelf(serverState: MatchPlayerSnapshot) {
-    this.serverSelfBase = { ...serverState, fireCooldownTicks: 0 };
-    this.predictionStepCount = 0;
+    if (this.predictedSelf === null) {
+      this.predictedSelf = { ...serverState, fireCooldownTicks: 0 };
+      return;
+    }
+
+    // Accept server authority for all non-predicted state
+    this.predictedSelf.health = serverState.health;
+    this.predictedSelf.ammo = serverState.ammo;
+    this.predictedSelf.damageRecoveryTicks = serverState.damageRecoveryTicks;
+    this.predictedSelf.slot = serverState.slot;
+    this.predictedSelf.shipVariant = serverState.shipVariant;
+
+    // Snap to server if too far off
+    const dx = serverState.x - this.predictedSelf.x;
+    const dy = serverState.y - this.predictedSelf.y;
+    if (Math.hypot(dx, dy) > 150) {
+      this.predictedSelf.x = serverState.x;
+      this.predictedSelf.y = serverState.y;
+      this.predictedSelf.vx = serverState.vx;
+      this.predictedSelf.vy = serverState.vy;
+      this.predictedSelf.angle = serverState.angle;
+    }
   }
 
   private stepPredictedSelf(match: ActiveMatchState) {
-    if (this.serverSelfBase === null || match.snapshot === null) {
+    if (this.predictedSelf === null || match.snapshot === null) {
+      return;
+    }
+
+    if (this.predictedSelf.health <= 0) {
       return;
     }
 
@@ -1567,18 +1589,7 @@ class MultiplayerClientSession {
       turnRight: isShipActionActive("turnRight"),
     };
 
-    // Re-predict from server base state each frame
-    const predicted = { ...this.serverSelfBase };
-
-    if (predicted.health > 0) {
-      const stepsToSimulate = this.predictionStepCount + 1;
-      for (let i = 0; i < stepsToSimulate; i++) {
-        stepPlayerState(predicted, currentInput, match.arena);
-      }
-    }
-
-    this.predictedSelf = predicted;
-    this.predictionStepCount++;
+    stepPlayerState(this.predictedSelf, currentInput, match.arena);
   }
 
   private clearPendingResult() {
@@ -1587,8 +1598,6 @@ class MultiplayerClientSession {
 
   private resetClientEffects() {
     this.predictedSelf = null;
-    this.serverSelfBase = null;
-    this.predictionStepCount = 0;
     this.ammoHudEffects = [];
     this.playerArrivals.clear();
     this.playerDestructions.clear();
