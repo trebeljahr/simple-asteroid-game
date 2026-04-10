@@ -94,7 +94,7 @@ const ImpressumSection: React.FC = () => {
         onClick={() => setOpen(!open)}
         style={{ background: "none", border: "none", cursor: "pointer", color: "inherit", fontSize: "inherit", padding: 0 }}
       >
-        Legal Notice {open ? "▾" : "▸"}
+        Imprint {open ? "▾" : "▸"}
       </button>
       {open && (
         <div style={{ marginTop: "0.5rem", fontSize: "0.75rem", lineHeight: 1.6, opacity: 0.7 }}>
