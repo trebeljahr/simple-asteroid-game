@@ -85,6 +85,35 @@ const CreditsSection: React.FC = () => (
   </div>
 );
 
+const ImpressumSection: React.FC = () => {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="creditsSection">
+      <button
+        className="creditsLine"
+        onClick={() => setOpen(!open)}
+        style={{ background: "none", border: "none", cursor: "pointer", color: "inherit", fontSize: "inherit", padding: 0 }}
+      >
+        Legal Notice {open ? "▾" : "▸"}
+      </button>
+      {open && (
+        <div style={{ marginTop: "0.5rem", fontSize: "0.75rem", lineHeight: 1.6, opacity: 0.7 }}>
+          <p>Information pursuant to § 5 DDG / § 18 (2) MStV (Germany)</p>
+          <p style={{ marginTop: "0.4rem" }}>
+            Rico Trebeljahr<br />
+            c/o Block Services<br />
+            Stuttgarter Str. 106<br />
+            70736 Fellbach, Germany
+          </p>
+          <p style={{ marginTop: "0.4rem" }}>
+            Email: imprint+asteroids@trebeljahr.com
+          </p>
+        </div>
+      )}
+    </div>
+  );
+};
+
 const OptionsPanel: React.FC<{ state: GameState }> = ({ state }) => (
   <section className="menuPanel">
     <h1 className="menuTitle">Options</h1>
@@ -110,6 +139,7 @@ const OptionsPanel: React.FC<{ state: GameState }> = ({ state }) => (
     </div>
 
     <CreditsSection />
+    <ImpressumSection />
   </section>
 );
 
