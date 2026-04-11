@@ -22,6 +22,11 @@ import {
   subscribeToStats,
 } from "./stats";
 import { formatRaceDuration } from "./raceSession";
+import {
+  isFullscreenActive,
+  isFullscreenAvailable,
+  toggleFullscreenMode,
+} from "./fullscreen";
 
 const capitalizeWords = (str: string) => {
   return str.split("-").map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(" ");
@@ -128,34 +133,67 @@ const ImpressumSection: React.FC = () => {
   );
 };
 
-const OptionsPanel: React.FC<{ state: GameState }> = ({ state }) => (
-  <section className="menuPanel">
-    <h1 className="menuTitle">Options</h1>
+const useFullscreenState = (): {
+  available: boolean;
+  active: boolean;
+  toggle: () => void;
+} => {
+  const [active, setActive] = useState(() => isFullscreenActive());
+  useEffect(() => {
+    const handleChange = () => setActive(isFullscreenActive());
+    document.addEventListener("fullscreenchange", handleChange);
+    document.addEventListener("webkitfullscreenchange", handleChange);
+    return () => {
+      document.removeEventListener("fullscreenchange", handleChange);
+      document.removeEventListener("webkitfullscreenchange", handleChange);
+    };
+  }, []);
+  return {
+    available: isFullscreenAvailable(),
+    active,
+    toggle: () => {
+      toggleFullscreenMode().then((nowActive) => setActive(nowActive));
+    },
+  };
+};
 
-    <div className="menuActions">
-      <ActionButton
-        label={state.settings.soundEnabled ? "Sound: On" : "Sound: Off"}
-        onClick={toggleSoundEnabled}
-      />
-      {isCollisionDebugAvailable() && (
-        <ActionButton
-          label={state.settings.collisionDebugEnabled ? "Collision Debug: On" : "Collision Debug: Off"}
-          onClick={toggleCollisionDebug}
-        />
-      )}
-      {isCollisionDebugAvailable() && (
-        <ActionButton
-          label={state.settings.netcodeDebugEnabled ? "Netcode Debug: On" : "Netcode Debug: Off"}
-          onClick={toggleNetcodeDebug}
-        />
-      )}
-      <ActionButton label="Back" onClick={closeOptionsMenu} variant="secondary" />
-    </div>
+const OptionsPanel: React.FC<{ state: GameState }> = ({ state }) => {
+  const fullscreen = useFullscreenState();
+  return (
+    <section className="menuPanel">
+      <h1 className="menuTitle">Options</h1>
 
-    <CreditsSection />
-    <ImpressumSection />
-  </section>
-);
+      <div className="menuActions">
+        <ActionButton
+          label={state.settings.soundEnabled ? "Sound: On" : "Sound: Off"}
+          onClick={toggleSoundEnabled}
+        />
+        {fullscreen.available && (
+          <ActionButton
+            label={fullscreen.active ? "Fullscreen: On" : "Fullscreen: Off"}
+            onClick={fullscreen.toggle}
+          />
+        )}
+        {isCollisionDebugAvailable() && (
+          <ActionButton
+            label={state.settings.collisionDebugEnabled ? "Collision Debug: On" : "Collision Debug: Off"}
+            onClick={toggleCollisionDebug}
+          />
+        )}
+        {isCollisionDebugAvailable() && (
+          <ActionButton
+            label={state.settings.netcodeDebugEnabled ? "Netcode Debug: On" : "Netcode Debug: Off"}
+            onClick={toggleNetcodeDebug}
+          />
+        )}
+        <ActionButton label="Back" onClick={closeOptionsMenu} variant="secondary" />
+      </div>
+
+      <CreditsSection />
+      <ImpressumSection />
+    </section>
+  );
+};
 
 const useStats = (): PersistentStats => {
   const [stats, setStats] = useState<PersistentStats>(() => getStats());
