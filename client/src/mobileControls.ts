@@ -43,7 +43,7 @@ const mobileButtons: MobileButtonConfig[] = [
     action: "fire",
     causeId: "mobile:fire",
     label: "Fire",
-    modes: ["multiplayer", "horde"],
+    modes: ["multiplayer", "battle-royale", "horde"],
     side: "right",
   },
 ];
@@ -51,7 +51,11 @@ const mobileButtons: MobileButtonConfig[] = [
 let initialized = false;
 
 const isSupportedMobileMode = (mode: GameMode | null) => {
-  return mode === "singleplayer" || mode === "multiplayer";
+  return (
+    mode === "singleplayer" ||
+    mode === "multiplayer" ||
+    mode === "battle-royale"
+  );
 };
 
 const shouldShowTouchControls = () => {

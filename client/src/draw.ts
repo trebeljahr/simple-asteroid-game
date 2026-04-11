@@ -28,6 +28,7 @@ import {
 const modeTitles: Record<GameMode, string> = {
   singleplayer: "Singleplayer Mode",
   multiplayer: "Multiplayer Mode",
+  "battle-royale": "Battle Royale",
   horde: "Enemy Hordes Mode",
 };
 
@@ -74,7 +75,10 @@ export const draw = (p: p5) => {
     return;
   }
 
-  if (state.scene.type === "mode" && state.scene.mode === "multiplayer") {
+  if (
+    state.scene.type === "mode" &&
+    (state.scene.mode === "multiplayer" || state.scene.mode === "battle-royale")
+  ) {
     drawMultiplayerMode(p);
     return;
   }

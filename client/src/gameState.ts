@@ -5,7 +5,11 @@ import {
   MULTIPLAYER_SHIP_VARIANTS,
 } from "../../shared/src";
 
-export type GameMode = "singleplayer" | "multiplayer" | "horde";
+export type GameMode =
+  | "singleplayer"
+  | "multiplayer"
+  | "battle-royale"
+  | "horde";
 
 export interface MainMenuScene {
   type: "main-menu";

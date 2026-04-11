@@ -10,7 +10,11 @@ export const configureGameModeActions = (p: p5) => {
 };
 
 export const activateGameMode = (mode: GameMode) => {
-  if (mode === "singleplayer" || mode === "multiplayer") {
+  if (
+    mode === "singleplayer" ||
+    mode === "multiplayer" ||
+    mode === "battle-royale"
+  ) {
     requestLandscapeOrientationLock();
   }
 

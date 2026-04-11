@@ -163,10 +163,25 @@ export interface ServerToClientEvents {
   "match:snapshot": (payload: MatchSnapshotPayload) => void;
   "match:world-events": (payload: MatchWorldEventsPayload) => void;
   "matchmaking:status": (payload: MatchmakingStatusPayload) => void;
+  "br:lobby": (payload: import("./battleRoyaleCore").BattleRoyaleLobbyPayload) => void;
+  "br:match-found": (
+    payload: import("./battleRoyaleCore").BattleRoyaleMatchFoundPayload
+  ) => void;
+  "br:snapshot": (
+    payload: import("./battleRoyaleCore").BattleRoyaleSnapshotPayload
+  ) => void;
+  "br:world-events": (payload: MatchWorldEventsPayload) => void;
+  "br:eliminated": (
+    payload: import("./battleRoyaleCore").BattleRoyaleEliminatedPayload
+  ) => void;
+  "br:match-ended": (
+    payload: import("./battleRoyaleCore").BattleRoyaleMatchEndedPayload
+  ) => void;
 }
 
 export interface ClientToServerEvents {
   "match:input": (payload: ShipInputState) => void;
+  "br:input": (payload: ShipInputState) => void;
 }
 
 export type SpatialHash = Map<string, Set<string>>;

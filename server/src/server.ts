@@ -7,6 +7,7 @@ import { Server } from "socket.io";
 import { createAdapter } from "@socket.io/redis-adapter";
 import * as trpcExpress from "@trpc/server/adapters/express";
 import { MultiplayerService } from "./multiplayerService";
+import { BattleRoyaleService } from "./battleRoyaleService";
 import { ClientToServerEvents, ServerToClientEvents } from "../../shared/src";
 import { createAppRouter } from "./trpc/router";
 import { getRedisClient } from "./redis";
@@ -29,7 +30,8 @@ if (redisClient) {
 }
 
 const multiplayerService = new MultiplayerService(io);
-const appRouter = createAppRouter(multiplayerService);
+const battleRoyaleService = new BattleRoyaleService(io);
+const appRouter = createAppRouter(multiplayerService, battleRoyaleService);
 
 const clientDistPath = path.resolve(__dirname, "../../client/dist");
 
@@ -68,6 +70,7 @@ if (existsSync(clientDistPath)) {
 io.on("connection", (socket) => {
   console.log(`New user with id: ${socket.id}`);
   multiplayerService.registerSocket(socket);
+  battleRoyaleService.registerSocketHandlers(socket);
 });
 
 const port = Number(process.env.PORT ?? 9777);

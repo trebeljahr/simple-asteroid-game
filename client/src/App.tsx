@@ -236,8 +236,13 @@ const MainMenuPanel: React.FC<{ state: GameState }> = ({ state }) => {
       <div className="menuActions">
         <ActionButton label="Singleplayer Mode" onClick={() => activateGameMode("singleplayer")} />
         <ActionButton
-          label="Multiplayer Battle"
+          label="Multiplayer Duel"
           onClick={() => activateGameMode("multiplayer")}
+          variant="secondary"
+        />
+        <ActionButton
+          label="Battle Royale (20)"
+          onClick={() => activateGameMode("battle-royale")}
           variant="secondary"
         />
         <ActionButton label="Options" onClick={openOptionsMenu} variant="ghost" />

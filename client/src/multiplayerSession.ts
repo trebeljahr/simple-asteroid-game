@@ -3,7 +3,7 @@ import { io, Socket } from "socket.io-client";
 
 import { drawCollisionCircle, drawShipCollisionBox, isCollisionDebugAvailable } from "./collisionDebug";
 import { ExplosionSystem } from "./explosions";
-import { gameStateMachine, getGameState } from "./gameState";
+import { gameStateMachine, getGameState, GameState } from "./gameState";
 import { showMultiplayerResult } from "./gameUiActions";
 import {
   clearShipInput,
@@ -23,10 +23,21 @@ import { trpcClient } from "./trpcClient";
 import { createCameraBounds, getViewScale, height, width } from "./utils";
 import {
   applyWorldEvents,
+  BATTLE_ROYALE_ARENA,
+  BATTLE_ROYALE_MATCH_COUNTDOWN_MS,
+  BATTLE_ROYALE_MAX_PLAYERS,
+  BATTLE_ROYALE_MIN_PLAYERS,
+  BattleRoyaleEliminatedPayload,
+  BattleRoyaleLobbyPayload,
+  BattleRoyaleMatchEndedPayload,
+  BattleRoyaleMatchFoundPayload,
+  BattleRoyaleSnapshotPayload,
   BULLET_DIAMETER,
   circleIntersectsBounds,
   circleOverlapsShipCollider,
   ClientToServerEvents,
+  createEmptyMatchWorld,
+  createInitialBattleRoyaleWorld,
   createInitialMatchWorld,
   getShipCollider,
   getShipCollisionBoundingDiameter,
@@ -69,18 +80,35 @@ import {
 
 type MultiplayerStatus = "connecting" | "error" | "idle" | "matched" | "queueing";
 
+type MultiplayerMatchMode = "duel" | "battle-royale";
+
 interface ActiveMatchState {
+  mode: MultiplayerMatchMode;
   arena: MatchFoundPayload["arena"];
   foundAt: number;
   matchId: string;
   maxHealth: number;
-  opponentId: string;
+  /** For duel, the single opponent id. Null/empty for battle royale. */
+  opponentId: string | null;
+  /** All player ids in this match, including self. Used by BR rendering. */
+  allPlayerIds: string[];
   playerId: string;
   slot: PlayerSlot;
   snapshot: MatchSnapshotPayload | null;
   snapshotReceivedAt: number;
   world: MatchWorldRuntime;
   worldVersion: number;
+  survivorsRemaining: number;
+  /** Personal placement once eliminated, e.g. 5 = finished 5th. */
+  placement: number | null;
+}
+
+interface BattleRoyaleLobbyState {
+  phase: BattleRoyaleLobbyPayload["phase"];
+  countdownMs: number;
+  playerCount: number;
+  minPlayers: number;
+  maxPlayers: number;
 }
 
 interface MultiplayerViewState {
@@ -89,6 +117,7 @@ interface MultiplayerViewState {
   queuePosition: number;
   queueSize: number;
   status: MultiplayerStatus;
+  battleRoyaleLobby: BattleRoyaleLobbyState | null;
 }
 
 const SNAPSHOT_TICK_MS = 1000 / 60;
@@ -129,6 +158,7 @@ const createInitialViewState = (): MultiplayerViewState => {
     queuePosition: 0,
     queueSize: 0,
     status: "idle",
+    battleRoyaleLobby: null,
   };
 };
 
@@ -175,6 +205,23 @@ const getResultCopy = (
     subtitle: "Both ships were destroyed in the same exchange. Queue again for a cleaner finish.",
     title: "Mutual destruction",
   };
+};
+
+const formatPlacement = (placement: number): string => {
+  const lastTwo = placement % 100;
+  if (lastTwo >= 11 && lastTwo <= 13) {
+    return `${placement}th`;
+  }
+  switch (placement % 10) {
+    case 1:
+      return `${placement}st`;
+    case 2:
+      return `${placement}nd`;
+    case 3:
+      return `${placement}rd`;
+    default:
+      return `${placement}th`;
+  }
 };
 
 const sameInputState = (left: ShipInputState, right: ShipInputState) => {
@@ -252,12 +299,20 @@ class MultiplayerClientSession {
     this.p = p;
     this.resetClientEffects();
 
+    const isNetworkedMode = (scene: GameState["scene"]): boolean => {
+      return (
+        scene.type === "mode" &&
+        (scene.mode === "multiplayer" || scene.mode === "battle-royale")
+      );
+    };
+
     gameStateMachine.subscribe((state, previousState) => {
-      const wasMultiplayerMode =
+      const wasMultiplayerMode = isNetworkedMode(previousState.scene);
+      const isMultiplayerMode = isNetworkedMode(state.scene);
+      const modeChanged =
+        state.scene.type === "mode" &&
         previousState.scene.type === "mode" &&
-        previousState.scene.mode === "multiplayer";
-      const isMultiplayerMode =
-        state.scene.type === "mode" && state.scene.mode === "multiplayer";
+        state.scene.mode !== previousState.scene.mode;
 
       if (!wasMultiplayerMode && isMultiplayerMode) {
         this.enterMode();
@@ -266,6 +321,15 @@ class MultiplayerClientSession {
 
       if (wasMultiplayerMode && !isMultiplayerMode) {
         this.leaveMode();
+        return;
+      }
+
+      // Transitioning directly between duel and battle-royale (or vice
+      // versa) needs a full mode reset since each mode owns its own
+      // queue/lobby state on the server.
+      if (wasMultiplayerMode && isMultiplayerMode && modeChanged) {
+        this.leaveMode();
+        this.enterMode();
       }
     });
 
@@ -387,17 +451,21 @@ class MultiplayerClientSession {
 
       this.viewState.errorMessage = null;
       this.viewState.match = {
+        mode: "duel",
         arena: payload.arena,
         foundAt: performance.now(),
         matchId: payload.matchId,
         maxHealth: payload.maxHealth,
         opponentId: payload.opponentId,
+        allPlayerIds: [payload.playerId, payload.opponentId],
         playerId: payload.playerId,
         slot: payload.slot,
         snapshot: null,
         snapshotReceivedAt: performance.now(),
         world: createInitialMatchWorld(payload.worldSeed, payload.arena),
         worldVersion: 0,
+        survivorsRemaining: 2,
+        placement: null,
       };
       this.viewState.queuePosition = 0;
       this.viewState.queueSize = 0;
@@ -412,6 +480,214 @@ class MultiplayerClientSession {
       };
       this.resetClientEffects();
     });
+
+    socket.on("br:lobby", (payload: BattleRoyaleLobbyPayload) => {
+      if (!this.isMultiplayerModeActive()) return;
+      if (this.getActiveModeMode() !== "battle-royale") return;
+      this.viewState.battleRoyaleLobby = {
+        phase: payload.phase,
+        countdownMs: payload.countdownMs,
+        playerCount: payload.playerCount,
+        minPlayers: payload.minPlayers,
+        maxPlayers: payload.maxPlayers,
+      };
+      this.viewState.status = "queueing";
+    });
+
+    socket.on(
+      "br:match-found",
+      (payload: BattleRoyaleMatchFoundPayload) => {
+        if (!this.isMultiplayerModeActive()) return;
+        if (this.getActiveModeMode() !== "battle-royale") return;
+
+        this.viewState.errorMessage = null;
+        this.viewState.battleRoyaleLobby = null;
+        this.viewState.match = {
+          mode: "battle-royale",
+          arena: payload.arena,
+          foundAt: performance.now(),
+          matchId: payload.matchId,
+          maxHealth: payload.maxHealth,
+          opponentId: null,
+          allPlayerIds: payload.playerIds.slice(),
+          playerId: payload.playerId,
+          // Slot is unused in BR but the field remains for duel
+          // compatibility.
+          slot: "alpha",
+          snapshot: null,
+          snapshotReceivedAt: performance.now(),
+          world: createInitialBattleRoyaleWorld(
+            payload.worldSeed,
+            payload.playerIds.map((_, index) => {
+              // The spawn ring is recomputed on the client to match the
+              // server. This mirrors the createInitialBattleRoyaleWorld
+              // input on the server.
+              const total = payload.playerIds.length;
+              const angle = (index / total) * Math.PI * 2;
+              const arena = payload.arena;
+              const safeH = arena.width / 2 - 280;
+              const safeV = arena.height / 2 - 280;
+              const radius = Math.min(safeH, safeV) * 0.82;
+              return {
+                x: Math.cos(angle) * radius,
+                y: Math.sin(angle) * radius,
+              };
+            }),
+            payload.arena
+          ),
+          worldVersion: 0,
+          survivorsRemaining: payload.playerIds.length,
+          placement: null,
+        };
+        this.viewState.queuePosition = 0;
+        this.viewState.queueSize = 0;
+        this.viewState.status = "matched";
+        this.lastSentAt = 0;
+        this.lastSentInput = {
+          fire: false,
+          inputSeq: 0,
+          thrust: false,
+          turnLeft: false,
+          turnRight: false,
+        };
+        this.resetClientEffects();
+      }
+    );
+
+    socket.on(
+      "br:snapshot",
+      (payload: BattleRoyaleSnapshotPayload) => {
+        if (!this.isMultiplayerModeActive() || this.viewState.match === null) {
+          return;
+        }
+        if (this.viewState.match.mode !== "battle-royale") return;
+        if (payload.matchId !== this.viewState.match.matchId) return;
+
+        const previousSnapshot = this.viewState.match.snapshot;
+        if (
+          previousSnapshot !== null &&
+          payload.sequence <= previousSnapshot.sequence
+        ) {
+          return;
+        }
+
+        // Adapt the BR snapshot to the duel's MatchSnapshotPayload shape so
+        // the render pipeline can be reused as-is.
+        const adaptedSnapshot: MatchSnapshotPayload = {
+          bullets: payload.bullets,
+          countdownMs: payload.countdownMs,
+          matchId: payload.matchId,
+          phase: payload.phase,
+          players: payload.players,
+          sequence: payload.sequence,
+        };
+
+        if (previousSnapshot !== null) {
+          this.playSnapshotEffects(previousSnapshot, adaptedSnapshot);
+        }
+
+        if (
+          (previousSnapshot === null && payload.phase === "active") ||
+          (previousSnapshot !== null &&
+            previousSnapshot.phase === "countdown" &&
+            payload.phase === "active")
+        ) {
+          this.triggerPlayerArrivals(payload.players);
+        }
+
+        const now = performance.now();
+        this.viewState.match.snapshot = adaptedSnapshot;
+        this.viewState.match.snapshotReceivedAt = now;
+        this.viewState.match.survivorsRemaining = payload.survivorsRemaining;
+        this.viewState.status = "matched";
+
+        if (payload.phase !== "active") {
+          return;
+        }
+
+        const serverSelf = payload.players.find(
+          (player) => player.id === this.viewState.match?.playerId
+        );
+        if (serverSelf !== undefined) {
+          const wasFirstActiveSnapshot = this.predictedSelf === null;
+          this.reconcilePredictedSelf(
+            serverSelf,
+            this.viewState.match.arena
+          );
+          if (wasFirstActiveSnapshot) {
+            this.startPredictionLoop();
+          }
+        }
+      }
+    );
+
+    socket.on(
+      "br:world-events",
+      (payload: MatchWorldEventsPayload) => {
+        if (!this.isMultiplayerModeActive() || this.viewState.match === null) {
+          return;
+        }
+        if (this.viewState.match.mode !== "battle-royale") return;
+        if (payload.matchId !== this.viewState.match.matchId) return;
+        if (payload.worldVersion <= this.viewState.match.worldVersion) return;
+
+        this.playWorldEventEffects(this.viewState.match, payload.events);
+        applyWorldEvents(
+          this.viewState.match.world,
+          payload.events,
+          this.viewState.match.arena
+        );
+        this.viewState.match.worldVersion = payload.worldVersion;
+      }
+    );
+
+    socket.on(
+      "br:eliminated",
+      (payload: BattleRoyaleEliminatedPayload) => {
+        if (!this.isMultiplayerModeActive() || this.viewState.match === null) {
+          return;
+        }
+        if (payload.matchId !== this.viewState.match.matchId) return;
+        if (payload.playerId !== this.viewState.match.playerId) return;
+        this.viewState.match.placement = payload.placement;
+      }
+    );
+
+    socket.on(
+      "br:match-ended",
+      (payload: BattleRoyaleMatchEndedPayload) => {
+        if (!this.isMultiplayerModeActive() || this.viewState.match === null) {
+          return;
+        }
+        if (payload.matchId !== this.viewState.match.matchId) return;
+
+        const placement = this.viewState.match.placement;
+        clearShipInput();
+
+        let title: string;
+        let subtitle: string;
+        if (payload.youWon) {
+          title = "Victory Royale";
+          subtitle = "Last ship standing. The arena is yours.";
+        } else if (payload.reason === "inactive") {
+          title = "Match closed";
+          subtitle =
+            "The match ended after a long period of inactivity. Queue again to try another round.";
+        } else if (placement !== null) {
+          title = `Eliminated — ${formatPlacement(placement)} place`;
+          subtitle =
+            "Your ship was destroyed. Queue again to jump back into the next battle royale.";
+        } else {
+          title = "Battle over";
+          subtitle =
+            "The last ship standing claimed the match. Queue again for another try.";
+        }
+
+        recordMultiplayerResult(payload.youWon ? "win" : "loss");
+        this.resetViewState();
+        showMultiplayerResult(title, subtitle);
+      }
+    );
 
     socket.on("match:world-events", (payload: MatchWorldEventsPayload) => {
       if (!this.isMultiplayerModeActive() || this.viewState.match === null) {
@@ -1005,15 +1281,22 @@ class MultiplayerClientSession {
       ?? match.snapshot.players.find((player) => player.id === match.playerId)
       ?? null;
 
-    const opponentSnapshot =
-      match.snapshot.players.find((player) => player.id === match.opponentId) ?? null;
-    const opponentPlayer = opponentSnapshot !== null
-      ? projectPlayerSnapshot(opponentSnapshot, predictedTicks, match.arena)
-      : null;
+    const opponentSnapshots = match.snapshot.players.filter(
+      (player) => player.id !== match.playerId
+    );
+    const opponentPlayers: MatchPlayerSnapshot[] = opponentSnapshots.map(
+      (snapshot) => projectPlayerSnapshot(snapshot, predictedTicks, match.arena)
+    );
+    // For the duel-only radar HUD we still want a single reference
+    // opponent. Pick the first alive one (fallback: first entry).
+    const primaryOpponent =
+      opponentPlayers.find((player) => player.health > 0)
+      ?? opponentPlayers[0]
+      ?? null;
 
     const renderedPlayers: MatchPlayerSnapshot[] = [];
     if (selfPlayer !== null) renderedPlayers.push(selfPlayer);
-    if (opponentPlayer !== null) renderedPlayers.push(opponentPlayer);
+    renderedPlayers.push(...opponentPlayers);
 
     if (selfPlayer === null) {
       this.drawBackdrop(p);
@@ -1155,7 +1438,12 @@ class MultiplayerClientSession {
     this.drawHealthHud(p, "", selfPlayer.health, match.maxHealth, "left");
     this.drawAmmoHud(p, selfPlayer.ammo);
     this.drawAmmoHudEffects(p);
-    this.drawRadarHud(p, selfPlayer, opponentPlayer, match.arena);
+    this.drawRadarHud(
+      p,
+      selfPlayer,
+      match.mode === "battle-royale" ? opponentPlayers : primaryOpponent,
+      match.arena
+    );
 
     if (getGameState().settings.netcodeDebugEnabled && isCollisionDebugAvailable()) {
       this.drawNetcodeDebugOverlay(p, match);
@@ -1275,6 +1563,38 @@ class MultiplayerClientSession {
       return;
     }
 
+    const mode = this.getActiveModeMode();
+    if (mode === "battle-royale") {
+      const lobby = this.viewState.battleRoyaleLobby;
+      if (lobby === null) {
+        this.drawCenterCard(
+          p,
+          "Joining Battle Royale lobby",
+          "Connecting you to the next arena drop. Stand by."
+        );
+        return;
+      }
+
+      if (lobby.playerCount < lobby.minPlayers) {
+        const needed = lobby.minPlayers - lobby.playerCount;
+        const plural = needed === 1 ? "pilot" : "pilots";
+        this.drawCenterCard(
+          p,
+          "Waiting for more pilots",
+          `${lobby.playerCount} in lobby. Need ${needed} more ${plural} before the match can launch. Up to ${lobby.maxPlayers} ships per arena.`
+        );
+        return;
+      }
+
+      const seconds = Math.max(0, Math.ceil(lobby.countdownMs / 1000));
+      this.drawCenterCard(
+        p,
+        `Battle Royale: ${lobby.playerCount}/${lobby.maxPlayers}`,
+        `Dropping in ${seconds}s. Late arrivals can still join until the timer hits zero.`
+      );
+      return;
+    }
+
     const title = "Waiting for other player";
     const subtitle =
       this.viewState.queuePosition > 0
@@ -1287,9 +1607,14 @@ class MultiplayerClientSession {
   private drawRadarHud(
     p: p5,
     selfPlayer: MatchPlayerSnapshot,
-    opponentPlayer: MatchPlayerSnapshot | null,
+    opponents: MatchPlayerSnapshot | MatchPlayerSnapshot[] | null,
     arena: MatchFoundPayload["arena"]
   ) {
+    const opponentList: MatchPlayerSnapshot[] = Array.isArray(opponents)
+      ? opponents
+      : opponents !== null
+        ? [opponents]
+        : [];
     const panelWidth = Math.min(248, Math.max(208, width * 0.22));
     const panelPadding = 12;
     const mapWidth = panelWidth - panelPadding * 2;
@@ -1330,13 +1655,17 @@ class MultiplayerClientSession {
     p.fill(121, 220, 255, 235);
     p.circle(selfMapX, selfMapY, 9);
 
-    if (opponentPlayer !== null) {
-      const opponentMapX = toMapX(opponentPlayer.x);
-      const opponentMapY = toMapY(opponentPlayer.y);
-
+    for (const opponent of opponentList) {
+      const opponentMapX = toMapX(opponent.x);
+      const opponentMapY = toMapY(opponent.y);
       p.noStroke();
-      p.fill(218, 228, 237, 228);
-      p.circle(opponentMapX, opponentMapY, 9);
+      if (opponent.health <= 0) {
+        p.fill(90, 100, 115, 140);
+        p.circle(opponentMapX, opponentMapY, 6);
+      } else {
+        p.fill(255, 138, 90, 228);
+        p.circle(opponentMapX, opponentMapY, 9);
+      }
     }
     p.pop();
   }
@@ -1560,16 +1889,36 @@ class MultiplayerClientSession {
 
   private isMultiplayerModeActive() {
     const state = getGameState();
-    return state.scene.type === "mode" && state.scene.mode === "multiplayer";
+    return (
+      state.scene.type === "mode" &&
+      (state.scene.mode === "multiplayer" ||
+        state.scene.mode === "battle-royale")
+    );
+  }
+
+  private getActiveModeMode(): MultiplayerMatchMode | null {
+    const state = getGameState();
+    if (state.scene.type !== "mode") return null;
+    if (state.scene.mode === "multiplayer") return "duel";
+    if (state.scene.mode === "battle-royale") return "battle-royale";
+    return null;
   }
 
   private async joinQueue(socketId: string) {
     try {
       const state = getGameState();
-      await trpcClient.multiplayer.joinQueue.mutate({
-        socketId,
-        shipVariant: state.settings.shipVariant,
-      });
+      const mode = this.getActiveModeMode();
+      if (mode === "battle-royale") {
+        await trpcClient.battleRoyale.joinQueue.mutate({
+          socketId,
+          shipVariant: state.settings.shipVariant,
+        });
+      } else {
+        await trpcClient.multiplayer.joinQueue.mutate({
+          socketId,
+          shipVariant: state.settings.shipVariant,
+        });
+      }
     } catch (_error) {
       if (!this.isMultiplayerModeActive()) {
         return;
@@ -1587,7 +1936,15 @@ class MultiplayerClientSession {
 
     if (this.socket !== null) {
       if (this.socket.connected && this.socket.id !== undefined) {
+        // Best-effort leave on both queues — we don't always know
+        // which mode the session was in, and the server silently
+        // no-ops on sockets that aren't in the corresponding queue.
         void trpcClient.multiplayer.leaveQueue
+          .mutate({ socketId: this.socket.id })
+          .catch(() => {
+            // Best-effort shutdown.
+          });
+        void trpcClient.battleRoyale.leaveQueue
           .mutate({ socketId: this.socket.id })
           .catch(() => {
             // Best-effort shutdown.
@@ -1872,7 +2229,11 @@ class MultiplayerClientSession {
     // client ticks and server physics steps is what makes reconciliation
     // produce the same result as local prediction, eliminating jitter.
     if (this.socket !== null && this.socket.connected) {
-      this.socket.emit("match:input", currentInput);
+      if (match.mode === "battle-royale") {
+        this.socket.emit("br:input", currentInput);
+      } else {
+        this.socket.emit("match:input", currentInput);
+      }
     }
   }
 

@@ -15,7 +15,19 @@ interface MultiplayerController {
     | { removed: true; scope: "match" | "queue" };
 }
 
-export const createAppRouter = (multiplayerService: MultiplayerController) => {
+interface BattleRoyaleController {
+  enqueue(socketId: string, shipVariant: ShipVariant):
+    | { enqueued: false; reason: "already-in-match" | "socket-not-found" | "lobby-full" }
+    | { enqueued: true };
+  leave(socketId: string):
+    | { removed: false; scope: "none" }
+    | { removed: true; scope: "lobby" | "match" };
+}
+
+export const createAppRouter = (
+  multiplayerService: MultiplayerController,
+  battleRoyaleService: BattleRoyaleController
+) => {
   return t.router({
     health: t.procedure.query(() => {
       return { ok: true };
@@ -43,6 +55,32 @@ export const createAppRouter = (multiplayerService: MultiplayerController) => {
       runtime: t.procedure.query(() => {
         return multiplayerService.getRuntimeConfig();
       }),
+    }),
+    battleRoyale: t.router({
+      joinQueue: t.procedure
+        .input(
+          z.object({
+            socketId: z.string().min(1),
+            shipVariant: z.enum(
+              MULTIPLAYER_SHIP_VARIANTS as unknown as [string, ...string[]]
+            ),
+          })
+        )
+        .mutation(({ input }) => {
+          return battleRoyaleService.enqueue(
+            input.socketId,
+            input.shipVariant as ShipVariant
+          );
+        }),
+      leaveQueue: t.procedure
+        .input(
+          z.object({
+            socketId: z.string().min(1),
+          })
+        )
+        .mutation(({ input }) => {
+          return battleRoyaleService.leave(input.socketId);
+        }),
     }),
   });
 };
