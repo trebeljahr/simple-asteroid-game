@@ -1,6 +1,7 @@
 import { GameMode, gameStateMachine, getGameState } from "./gameState";
-import { formatRaceDuration } from "./raceSession";
+import { formatRaceDuration, getRaceDurationMilliseconds } from "./raceSession";
 import { playSound } from "./audio";
+import { recordRaceCompletion } from "./stats";
 
 export const openPauseMenu = () => {
   return gameStateMachine.send({ type: "OPEN_PAUSE" });
@@ -48,12 +49,26 @@ export const showModeResult = (
 };
 
 export const showSingleplayerVictory = () => {
-  const totalTime = formatRaceDuration(undefined, 2);
+  const durationMs = getRaceDurationMilliseconds();
+  const totalTime = formatRaceDuration(durationMs, 2);
+  const completion = recordRaceCompletion(durationMs);
   playSound("victory");
+  let subtitle: string;
+  if (completion.isNewRecord) {
+    if (completion.previousBestMs === null) {
+      subtitle = `New personal best: ${totalTime}. Launch again or head back to the menu.`;
+    } else {
+      const previousBest = formatRaceDuration(completion.previousBestMs, 2);
+      subtitle = `New personal best! Previous best ${previousBest}.`;
+    }
+  } else {
+    const bestTime = formatRaceDuration(completion.newBestMs, 2);
+    subtitle = `Personal best still ${bestTime}. Try to beat it.`;
+  }
   return showModeResult(
     "singleplayer",
     `Singleplayer complete in ${totalTime}`,
-    "The course is clear. Launch again or head back to the menu."
+    subtitle
   );
 };
 

@@ -16,6 +16,12 @@ import {
 import { isCollisionDebugAvailable } from "./collisionDebug";
 import { MULTIPLAYER_SHIP_VARIANTS, ShipVariant } from "../../shared/src";
 import { playSound } from "./audio";
+import {
+  getStats,
+  PersistentStats,
+  subscribeToStats,
+} from "./stats";
+import { formatRaceDuration } from "./raceSession";
 
 const capitalizeWords = (str: string) => {
   return str.split("-").map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(" ");
@@ -151,23 +157,56 @@ const OptionsPanel: React.FC<{ state: GameState }> = ({ state }) => (
   </section>
 );
 
-const MainMenuPanel: React.FC<{ state: GameState }> = ({ state }) => (
-  <section className="menuPanel">
-    <h1 className="menuTitle menuTitle--main-menu">Asteroids</h1>
-    
-    <ShipSelection currentVariant={state.settings.shipVariant} />
+const useStats = (): PersistentStats => {
+  const [stats, setStats] = useState<PersistentStats>(() => getStats());
+  useEffect(() => {
+    return subscribeToStats((next) => setStats(next));
+  }, []);
+  return stats;
+};
 
-    <div className="menuActions">
-      <ActionButton label="Singleplayer Mode" onClick={() => activateGameMode("singleplayer")} />
-      <ActionButton
-        label="Multiplayer Battle"
-        onClick={() => activateGameMode("multiplayer")}
-        variant="secondary"
-      />
-      <ActionButton label="Options" onClick={openOptionsMenu} variant="ghost" />
-    </div>
-  </section>
+const StatsLine: React.FC<{ label: string; value: string }> = ({
+  label,
+  value,
+}) => (
+  <p className="statsLine">
+    <span className="statsLabel">{label}</span>
+    <span className="statsValue">{value}</span>
+  </p>
 );
+
+const MainMenuPanel: React.FC<{ state: GameState }> = ({ state }) => {
+  const stats = useStats();
+  const bestTimeLabel =
+    stats.raceBestTimeMs === null
+      ? "—"
+      : formatRaceDuration(stats.raceBestTimeMs, 2);
+  const multiplayerRecordLabel = `${stats.multiplayerWins}W · ${stats.multiplayerLosses}L${stats.multiplayerDraws > 0 ? ` · ${stats.multiplayerDraws}D` : ""}`;
+
+  return (
+    <section className="menuPanel">
+      <h1 className="menuTitle menuTitle--main-menu">Asteroids</h1>
+
+      <ShipSelection currentVariant={state.settings.shipVariant} />
+
+      <div className="menuStats">
+        <StatsLine label="Best race time" value={bestTimeLabel} />
+        <StatsLine label="Races finished" value={String(stats.raceCompletionCount)} />
+        <StatsLine label="Multiplayer record" value={multiplayerRecordLabel} />
+      </div>
+
+      <div className="menuActions">
+        <ActionButton label="Singleplayer Mode" onClick={() => activateGameMode("singleplayer")} />
+        <ActionButton
+          label="Multiplayer Battle"
+          onClick={() => activateGameMode("multiplayer")}
+          variant="secondary"
+        />
+        <ActionButton label="Options" onClick={openOptionsMenu} variant="ghost" />
+      </div>
+    </section>
+  );
+};
 
 const PausePanel: React.FC<{ state: GameState }> = ({ state }) => {
   const modeLabel = state.scene.type === "mode" 

@@ -17,6 +17,7 @@ import {
 import { assets } from "./sketch";
 import { ShipDebrisSystem } from "./shipDebris";
 import { playSound } from "./audio";
+import { recordMultiplayerResult } from "./stats";
 import { ThrusterExhaustSystem } from "./thruster";
 import { trpcClient } from "./trpcClient";
 import { createCameraBounds, getViewScale, height, width } from "./utils";
@@ -520,6 +521,7 @@ class MultiplayerClientSession {
       }
 
       const resultCopy = getResultCopy(payload.outcome, payload.reason);
+      recordMultiplayerResult(payload.outcome);
       clearShipInput();
 
       if (payload.reason === "destroyed") {

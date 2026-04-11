@@ -10,8 +10,10 @@ import { refreshGoalsAfterResize, resetGoals } from "./goals";
 import { resetRaceStartTime } from "./raceSession";
 import { clearShipInput } from "./input";
 import { resetShipDebris } from "./shipDebris";
+import { recordRaceAttempt } from "./stats";
 
 export const resetRaceMode = (p: p5) => {
+  recordRaceAttempt();
   resetRaceStartTime();
   clearShipInput();
   resetPlayer(p);
