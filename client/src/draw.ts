@@ -18,7 +18,7 @@ import { drawMultiplayerMode } from "./multiplayerSession";
 import { player, playerHitsCollectible } from "./player";
 import { formatRaceDuration } from "./raceSession";
 import { shipDebris } from "./shipDebris";
-import { createCameraBounds, width, height } from "./utils";
+import { createCameraBounds, getViewScale, width, height } from "./utils";
 import {
   circleOverlapsCollisionShape,
   collisionShapesOverlap,
@@ -52,8 +52,12 @@ export const draw = (p: p5) => {
 
     p.clear();
     p.push();
-    p.translate(-player.enginePlayer.position.x, -player.enginePlayer.position.y);
     p.translate(width / 2, height / 2);
+    const viewScale = getViewScale();
+    if (viewScale !== 1) {
+      p.scale(viewScale);
+    }
+    p.translate(-player.enginePlayer.position.x, -player.enginePlayer.position.y);
     border.show();
     p.noStroke();
     player.run();

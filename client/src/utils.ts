@@ -1,6 +1,9 @@
 import p5 from "p5";
 import { player, Player } from "./player";
 import { circleOverlapsShipCollider } from "../../shared/src";
+import { isMobileDevice } from "./input";
+
+const MOBILE_VIEW_SCALE = 1 / 1.5;
 
 export const BULLET_SPEED = 10;
 export const REFERENCE_VIEWPORT_WIDTH = 1440;
@@ -31,16 +34,23 @@ export interface CameraBounds {
   bottom: number;
 }
 
+export const getViewScale = () => {
+  return isMobileDevice() ? MOBILE_VIEW_SCALE : 1;
+};
+
 export const createCameraBounds = (
   centerX: number,
   centerY: number,
   padding = 0
 ): CameraBounds => {
+  const scale = getViewScale();
+  const halfWidth = width / (2 * scale);
+  const halfHeight = height / (2 * scale);
   return {
-    left: centerX - width / 2 - padding,
-    right: centerX + width / 2 + padding,
-    top: centerY - height / 2 - padding,
-    bottom: centerY + height / 2 + padding,
+    left: centerX - halfWidth - padding,
+    right: centerX + halfWidth + padding,
+    top: centerY - halfHeight - padding,
+    bottom: centerY + halfHeight + padding,
   };
 };
 

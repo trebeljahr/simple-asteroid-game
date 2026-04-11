@@ -18,7 +18,7 @@ import { assets } from "./sketch";
 import { ShipDebrisSystem } from "./shipDebris";
 import { ThrusterExhaustSystem } from "./thruster";
 import { trpcClient } from "./trpcClient";
-import { createCameraBounds, height, width } from "./utils";
+import { createCameraBounds, getViewScale, height, width } from "./utils";
 import {
   applyWorldEvents,
   BULLET_DIAMETER,
@@ -1076,8 +1076,12 @@ class MultiplayerClientSession {
     this.drawBackdrop(p, selfPlayer.x, selfPlayer.y);
 
     p.push();
-    p.translate(-selfPlayer.x, -selfPlayer.y);
     p.translate(width / 2, height / 2);
+    const viewScale = getViewScale();
+    if (viewScale !== 1) {
+      p.scale(viewScale);
+    }
+    p.translate(-selfPlayer.x, -selfPlayer.y);
     this.drawWorldBorder(p, match.arena);
 
     for (let heartIndex = 0; heartIndex < visibleHearts.length; heartIndex++) {

@@ -64,13 +64,17 @@ body.app-loading .menuRoot {
   display: flex;
   position: absolute;
   inset: 0;
-  align-items: center;
+  align-items: safe center;
   justify-content: center;
   z-index: 40;
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
   opacity: 0;
   pointer-events: none;
   transition: opacity 180ms ease;
+  touch-action: pan-y;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
 }
 
 .menuRoot::before {
