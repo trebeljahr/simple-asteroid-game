@@ -79,7 +79,7 @@ body.app-loading .menuRoot {
 
 .menuRoot::before {
   content: "";
-  position: absolute;
+  position: fixed;
   inset: 0;
   z-index: 1;
   opacity: 0;
@@ -104,9 +104,10 @@ body.app-loading .menuRoot {
 }
 
 .menuScene {
-  position: absolute;
+  position: fixed;
   inset: 0;
   overflow: hidden;
+  pointer-events: none;
   z-index: 0;
 }
 
