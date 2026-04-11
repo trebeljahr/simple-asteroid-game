@@ -21,6 +21,7 @@ import { engine } from "./engine";
 import { goals } from "./goals";
 import { isShipActionActive } from "./input";
 import { shipDebris } from "./shipDebris";
+import { playSound } from "./audio";
 import {
   getShipCollider,
   getShipColliderSpec,
@@ -245,6 +246,9 @@ export class Player {
         this.shipVariant
       );
       this.deathCountDown = 255;
+      playSound("playerDeath");
+    } else {
+      playSound("playerHit");
     }
     return true;
   }
@@ -338,6 +342,7 @@ export class Player {
         this.ammunition--;
         bullets.addBullet(newPos, this.enginePlayer.angle);
       }
+      playSound("shoot");
     }
   }
 

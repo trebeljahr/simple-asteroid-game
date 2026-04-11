@@ -16,6 +16,7 @@ import {
 } from "./healthHud";
 import { assets } from "./sketch";
 import { ShipDebrisSystem } from "./shipDebris";
+import { playSound } from "./audio";
 import { ThrusterExhaustSystem } from "./thruster";
 import { trpcClient } from "./trpcClient";
 import { createCameraBounds, getViewScale, height, width } from "./utils";
@@ -571,6 +572,7 @@ class MultiplayerClientSession {
       const burstPos = this.p.createVector(x + offset.x, y + offset.y);
       this.collisionExplosions.createExplosion(burstPos);
     }
+    playSound("explosion");
   }
 
   private createAmmoPickupEffect(
@@ -1622,6 +1624,18 @@ class MultiplayerClientSession {
         this.playerDestructions.delete(nextPlayer.id);
       }
 
+      const isLocalPlayer =
+        this.viewState.match !== null &&
+        nextPlayer.id === this.viewState.match.playerId;
+      if (
+        isLocalPlayer &&
+        previousPlayer !== undefined &&
+        nextPlayer.health < previousPlayer.health &&
+        nextPlayer.health > 0
+      ) {
+        playSound("playerHit");
+      }
+
       if (
         previousPlayer === undefined ||
         nextPlayer.health >= previousPlayer.health ||
@@ -1630,6 +1644,9 @@ class MultiplayerClientSession {
         continue;
       }
 
+      if (isLocalPlayer) {
+        playSound("playerDeath");
+      }
       this.createShipDestruction(nextPlayer);
     }
   }
@@ -1644,6 +1661,22 @@ class MultiplayerClientSession {
         const asteroid = match.world.asteroids.get(event.asteroidId);
         if (asteroid !== undefined) {
           this.createCollisionExplosion(asteroid.x, asteroid.y);
+        }
+        continue;
+      }
+
+      if (event.type === "heart-removed" && localPlayer !== null) {
+        const heart = match.world.hearts.get(event.heartId);
+        if (
+          heart !== undefined &&
+          circleOverlapsShipCollider(
+            heart.x,
+            heart.y,
+            heart.size,
+            this.getPlayerCollider(localPlayer)
+          )
+        ) {
+          playSound("heartPickup");
         }
         continue;
       }
@@ -1669,6 +1702,7 @@ class MultiplayerClientSession {
             localPlayer.x,
             localPlayer.y
           );
+          playSound("ammoPickup");
         }
       }
     }

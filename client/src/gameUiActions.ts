@@ -1,5 +1,6 @@
 import { GameMode, gameStateMachine, getGameState } from "./gameState";
 import { formatRaceDuration } from "./raceSession";
+import { playSound } from "./audio";
 
 export const openPauseMenu = () => {
   return gameStateMachine.send({ type: "OPEN_PAUSE" });
@@ -48,6 +49,7 @@ export const showModeResult = (
 
 export const showSingleplayerVictory = () => {
   const totalTime = formatRaceDuration(undefined, 2);
+  playSound("victory");
   return showModeResult(
     "singleplayer",
     `Singleplayer complete in ${totalTime}`,
@@ -56,6 +58,7 @@ export const showSingleplayerVictory = () => {
 };
 
 export const showSingleplayerDefeat = () => {
+  playSound("defeat");
   return showModeResult(
     "singleplayer",
     "Ship destroyed",

@@ -9,6 +9,7 @@ import {
   distSquare,
 } from "./utils";
 import { player, playerHitsCollectible } from "./player";
+import { playSound } from "./audio";
 
 interface GoalLeg {
   distance: number;
@@ -324,6 +325,7 @@ class Goals {
     }
 
     this.currentGoalIndex++;
+    playSound("goalReached");
   }
 }
 

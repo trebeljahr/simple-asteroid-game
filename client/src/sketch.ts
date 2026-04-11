@@ -18,6 +18,7 @@ import { initializeMultiplayerSession } from "./multiplayerSession";
 import { refreshRaceViewport } from "./raceMode";
 import { ShipVariant, MULTIPLAYER_SHIP_VARIANTS } from "../../shared/src";
 import { configureGameModeActions } from "./gameModeActions";
+import { initAudio, setAudioEnabled } from "./audio";
 
 const MIN_SPLASH_DURATION_MS = 1000;
 const ASTEROID_TEXTURE_SIZE = 512;
@@ -134,6 +135,14 @@ const sketch = (p: p5) => {
 
     gameStateMachine.subscribe((state) => {
       assets.raceShip = assets.multiplayerShips[state.settings.shipVariant];
+    });
+
+    initAudio(getGameState().settings.soundEnabled);
+    setAudioEnabled(getGameState().settings.soundEnabled);
+    gameStateMachine.subscribe((state, previousState) => {
+      if (state.settings.soundEnabled !== previousState.settings.soundEnabled) {
+        setAudioEnabled(state.settings.soundEnabled);
+      }
     });
   };
   p.draw = () => {

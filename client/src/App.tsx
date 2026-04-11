@@ -15,6 +15,7 @@ import {
 } from "./gameModeActions";
 import { isCollisionDebugAvailable } from "./collisionDebug";
 import { MULTIPLAYER_SHIP_VARIANTS, ShipVariant } from "../../shared/src";
+import { playSound } from "./audio";
 
 const capitalizeWords = (str: string) => {
   return str.split("-").map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(" ");
@@ -25,7 +26,14 @@ const ActionButton: React.FC<{
   onClick: () => void;
   variant?: "primary" | "secondary" | "ghost";
 }> = ({ label, onClick, variant = "primary" }) => (
-  <button className={`menuButton menuButton--${variant}`} onClick={onClick} type="button">
+  <button
+    className={`menuButton menuButton--${variant}`}
+    onClick={() => {
+      playSound("menuConfirm");
+      onClick();
+    }}
+    type="button"
+  >
     {label}
   </button>
 );
