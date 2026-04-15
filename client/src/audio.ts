@@ -31,10 +31,7 @@ interface ThrottleEntry {
 
 let audioContext: AudioContext | null = null;
 let masterGain: GainNode | null = null;
-let musicGain: GainNode | null = null;
 let sfxGain: GainNode | null = null;
-let musicNodes: AudioNode[] = [];
-let musicStarted = false;
 let unlockAttached = false;
 let audioEnabled = false;
 
@@ -73,10 +70,6 @@ const getCtx = (): AudioContext | null => {
   sfxGain.gain.value = 0.7;
   sfxGain.connect(masterGain);
 
-  musicGain = audioContext.createGain();
-  musicGain.gain.value = 0.18;
-  musicGain.connect(masterGain);
-
   return audioContext;
 };
 
@@ -94,9 +87,6 @@ const handleUnlock = () => {
   const ctx = getCtx();
   if (!ctx) return;
   tryResume();
-  if (audioEnabled && !musicStarted) {
-    startMusic();
-  }
 };
 
 export const initAudio = (initiallyEnabled: boolean) => {
@@ -129,9 +119,6 @@ export const setAudioEnabled = (enabled: boolean) => {
   masterGain.gain.setTargetAtTime(target, now(), 0.02);
   if (enabled) {
     tryResume();
-    if (!musicStarted) {
-      startMusic();
-    }
   }
 };
 
@@ -428,53 +415,3 @@ export const playSound = (name: SoundName) => {
   }
 };
 
-// Ambient music: a slow two-voice drone in a minor mode with a slow LFO.
-// Designed to be unobtrusive during playtesting.
-const startMusic = () => {
-  const ctx = getCtx();
-  if (!ctx || !musicGain || musicStarted) return;
-  musicStarted = true;
-
-  const t = now();
-
-  const voices = [
-    { freq: 110, type: "sine" as OscillatorType, detune: -6 },
-    { freq: 110, type: "sine" as OscillatorType, detune: 6 },
-    { freq: 164.81, type: "sine" as OscillatorType, detune: 0 }, // E3
-    { freq: 220, type: "triangle" as OscillatorType, detune: -4 },
-  ];
-
-  const voiceGain = ctx.createGain();
-  voiceGain.gain.value = 0.55;
-  voiceGain.connect(musicGain);
-
-  const filter = ctx.createBiquadFilter();
-  filter.type = "lowpass";
-  filter.frequency.value = 900;
-  filter.Q.value = 0.6;
-  filter.connect(voiceGain);
-
-  for (const v of voices) {
-    const osc = ctx.createOscillator();
-    osc.type = v.type;
-    osc.frequency.setValueAtTime(v.freq, t);
-    osc.detune.setValueAtTime(v.detune, t);
-    osc.connect(filter);
-    osc.start(t);
-    musicNodes.push(osc);
-  }
-
-  // Slow LFO modulating filter cutoff for motion.
-  const lfo = ctx.createOscillator();
-  lfo.type = "sine";
-  lfo.frequency.value = 0.07;
-  const lfoGain = ctx.createGain();
-  lfoGain.gain.value = 260;
-  lfo.connect(lfoGain);
-  lfoGain.connect(filter.frequency);
-  lfo.start(t);
-  musicNodes.push(lfo);
-
-  musicNodes.push(filter);
-  musicNodes.push(voiceGain);
-};
