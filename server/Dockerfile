@@ -25,6 +25,10 @@ ENV PORT=9777
 
 COPY --from=build /app/server/package*.json ./server/
 COPY --from=build /app/server/dist ./server/dist
+# Migrations are copied into dist by the build script, but keep the
+# src copy around as a belt-and-suspenders fallback used by
+# resolveMigrationsFolder when dist lookup fails.
+COPY --from=build /app/server/src/db/migrations ./server/src/db/migrations
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/shared/package*.json ./shared/
 COPY --from=build /app/package*.json ./

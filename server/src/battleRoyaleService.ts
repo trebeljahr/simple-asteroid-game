@@ -64,6 +64,7 @@ import {
   TICK_INTERVAL_MS,
   WorldEvent,
 } from "../../shared/src";
+import { achievementService } from "./achievementService";
 
 type TypedSocket = Socket<ClientToServerEvents, ServerToClientEvents>;
 
@@ -833,6 +834,40 @@ export class BattleRoyaleService {
     });
   }
 
+  private dispatchMatchEndAchievements(
+    match: BattleRoyaleMatch,
+    winnerId: string | null
+  ) {
+    const total = match.players.length;
+    for (const participant of match.players) {
+      const userId = (participant.socket.data as { userId?: string }).userId;
+      if (userId === undefined) continue;
+
+      const won = winnerId !== null && winnerId === participant.socket.id;
+      // Winner's placement is 1 (survived to the end). Others use their
+      // elimination placement (set in markElimination).
+      const placement = won
+        ? 1
+        : participant.eliminationPlacement ?? total;
+
+      const delta: Parameters<typeof achievementService.applyEvent>[1] = {
+        brMatches: 1,
+      };
+      if (won) {
+        delta.brWins = 1;
+        delta.brTopThree = 1;
+      } else if (placement <= 3) {
+        delta.brTopThree = 1;
+      }
+      void achievementService.applyEvent(userId, delta, {
+        type: "br.matchEnded",
+        placement,
+        survivors: won ? 1 : 0,
+        won,
+      });
+    }
+  }
+
   private finishIfMatchOver(match: BattleRoyaleMatch): boolean {
     const survivors = match.players.filter(
       (player) => player.state.health > 0
@@ -867,6 +902,10 @@ export class BattleRoyaleService {
           options.winnerId === participant.socket.id,
       };
       participant.socket.emit("br:match-ended", payload);
+    }
+
+    if (options.reason !== "inactive") {
+      this.dispatchMatchEndAchievements(match, options.winnerId);
     }
   }
 

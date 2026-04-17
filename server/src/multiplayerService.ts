@@ -62,6 +62,7 @@ import {
   removeHeartFromWorld,
   TICK_INTERVAL_MS,
 } from "../../shared/src";
+import { achievementService } from "./achievementService";
 
 type TypedSocket = Socket<ClientToServerEvents, ServerToClientEvents>;
 
@@ -564,12 +565,32 @@ export class MultiplayerService {
         continue;
       }
 
+      const outcome = getOutcomeForPlayer(
+        participant.socket.id,
+        options.winnerId
+      );
       participant.socket.emit("match:ended", {
         matchId: match.id,
-        outcome: getOutcomeForPlayer(participant.socket.id, options.winnerId),
+        outcome,
         reason: options.reason,
         winnerId: options.winnerId,
       });
+
+      // Fire an achievement event for each participant. Best-effort —
+      // don't block the finish path on db writes.
+      const userId = (participant.socket.data as { userId?: string }).userId;
+      if (userId !== undefined) {
+        const delta =
+          outcome === "win"
+            ? { multiplayerWins: 1, opponentsEliminated: 1 }
+            : outcome === "loss"
+              ? { multiplayerLosses: 1 }
+              : { multiplayerDraws: 1 };
+        void achievementService.applyEvent(userId, delta, {
+          type: "mp.matchEnded",
+          outcome,
+        });
+      }
     }
   }
 
