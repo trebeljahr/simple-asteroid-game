@@ -157,6 +157,11 @@ export interface MultiplayerRuntimeConfig {
   worldSyncMode: "seed-plus-events";
 }
 
+export interface AchievementUnlockedPayload {
+  achievementId: string;
+  unlockedAt: string;
+}
+
 export interface ServerToClientEvents {
   "match:ended": (payload: MatchEndedPayload) => void;
   "match:found": (payload: MatchFoundPayload) => void;
@@ -177,6 +182,7 @@ export interface ServerToClientEvents {
   "br:match-ended": (
     payload: import("./battleRoyaleCore").BattleRoyaleMatchEndedPayload
   ) => void;
+  "achievement:unlocked": (payload: AchievementUnlockedPayload) => void;
 }
 
 export interface ClientToServerEvents {

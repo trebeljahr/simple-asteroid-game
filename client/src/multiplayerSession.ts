@@ -18,6 +18,7 @@ import { assets } from "./sketch";
 import { ShipDebrisSystem } from "./shipDebris";
 import { playSound } from "./audio";
 import { recordMultiplayerResult } from "./stats";
+import { getOrCreateDeviceToken, recordLocalUnlock } from "./account";
 import { ThrusterExhaustSystem } from "./thruster";
 import { trpcClient } from "./trpcClient";
 import { createCameraBounds, getViewScale, height, width } from "./utils";
@@ -388,6 +389,9 @@ class MultiplayerClientSession {
 
     const socket: Socket<ServerToClientEvents, ClientToServerEvents> = io({
       autoConnect: false,
+      auth: {
+        deviceToken: getOrCreateDeviceToken(),
+      },
     });
 
     socket.on("connect", () => {
@@ -442,6 +446,13 @@ class MultiplayerClientSession {
       this.viewState.queuePosition = payload.position;
       this.viewState.queueSize = payload.queueSize;
       this.viewState.status = "queueing";
+    });
+
+    // Server-side achievement unlocks (from MP/BR match results or
+    // other server-authoritative sources) arrive here. The local
+    // record keeps the UI in sync without a re-bootstrap.
+    socket.on("achievement:unlocked", (payload) => {
+      recordLocalUnlock(payload.achievementId, new Date(payload.unlockedAt));
     });
 
     socket.on("match:found", (payload: MatchFoundPayload) => {

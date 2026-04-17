@@ -38,7 +38,12 @@ export interface OptionsOverlay {
   returnTarget: "main-menu" | "pause" | "result";
 }
 
-export type OverlayState = PauseOverlay | OptionsOverlay;
+export interface AchievementsOverlay {
+  type: "achievements";
+  returnTarget: "main-menu" | "pause" | "result";
+}
+
+export type OverlayState = PauseOverlay | OptionsOverlay | AchievementsOverlay;
 
 export interface SettingsState {
   collisionDebugEnabled: boolean;
@@ -59,6 +64,8 @@ export type GameStateEvent =
   | { type: "RESUME" }
   | { type: "OPEN_OPTIONS" }
   | { type: "CLOSE_OPTIONS" }
+  | { type: "OPEN_ACHIEVEMENTS" }
+  | { type: "CLOSE_ACHIEVEMENTS" }
   | { type: "RETURN_TO_MAIN_MENU" }
   | { type: "SHOW_RESULT"; mode: GameMode; title: string; subtitle: string }
   | { type: "TOGGLE_COLLISION_DEBUG" }
@@ -252,6 +259,44 @@ const transitionState = (
       return currentState;
     case "CLOSE_OPTIONS":
       if (currentState.overlay === null || currentState.overlay.type !== "options") {
+        return currentState;
+      }
+      if (currentState.overlay.returnTarget === "pause") {
+        return {
+          scene: currentState.scene,
+          overlay: { type: "pause" },
+          settings: currentState.settings,
+        };
+      }
+      return {
+        scene: currentState.scene,
+        overlay: null,
+        settings: currentState.settings,
+      };
+    case "OPEN_ACHIEVEMENTS": {
+      let returnTarget: AchievementsOverlay["returnTarget"];
+      if (
+        currentState.overlay?.type === "pause" ||
+        (currentState.overlay?.type === "options" &&
+          currentState.overlay.returnTarget === "pause")
+      ) {
+        returnTarget = "pause";
+      } else if (currentState.scene.type === "result") {
+        returnTarget = "result";
+      } else {
+        returnTarget = "main-menu";
+      }
+      return {
+        scene: currentState.scene,
+        overlay: { type: "achievements", returnTarget },
+        settings: currentState.settings,
+      };
+    }
+    case "CLOSE_ACHIEVEMENTS":
+      if (
+        currentState.overlay === null ||
+        currentState.overlay.type !== "achievements"
+      ) {
         return currentState;
       }
       if (currentState.overlay.returnTarget === "pause") {

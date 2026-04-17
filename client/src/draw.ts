@@ -20,6 +20,7 @@ import { formatRaceDuration } from "./raceSession";
 import { shipDebris } from "./shipDebris";
 import { createCameraBounds, getViewScale, width, height } from "./utils";
 import { playSound } from "./audio";
+import { reportAchievementEvent } from "./achievementEvents";
 import {
   circleOverlapsCollisionShape,
   collisionShapesOverlap,
@@ -201,6 +202,7 @@ function handleBulletAsteroidCollisions(handledAsteroidIds: Set<string>) {
         asteroids.removeAsteroid(asteroidIndex);
         handledAsteroidIds.add(asteroid.id);
         playSound("explosion");
+        reportAchievementEvent({ type: "asteroid.destroyed" });
       } else {
         playSound("bulletHit");
       }
@@ -231,6 +233,7 @@ function handleHeartCollection() {
     player.life = Math.min(player.life + 1, MAX_PLAYER_HEALTH);
     collectedHeartIndices.add(i);
     playSound("heartPickup");
+    reportAchievementEvent({ type: "heart.collected" });
   }
 
   if (collectedHeartIndices.size === 0) {

@@ -11,9 +11,11 @@ import { resetRaceStartTime } from "./raceSession";
 import { clearShipInput } from "./input";
 import { resetShipDebris } from "./shipDebris";
 import { recordRaceAttempt } from "./stats";
+import { reportAchievementEvent } from "./achievementEvents";
 
 export const resetRaceMode = (p: p5) => {
   recordRaceAttempt();
+  reportAchievementEvent({ type: "race.attempted" });
   resetRaceStartTime();
   clearShipInput();
   resetPlayer(p);

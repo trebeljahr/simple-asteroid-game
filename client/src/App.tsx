@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from "react";
 import { GameMode, GameState, gameStateMachine } from "./gameState";
 import {
+  closeAchievementsMenu,
   closeOptionsMenu,
+  openAchievementsMenu,
   openOptionsMenu,
   resumeGameplay,
   returnToMainMenu,
@@ -27,6 +29,13 @@ import {
   isFullscreenAvailable,
   toggleFullscreenMode,
 } from "./fullscreen";
+import {
+  AccountAchievement,
+  AccountState,
+  consumeOldestRecentUnlock,
+  getAccountState,
+  subscribeToAccount,
+} from "./account";
 
 const capitalizeWords = (str: string) => {
   return str.split("-").map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(" ");
@@ -195,6 +204,122 @@ const OptionsPanel: React.FC<{ state: GameState }> = ({ state }) => {
   );
 };
 
+const useAccount = (): AccountState => {
+  const [account, setAccount] = useState<AccountState>(() => getAccountState());
+  useEffect(() => {
+    return subscribeToAccount((next) => setAccount(next));
+  }, []);
+  return account;
+};
+
+const AchievementToastLayer: React.FC = () => {
+  const [queue, setQueue] = useState<
+    Array<{ achievement: AccountAchievement; id: number }>
+  >([]);
+  useEffect(() => {
+    let counter = 0;
+    const unsub = subscribeToAccount((next) => {
+      if (next.recentUnlocks.length === 0) return;
+      const unlocked = consumeOldestRecentUnlock();
+      if (unlocked === null) return;
+      const toastId = ++counter;
+      playSound("menuConfirm");
+      setQueue((current) => [...current, { achievement: unlocked, id: toastId }]);
+      setTimeout(() => {
+        setQueue((current) => current.filter((entry) => entry.id !== toastId));
+      }, 5200);
+    });
+    return unsub;
+  }, []);
+  if (queue.length === 0) return null;
+  return (
+    <div className="achievementToastStack">
+      {queue.map(({ achievement, id }) => (
+        <div
+          key={id}
+          className={`achievementToast achievementToast--${achievement.rarity}`}
+        >
+          <div className="achievementToastTitle">Achievement unlocked</div>
+          <div className="achievementToastName">{achievement.name}</div>
+          <div className="achievementToastDescription">
+            {achievement.description}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+};
+
+const AchievementsPanel: React.FC = () => {
+  const account = useAccount();
+  const achievements = account.achievements;
+  const unlocked = achievements.filter((entry) => entry.unlockedAt !== null);
+  return (
+    <section className="menuPanel">
+      <h1 className="menuTitle menuTitle--compact">Achievements</h1>
+      <PanelCloseButton
+        label="Close achievements"
+        onClick={closeAchievementsMenu}
+      />
+      <p className="menuSubtitle">
+        {unlocked.length} of {achievements.length} unlocked
+      </p>
+      {account.status === "offline" && (
+        <p className="menuSubtitle" style={{ opacity: 0.7 }}>
+          Offline — connect to the server to sync achievements.
+        </p>
+      )}
+      <div className="achievementList">
+        {achievements.map((entry) => {
+          const isUnlocked = entry.unlockedAt !== null;
+          const classes = [
+            "achievementRow",
+            isUnlocked ? "achievementRow--unlocked" : "achievementRow--locked",
+            `achievementRow--${entry.rarity}`,
+          ].join(" ");
+          const progressLabel =
+            entry.progress !== null
+              ? `${Math.min(entry.progressValue, entry.progress.target)} / ${entry.progress.target}`
+              : isUnlocked
+                ? "Unlocked"
+                : "Locked";
+          const shouldHide = entry.hidden && !isUnlocked;
+          return (
+            <div key={entry.id} className={classes}>
+              <div className="achievementRowHeader">
+                <span className="achievementRowName">
+                  {shouldHide ? "???" : entry.name}
+                </span>
+                <span className="achievementRowStatus">{progressLabel}</span>
+              </div>
+              <p className="achievementRowDescription">
+                {shouldHide ? "Hidden achievement" : entry.description}
+              </p>
+              {entry.progress !== null && !isUnlocked && (
+                <div className="achievementProgressBar">
+                  <div
+                    className="achievementProgressBarFill"
+                    style={{
+                      width: `${Math.min(100, (entry.progressValue / entry.progress.target) * 100)}%`,
+                    }}
+                  />
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+      <div className="menuActions" style={{ marginTop: "1.4rem" }}>
+        <ActionButton
+          label="Back"
+          onClick={closeAchievementsMenu}
+          variant="secondary"
+        />
+      </div>
+    </section>
+  );
+};
+
 const useStats = (): PersistentStats => {
   const [stats, setStats] = useState<PersistentStats>(() => getStats());
   useEffect(() => {
@@ -245,6 +370,11 @@ const MainMenuPanel: React.FC<{ state: GameState }> = ({ state }) => {
           onClick={() => activateGameMode("battle-royale")}
           variant="secondary"
         />
+        <ActionButton
+          label="Achievements"
+          onClick={openAchievementsMenu}
+          variant="ghost"
+        />
         <ActionButton label="Options" onClick={openOptionsMenu} variant="ghost" />
       </div>
     </section>
@@ -261,6 +391,11 @@ const PausePanel: React.FC<{ state: GameState }> = ({ state }) => {
       <PanelCloseButton label="Close pause menu" onClick={resumeGameplay} />
       <div className="menuActions menuActions--pause">
         <ActionButton label="Resume" onClick={resumeGameplay} />
+        <ActionButton
+          label="Achievements"
+          onClick={openAchievementsMenu}
+          variant="secondary"
+        />
         <ActionButton label="Options" onClick={openOptionsMenu} variant="secondary" />
         <ActionButton label="Main Menu" onClick={returnToMainMenu} variant="ghost" />
       </div>
@@ -336,14 +471,20 @@ export const App: React.FC = () => {
   }, []);
 
   const shouldShowMenu = state.scene.type === "main-menu" || state.scene.type === "result" || state.overlay !== null;
+  const overlayTargetsMenu =
+    state.overlay !== null &&
+    (state.overlay.type === "options" || state.overlay.type === "achievements") &&
+    (state.overlay.returnTarget === "main-menu" || state.overlay.returnTarget === "result");
   const shouldShowDecorativeScene =
     state.scene.type === "main-menu" ||
     state.scene.type === "result" ||
-    (state.overlay !== null &&
-      state.overlay.type === "options" &&
-      (state.overlay.returnTarget === "main-menu" || state.overlay.returnTarget === "result"));
+    overlayTargetsMenu;
+  const overlayTargetsPause =
+    state.overlay !== null &&
+    (state.overlay.type === "options" || state.overlay.type === "achievements") &&
+    state.overlay.returnTarget === "pause";
   const shouldShowGameplayShade =
-    state.overlay?.type === "pause" || (state.overlay?.type === "options" && state.overlay.returnTarget === "pause");
+    state.overlay?.type === "pause" || overlayTargetsPause;
 
   useEffect(() => {
     const root = document.getElementById("menu");
@@ -355,7 +496,7 @@ export const App: React.FC = () => {
   }, [shouldShowMenu, shouldShowDecorativeScene, shouldShowGameplayShade]);
 
   if (!shouldShowMenu) {
-    return null;
+    return <AchievementToastLayer />;
   }
 
   return (
@@ -363,12 +504,14 @@ export const App: React.FC = () => {
       {shouldShowDecorativeScene && <MenuScene />}
       <div className="menuContent">
         {state.overlay?.type === "options" && <OptionsPanel state={state} />}
+        {state.overlay?.type === "achievements" && <AchievementsPanel />}
         {state.overlay === null && state.scene.type === "main-menu" && <MainMenuPanel state={state} />}
         {state.overlay?.type === "pause" && <PausePanel state={state} />}
         {state.scene.type === "result" && state.overlay === null && (
           <ResultPanel state={state} title={state.scene.title} subtitle={state.scene.subtitle} />
         )}
       </div>
+      <AchievementToastLayer />
     </>
   );
 };

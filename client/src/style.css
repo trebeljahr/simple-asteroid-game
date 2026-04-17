@@ -825,8 +825,198 @@ body.app-loading .backgroundImage {
   .shipGrid {
     grid-template-columns: repeat(2, 1fr);
   }
-  
+
   .shipSelection {
     padding: 1rem 0.75rem;
+  }
+}
+
+/* Achievements */
+.achievementList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  max-height: 60vh;
+  overflow-y: auto;
+  margin-top: 0.6rem;
+  padding: 0.3rem 0.1rem;
+  text-align: left;
+}
+
+.achievementRow {
+  padding: 0.7rem 0.9rem;
+  border-radius: 0.7rem;
+  border: 1px solid rgba(125, 211, 252, 0.16);
+  background: rgba(15, 27, 46, 0.58);
+  transition: border-color 120ms ease, background 120ms ease;
+}
+
+.achievementRow--unlocked {
+  border-color: rgba(142, 223, 255, 0.55);
+  background: rgba(22, 42, 68, 0.75);
+}
+
+.achievementRow--legendary.achievementRow--unlocked {
+  border-color: rgba(255, 212, 110, 0.75);
+  box-shadow: 0 0 0 1px rgba(255, 212, 110, 0.28) inset;
+}
+
+.achievementRow--epic.achievementRow--unlocked {
+  border-color: rgba(203, 148, 255, 0.7);
+}
+
+.achievementRow--rare.achievementRow--unlocked {
+  border-color: rgba(148, 216, 255, 0.7);
+}
+
+.achievementRow--locked {
+  opacity: 0.72;
+}
+
+.achievementRowHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.6rem;
+  margin-bottom: 0.25rem;
+}
+
+.achievementRowName {
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: rgba(237, 247, 255, 0.97);
+}
+
+.achievementRow--unlocked .achievementRowName {
+  color: rgba(255, 234, 170, 0.98);
+}
+
+.achievementRowStatus {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(180, 210, 230, 0.75);
+  font-variant-numeric: tabular-nums;
+}
+
+.achievementRow--unlocked .achievementRowStatus {
+  color: rgba(255, 208, 126, 0.9);
+}
+
+.achievementRowDescription {
+  margin: 0;
+  font-size: 0.84rem;
+  line-height: 1.4;
+  color: rgba(205, 222, 235, 0.82);
+}
+
+.achievementProgressBar {
+  margin-top: 0.55rem;
+  height: 5px;
+  border-radius: 999px;
+  background: rgba(8, 16, 30, 0.7);
+  overflow: hidden;
+}
+
+.achievementProgressBarFill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(
+    90deg,
+    rgba(142, 223, 255, 0.85),
+    rgba(255, 174, 96, 0.85)
+  );
+  transition: width 160ms ease;
+}
+
+/* Toast */
+.achievementToastStack {
+  position: fixed;
+  top: calc(env(safe-area-inset-top, 0px) + 1rem);
+  right: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  z-index: 100;
+  pointer-events: none;
+}
+
+.achievementToast {
+  min-width: min(20rem, 90vw);
+  max-width: min(24rem, 92vw);
+  padding: 0.85rem 1rem;
+  border: 1px solid rgba(142, 223, 255, 0.55);
+  border-radius: 0.85rem;
+  background: linear-gradient(
+    180deg,
+    rgba(16, 34, 55, 0.94),
+    rgba(10, 22, 40, 0.94)
+  );
+  box-shadow:
+    0 1.1rem 2.4rem rgba(0, 0, 0, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  color: rgba(237, 247, 255, 0.96);
+  animation: achievementToastSlide 5200ms ease-out forwards;
+  pointer-events: auto;
+}
+
+.achievementToast--rare {
+  border-color: rgba(148, 216, 255, 0.75);
+}
+
+.achievementToast--epic {
+  border-color: rgba(203, 148, 255, 0.8);
+}
+
+.achievementToast--legendary {
+  border-color: rgba(255, 212, 110, 0.85);
+  box-shadow:
+    0 1.1rem 2.6rem rgba(0, 0, 0, 0.48),
+    0 0 0 1px rgba(255, 212, 110, 0.35) inset;
+}
+
+.achievementToastTitle {
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(255, 208, 126, 0.88);
+  margin-bottom: 0.2rem;
+}
+
+.achievementToastName {
+  font-size: 1rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  margin-bottom: 0.22rem;
+}
+
+.achievementToastDescription {
+  font-size: 0.82rem;
+  line-height: 1.4;
+  color: rgba(210, 226, 240, 0.85);
+}
+
+@keyframes achievementToastSlide {
+  0% {
+    transform: translateX(120%);
+    opacity: 0;
+  }
+  8%, 85% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(120%);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .achievementToast {
+    animation: none;
+    opacity: 1;
+    transform: none;
   }
 }

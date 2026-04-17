@@ -10,6 +10,7 @@ import {
 } from "./utils";
 import { player, playerHitsCollectible } from "./player";
 import { playSound } from "./audio";
+import { reportAchievementEvent } from "./achievementEvents";
 
 interface GoalLeg {
   distance: number;
@@ -326,6 +327,7 @@ class Goals {
 
     this.currentGoalIndex++;
     playSound("goalReached");
+    reportAchievementEvent({ type: "race.goalReached" });
   }
 }
 

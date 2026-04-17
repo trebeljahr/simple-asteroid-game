@@ -2,6 +2,7 @@ import { GameMode, gameStateMachine, getGameState } from "./gameState";
 import { formatRaceDuration, getRaceDurationMilliseconds } from "./raceSession";
 import { playSound } from "./audio";
 import { recordRaceCompletion } from "./stats";
+import { reportAchievementEvent } from "./achievementEvents";
 
 export const openPauseMenu = () => {
   return gameStateMachine.send({ type: "OPEN_PAUSE" });
@@ -17,6 +18,14 @@ export const openOptionsMenu = () => {
 
 export const closeOptionsMenu = () => {
   return gameStateMachine.send({ type: "CLOSE_OPTIONS" });
+};
+
+export const openAchievementsMenu = () => {
+  return gameStateMachine.send({ type: "OPEN_ACHIEVEMENTS" });
+};
+
+export const closeAchievementsMenu = () => {
+  return gameStateMachine.send({ type: "CLOSE_ACHIEVEMENTS" });
 };
 
 export const returnToMainMenu = () => {
@@ -52,6 +61,13 @@ export const showSingleplayerVictory = () => {
   const durationMs = getRaceDurationMilliseconds();
   const totalTime = formatRaceDuration(durationMs, 2);
   const completion = recordRaceCompletion(durationMs);
+  reportAchievementEvent({
+    type: "race.completed",
+    durationMs,
+    // Plumbing for a "no damage" check arrives with the full
+    // achievement list; for now record as false until we track it.
+    noDamage: false,
+  });
   playSound("victory");
   let subtitle: string;
   if (completion.isNewRecord) {
@@ -89,6 +105,10 @@ export const handleEscapeKey = () => {
   const state = getGameState();
   if (state.overlay !== null && state.overlay.type === "options") {
     closeOptionsMenu();
+    return true;
+  }
+  if (state.overlay !== null && state.overlay.type === "achievements") {
+    closeAchievementsMenu();
     return true;
   }
 

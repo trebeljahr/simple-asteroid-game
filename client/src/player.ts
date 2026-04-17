@@ -22,6 +22,7 @@ import { goals } from "./goals";
 import { isShipActionActive } from "./input";
 import { shipDebris } from "./shipDebris";
 import { playSound } from "./audio";
+import { reportAchievementEvent } from "./achievementEvents";
 import {
   getShipCollider,
   getShipColliderSpec,
@@ -332,6 +333,7 @@ export class Player {
   shoot() {
     if (isShipActionActive("fire") && this.ammunition > 0) {
       const spec = getShipColliderSpec(this.shipVariant);
+      let fired = 0;
       for (let i = 0; i < 2; i++) {
         const newPos = this.p
           .createVector(
@@ -341,8 +343,12 @@ export class Player {
           .add(p5.Vector.fromAngle(this.enginePlayer.angle, spec.renderHeight / 2));
         this.ammunition--;
         bullets.addBullet(newPos, this.enginePlayer.angle);
+        fired++;
       }
       playSound("shoot");
+      if (fired > 0) {
+        reportAchievementEvent({ type: "bullet.fired", count: fired });
+      }
     }
   }
 

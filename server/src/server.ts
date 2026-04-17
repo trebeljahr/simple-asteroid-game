@@ -93,10 +93,28 @@ io.use(async (socket, next) => {
   next();
 });
 
+const userRoomId = (userId: string) => `user:${userId}`;
+
 io.on("connection", (socket) => {
   console.log(`New user with id: ${socket.id}`);
+  const userId = (socket.data as { userId?: string }).userId;
+  if (userId !== undefined) {
+    // Join a personal room so the achievement service can push
+    // unlocks to just this user, even across multiple tabs.
+    socket.join(userRoomId(userId));
+  }
   multiplayerService.registerSocket(socket);
   battleRoyaleService.registerSocketHandlers(socket);
+});
+
+// Fan out achievement unlocks to the owning user's room. Since the
+// achievement service lives in-process, this handles pushes from any
+// code that calls applyEvent — gameplay services, tRPC endpoints, etc.
+achievementService.onUnlock((event) => {
+  io.to(userRoomId(event.userId)).emit("achievement:unlocked", {
+    achievementId: event.achievementId,
+    unlockedAt: event.unlockedAt.toISOString(),
+  });
 });
 
 function extractDeviceToken(raw: unknown): string | null {

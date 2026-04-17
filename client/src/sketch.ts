@@ -19,6 +19,12 @@ import { refreshRaceViewport } from "./raceMode";
 import { ShipVariant, MULTIPLAYER_SHIP_VARIANTS } from "../../shared/src";
 import { configureGameModeActions } from "./gameModeActions";
 import { initAudio, setAudioEnabled } from "./audio";
+import {
+  getOrCreateDeviceToken,
+  setAccountBootstrap,
+  setAccountOffline,
+} from "./account";
+import { trpcClient } from "./trpcClient";
 
 const MIN_SPLASH_DURATION_MS = 1000;
 const ASTEROID_TEXTURE_SIZE = 512;
@@ -144,6 +150,31 @@ const sketch = (p: p5) => {
         setAudioEnabled(state.settings.soundEnabled);
       }
     });
+
+    // Kick off the account bootstrap in the background. No UI is
+    // blocked on this — if it fails we flip to offline mode and
+    // localStorage keeps tracking stats per-device.
+    getOrCreateDeviceToken();
+    void trpcClient.user.bootstrap
+      .mutate()
+      .then((payload) => {
+        if (payload === null) {
+          setAccountOffline();
+          return;
+        }
+        setAccountBootstrap({
+          user: payload.user,
+          stats: payload.stats,
+          achievements: payload.achievements.map((entry) => ({
+            ...entry,
+            unlockedAt:
+              entry.unlockedAt === null ? null : String(entry.unlockedAt),
+          })),
+        });
+      })
+      .catch(() => {
+        setAccountOffline();
+      });
   };
   p.draw = () => {
     draw(p);
