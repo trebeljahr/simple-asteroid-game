@@ -1,5 +1,9 @@
 import { GameMode, gameStateMachine, getGameState } from "./gameState";
-import { formatRaceDuration, getRaceDurationMilliseconds } from "./raceSession";
+import {
+  didTakeDamageInCurrentRace,
+  formatRaceDuration,
+  getRaceDurationMilliseconds,
+} from "./raceSession";
 import { playSound } from "./audio";
 import { recordRaceCompletion } from "./stats";
 import { reportAchievementEvent } from "./achievementEvents";
@@ -64,9 +68,7 @@ export const showSingleplayerVictory = () => {
   reportAchievementEvent({
     type: "race.completed",
     durationMs,
-    // Plumbing for a "no damage" check arrives with the full
-    // achievement list; for now record as false until we track it.
-    noDamage: false,
+    noDamage: !didTakeDamageInCurrentRace(),
   });
   playSound("victory");
   let subtitle: string;

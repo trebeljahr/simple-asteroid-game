@@ -23,6 +23,7 @@ import { isShipActionActive } from "./input";
 import { shipDebris } from "./shipDebris";
 import { playSound } from "./audio";
 import { reportAchievementEvent } from "./achievementEvents";
+import { markRaceDamageTaken } from "./raceSession";
 import {
   getShipCollider,
   getShipColliderSpec,
@@ -233,6 +234,7 @@ export class Player {
     hearts.createLossEffect(this.life - 1);
     this.life--;
     this.collisionRecoveryFrames = PLAYER_DAMAGE_RECOVERY_FRAMES;
+    markRaceDamageTaken();
     if (this.life <= 0) {
       explosions.createExplosion(
         this.p.createVector(

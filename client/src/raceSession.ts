@@ -1,8 +1,16 @@
 let raceStartTime = Date.now();
+let raceTookDamage = false;
 
 export const resetRaceStartTime = () => {
   raceStartTime = Date.now();
+  raceTookDamage = false;
 };
+
+export const markRaceDamageTaken = () => {
+  raceTookDamage = true;
+};
+
+export const didTakeDamageInCurrentRace = () => raceTookDamage;
 
 export const getRaceDurationMilliseconds = () => {
   return Date.now() - raceStartTime;

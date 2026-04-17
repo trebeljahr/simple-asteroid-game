@@ -79,10 +79,22 @@ export interface AchievementDefinition {
   check: (stats: AchievementStats, event?: AchievementEvent) => boolean;
 }
 
-// Placeholder definitions — we'll flesh out the full 15-20 list in a
-// follow-up commit. Keeping three examples here so the engine has
-// something to iterate on.
+/**
+ * The ship has been tested against all three modes.
+ */
+const hasPlayedAllModes = (stats: AchievementStats): boolean => {
+  const playedMultiplayer =
+    stats.multiplayerWins +
+      stats.multiplayerLosses +
+      stats.multiplayerDraws >=
+    1;
+  return (
+    stats.raceAttempts >= 1 && playedMultiplayer && stats.brMatches >= 1
+  );
+};
+
 export const ACHIEVEMENT_DEFINITIONS: readonly AchievementDefinition[] = [
+  // --- Singleplayer ---
   {
     id: "first-race",
     name: "First Flight",
@@ -92,6 +104,63 @@ export const ACHIEVEMENT_DEFINITIONS: readonly AchievementDefinition[] = [
     check: (stats) => stats.raceCompletions >= 1,
   },
   {
+    id: "race-sub-60",
+    name: "Speed Runner",
+    description: "Finish a race in under 60 seconds.",
+    category: "singleplayer",
+    rarity: "rare",
+    check: (_stats, event) =>
+      event?.type === "race.completed" && event.durationMs < 60_000,
+  },
+  {
+    id: "race-sub-40",
+    name: "Blitz Pilot",
+    description: "Finish a race in under 40 seconds.",
+    category: "singleplayer",
+    rarity: "epic",
+    check: (_stats, event) =>
+      event?.type === "race.completed" && event.durationMs < 40_000,
+  },
+  {
+    id: "race-no-damage",
+    name: "Untouchable",
+    description: "Complete a race without taking a single hit.",
+    category: "singleplayer",
+    rarity: "epic",
+    hidden: true,
+    check: (_stats, event) =>
+      event?.type === "race.completed" && event.noDamage === true,
+  },
+  {
+    id: "race-completions-10",
+    name: "Dedicated Pilot",
+    description: "Complete 10 singleplayer races.",
+    category: "singleplayer",
+    rarity: "common",
+    progress: { statKey: "raceCompletions", target: 10 },
+    check: (stats) => stats.raceCompletions >= 10,
+  },
+  {
+    id: "race-completions-50",
+    name: "Veteran Pilot",
+    description: "Complete 50 singleplayer races.",
+    category: "singleplayer",
+    rarity: "rare",
+    progress: { statKey: "raceCompletions", target: 50 },
+    check: (stats) => stats.raceCompletions >= 50,
+  },
+  {
+    id: "goals-cleared-100",
+    name: "Waypoint Hunter",
+    description: "Clear 100 route waypoints across all races.",
+    category: "singleplayer",
+    rarity: "common",
+    progress: { statKey: "goalsCleared", target: 100 },
+    check: (stats) => stats.goalsCleared >= 100,
+  },
+
+  // --- Multiplayer duel ---
+  {
     id: "first-multiplayer-win",
     name: "First Blood",
     description: "Win your first multiplayer duel.",
@@ -100,12 +169,113 @@ export const ACHIEVEMENT_DEFINITIONS: readonly AchievementDefinition[] = [
     check: (stats) => stats.multiplayerWins >= 1,
   },
   {
-    id: "first-battle-royale-win",
+    id: "multiplayer-wins-10",
+    name: "Duelist",
+    description: "Win 10 multiplayer duels.",
+    category: "multiplayer",
+    rarity: "rare",
+    progress: { statKey: "multiplayerWins", target: 10 },
+    check: (stats) => stats.multiplayerWins >= 10,
+  },
+  {
+    id: "multiplayer-wins-50",
+    name: "Gladiator",
+    description: "Win 50 multiplayer duels.",
+    category: "multiplayer",
+    rarity: "epic",
+    progress: { statKey: "multiplayerWins", target: 50 },
+    check: (stats) => stats.multiplayerWins >= 50,
+  },
+
+  // --- Battle royale ---
+  {
+    id: "first-br-match",
+    name: "Drop In",
+    description: "Join your first Battle Royale match.",
+    category: "battle-royale",
+    rarity: "common",
+    check: (stats) => stats.brMatches >= 1,
+  },
+  {
+    id: "br-top-three",
+    name: "Podium Finish",
+    description: "Finish in the top 3 of a Battle Royale match.",
+    category: "battle-royale",
+    rarity: "rare",
+    check: (stats) => stats.brTopThree >= 1,
+  },
+  {
+    id: "first-br-win",
     name: "Last Ship Standing",
     description: "Win a Battle Royale match.",
     category: "battle-royale",
-    rarity: "rare",
+    rarity: "epic",
     check: (stats) => stats.brWins >= 1,
+  },
+  {
+    id: "br-wins-5",
+    name: "Royale Champion",
+    description: "Win 5 Battle Royale matches.",
+    category: "battle-royale",
+    rarity: "legendary",
+    progress: { statKey: "brWins", target: 5 },
+    check: (stats) => stats.brWins >= 5,
+  },
+
+  // --- General / cross-mode ---
+  {
+    id: "asteroids-100",
+    name: "Asteroid Buster",
+    description: "Destroy 100 asteroids with gunfire.",
+    category: "general",
+    rarity: "common",
+    progress: { statKey: "asteroidsDestroyed", target: 100 },
+    check: (stats) => stats.asteroidsDestroyed >= 100,
+  },
+  {
+    id: "asteroids-1000",
+    name: "Starfield Sweeper",
+    description: "Destroy 1,000 asteroids with gunfire.",
+    category: "general",
+    rarity: "epic",
+    progress: { statKey: "asteroidsDestroyed", target: 1000 },
+    check: (stats) => stats.asteroidsDestroyed >= 1000,
+  },
+  {
+    id: "bullets-fired-1000",
+    name: "Trigger Happy",
+    description: "Fire 1,000 bullets.",
+    category: "general",
+    rarity: "common",
+    progress: { statKey: "bulletsFired", target: 1000 },
+    check: (stats) => stats.bulletsFired >= 1000,
+  },
+  {
+    id: "hearts-collected-25",
+    name: "Field Medic",
+    description: "Collect 25 health pickups.",
+    category: "general",
+    rarity: "common",
+    progress: { statKey: "heartsCollected", target: 25 },
+    check: (stats) => stats.heartsCollected >= 25,
+  },
+  {
+    id: "opponents-eliminated-25",
+    name: "Bounty Hunter",
+    description: "Eliminate 25 opposing ships across multiplayer modes.",
+    category: "general",
+    rarity: "rare",
+    progress: { statKey: "opponentsEliminated", target: 25 },
+    check: (stats) => stats.opponentsEliminated >= 25,
+  },
+  {
+    id: "try-all-modes",
+    name: "Explorer",
+    description:
+      "Play at least once in singleplayer, multiplayer, and battle royale.",
+    category: "general",
+    rarity: "rare",
+    check: hasPlayedAllModes,
   },
 ] as const;
 
