@@ -353,8 +353,8 @@ const MainMenuPanel: React.FC<{ state: GameState }> = ({ state }) => {
       <ShipSelection currentVariant={state.settings.shipVariant} />
 
       <div className="menuStats">
-        <StatsLine label="Best race time" value={bestTimeLabel} />
-        <StatsLine label="Races finished" value={String(stats.raceCompletionCount)} />
+        <StatsLine label="Best course time" value={bestTimeLabel} />
+        <StatsLine label="Courses finished" value={String(stats.raceCompletionCount)} />
         <StatsLine label="Multiplayer record" value={multiplayerRecordLabel} />
       </div>
 
