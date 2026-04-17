@@ -16,7 +16,7 @@ import {
   addHeartToWorld,
   createEmptyMatchWorld,
   createSeededRandom,
-  DEFAULT_RACE_SHIP_VARIANT,
+  DEFAULT_SHIP_VARIANT,
   isAmmoSpawnValid,
   isAsteroidSpawnValid,
   isHeartSpawnValid,
@@ -131,7 +131,7 @@ export const createBattleRoyalePlayerState = (
   id: string,
   spawnIndex: number,
   totalPlayers: number,
-  shipVariant: ShipVariant = DEFAULT_RACE_SHIP_VARIANT,
+  shipVariant: ShipVariant = DEFAULT_SHIP_VARIANT,
   arena: ArenaConfig = BATTLE_ROYALE_ARENA
 ): RuntimePlayerState => {
   const spawn = getBattleRoyaleSpawnPosition(spawnIndex, totalPlayers, arena);

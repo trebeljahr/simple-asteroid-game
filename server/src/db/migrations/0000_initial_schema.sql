@@ -7,9 +7,9 @@ CREATE TABLE "user_achievements" (
 --> statement-breakpoint
 CREATE TABLE "user_stats" (
 	"user_id" uuid PRIMARY KEY NOT NULL,
-	"race_attempts" integer DEFAULT 0 NOT NULL,
-	"race_completions" integer DEFAULT 0 NOT NULL,
-	"race_best_time_ms" integer,
+	"run_attempts" integer DEFAULT 0 NOT NULL,
+	"run_completions" integer DEFAULT 0 NOT NULL,
+	"run_best_time_ms" integer,
 	"multiplayer_wins" integer DEFAULT 0 NOT NULL,
 	"multiplayer_losses" integer DEFAULT 0 NOT NULL,
 	"multiplayer_draws" integer DEFAULT 0 NOT NULL,

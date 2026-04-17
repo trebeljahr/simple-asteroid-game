@@ -24,9 +24,9 @@ export type AchievementRarity = "common" | "rare" | "epic" | "legendary";
  * achievements read from this shape to decide when to unlock.
  */
 export interface AchievementStats {
-  raceAttempts: number;
-  raceCompletions: number;
-  raceBestTimeMs: number | null;
+  runAttempts: number;
+  runCompletions: number;
+  runBestTimeMs: number | null;
   multiplayerWins: number;
   multiplayerLosses: number;
   multiplayerDraws: number;
@@ -46,8 +46,8 @@ export interface AchievementStats {
  * evaluates. Some also feed stat counters (handled elsewhere).
  */
 export type AchievementEvent =
-  | { type: "race.completed"; durationMs: number; noDamage: boolean }
-  | { type: "race.attempted" }
+  | { type: "run.completed"; durationMs: number; noDamage: boolean }
+  | { type: "run.attempted" }
   | { type: "mp.matchEnded"; outcome: "win" | "loss" | "draw" }
   | { type: "mp.opponentDestroyed" }
   | { type: "br.matchEnded"; placement: number; survivors: number; won: boolean }
@@ -89,70 +89,70 @@ const hasPlayedAllModes = (stats: AchievementStats): boolean => {
       stats.multiplayerDraws >=
     1;
   return (
-    stats.raceAttempts >= 1 && playedMultiplayer && stats.brMatches >= 1
+    stats.runAttempts >= 1 && playedMultiplayer && stats.brMatches >= 1
   );
 };
 
 export const ACHIEVEMENT_DEFINITIONS: readonly AchievementDefinition[] = [
   // --- Singleplayer ---
   {
-    id: "first-course",
+    id: "first-run",
     name: "First Flight",
-    description: "Complete your first singleplayer course.",
+    description: "Complete your first singleplayer run.",
     category: "singleplayer",
     rarity: "common",
-    check: (stats) => stats.raceCompletions >= 1,
+    check: (stats) => stats.runCompletions >= 1,
   },
   {
-    id: "course-sub-60",
+    id: "run-sub-60",
     name: "Speed Runner",
-    description: "Finish a course in under 60 seconds.",
+    description: "Finish a run in under 60 seconds.",
     category: "singleplayer",
     rarity: "rare",
     check: (_stats, event) =>
-      event?.type === "race.completed" && event.durationMs < 60_000,
+      event?.type === "run.completed" && event.durationMs < 60_000,
   },
   {
-    id: "course-sub-40",
+    id: "run-sub-40",
     name: "Blitz Pilot",
-    description: "Finish a course in under 40 seconds.",
+    description: "Finish a run in under 40 seconds.",
     category: "singleplayer",
     rarity: "epic",
     check: (_stats, event) =>
-      event?.type === "race.completed" && event.durationMs < 40_000,
+      event?.type === "run.completed" && event.durationMs < 40_000,
   },
   {
-    id: "course-no-damage",
+    id: "run-no-damage",
     name: "Untouchable",
-    description: "Complete a course without taking a single hit.",
+    description: "Complete a run without taking a single hit.",
     category: "singleplayer",
     rarity: "epic",
     hidden: true,
     check: (_stats, event) =>
-      event?.type === "race.completed" && event.noDamage === true,
+      event?.type === "run.completed" && event.noDamage === true,
   },
   {
-    id: "course-completions-10",
+    id: "run-completions-10",
     name: "Dedicated Pilot",
-    description: "Complete 10 singleplayer courses.",
+    description: "Complete 10 singleplayer runs.",
     category: "singleplayer",
     rarity: "common",
-    progress: { statKey: "raceCompletions", target: 10 },
-    check: (stats) => stats.raceCompletions >= 10,
+    progress: { statKey: "runCompletions", target: 10 },
+    check: (stats) => stats.runCompletions >= 10,
   },
   {
-    id: "course-completions-50",
+    id: "run-completions-50",
     name: "Veteran Pilot",
-    description: "Complete 50 singleplayer courses.",
+    description: "Complete 50 singleplayer runs.",
     category: "singleplayer",
     rarity: "rare",
-    progress: { statKey: "raceCompletions", target: 50 },
-    check: (stats) => stats.raceCompletions >= 50,
+    progress: { statKey: "runCompletions", target: 50 },
+    check: (stats) => stats.runCompletions >= 50,
   },
   {
     id: "goals-cleared-100",
     name: "Waypoint Hunter",
-    description: "Clear 100 route waypoints across all courses.",
+    description: "Clear 100 route waypoints across all runs.",
     category: "singleplayer",
     rarity: "common",
     progress: { statKey: "goalsCleared", target: 100 },

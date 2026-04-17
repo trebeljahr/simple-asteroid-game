@@ -11,11 +11,11 @@ import p5, { Image } from "p5";
 import { Engine } from "matter-js";
 import { engine } from "./engine";
 import { handleEscapeKey } from "./gameUiActions";
-import { getGameState, gameStateMachine, shouldAdvanceRaceSimulation } from "./gameState";
+import { getGameState, gameStateMachine, shouldAdvanceRunSimulation } from "./gameState";
 import { initializeShipInput } from "./input";
 import { initializeMobileControls } from "./mobileControls";
 import { initializeMultiplayerSession } from "./multiplayerSession";
-import { refreshRaceViewport } from "./raceMode";
+import { refreshRunViewport } from "./runMode";
 import { ShipVariant, MULTIPLAYER_SHIP_VARIANTS } from "../../shared/src";
 import { configureGameModeActions } from "./gameModeActions";
 import { initAudio, setAudioEnabled } from "./audio";
@@ -71,7 +71,7 @@ const sketch = (p: p5) => {
 
     const state = getGameState();
     if (state.scene.type === "mode" && state.scene.mode === "singleplayer") {
-      refreshRaceViewport();
+      refreshRunViewport();
     }
   };
 
@@ -117,7 +117,7 @@ const sketch = (p: p5) => {
       heart,
       space,
       multiplayerShips: multiplayerShips as Record<ShipVariant, Image>,
-      raceShip: multiplayerShips[initialState.settings.shipVariant]!,
+      runShip: multiplayerShips[initialState.settings.shipVariant]!,
       ammoAsset,
     };
   };
@@ -140,7 +140,7 @@ const sketch = (p: p5) => {
     window.addEventListener("orientationchange", scheduleViewportSync);
 
     gameStateMachine.subscribe((state) => {
-      assets.raceShip = assets.multiplayerShips[state.settings.shipVariant];
+      assets.runShip = assets.multiplayerShips[state.settings.shipVariant];
     });
 
     initAudio(getGameState().settings.soundEnabled);
@@ -178,7 +178,7 @@ const sketch = (p: p5) => {
   };
   p.draw = () => {
     draw(p);
-    if (shouldAdvanceRaceSimulation(getGameState())) {
+    if (shouldAdvanceRunSimulation(getGameState())) {
       Engine.update(engine, 1000 / 60);
     }
     if (!hasShownFirstFrame) {
@@ -199,7 +199,7 @@ export interface Assets {
   heart: Image;
   space: Image;
   multiplayerShips: Record<ShipVariant, Image>;
-  raceShip: Image;
+  runShip: Image;
   ammoAsset: Image;
 }
 export let assets = {} as Assets;

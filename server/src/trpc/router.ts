@@ -99,9 +99,9 @@ export const createAppRouter = (
               createdAt: context.user.createdAt.toISOString(),
             },
             stats: {
-              raceAttempts: context.stats.raceAttempts,
-              raceCompletions: context.stats.raceCompletions,
-              raceBestTimeMs: context.stats.raceBestTimeMs,
+              runAttempts: context.stats.runAttempts,
+              runCompletions: context.stats.runCompletions,
+              runBestTimeMs: context.stats.runBestTimeMs,
               multiplayerWins: context.stats.multiplayerWins,
               multiplayerLosses: context.stats.multiplayerLosses,
               multiplayerDraws: context.stats.multiplayerDraws,
@@ -155,7 +155,7 @@ export const createAppRouter = (
         }
       }),
       /**
-       * Clients dispatch singleplayer events here (race attempts,
+       * Clients dispatch singleplayer events here (run attempts,
        * completions, goal clears, asteroid destructions). Server-side
        * authoritative events (MP/BR match results) are dispatched by
        * the match services directly.
@@ -163,13 +163,13 @@ export const createAppRouter = (
       reportClientEvent: authedProcedure
         .input(
           z.discriminatedUnion("type", [
-            z.object({ type: z.literal("race.attempted") }),
+            z.object({ type: z.literal("run.attempted") }),
             z.object({
-              type: z.literal("race.completed"),
+              type: z.literal("run.completed"),
               durationMs: z.number().int().min(0).max(60 * 60 * 1000),
               noDamage: z.boolean(),
             }),
-            z.object({ type: z.literal("race.goalReached") }),
+            z.object({ type: z.literal("run.goalReached") }),
             z.object({ type: z.literal("asteroid.destroyed") }),
             z.object({ type: z.literal("heart.collected") }),
             z.object({ type: z.literal("ammo.collected") }),
@@ -269,35 +269,35 @@ const dispatchClientEvent = async (
   achievementService: AchievementService,
   userId: string,
   event:
-    | { type: "race.attempted" }
-    | { type: "race.completed"; durationMs: number; noDamage: boolean }
-    | { type: "race.goalReached" }
+    | { type: "run.attempted" }
+    | { type: "run.completed"; durationMs: number; noDamage: boolean }
+    | { type: "run.goalReached" }
     | { type: "asteroid.destroyed" }
     | { type: "heart.collected" }
     | { type: "ammo.collected" }
     | { type: "bullet.fired"; count: number }
 ) => {
   switch (event.type) {
-    case "race.attempted":
+    case "run.attempted":
       return achievementService.applyEvent(
         userId,
-        { raceAttempts: 1 },
-        { type: "race.attempted" }
+        { runAttempts: 1 },
+        { type: "run.attempted" }
       );
-    case "race.completed":
+    case "run.completed":
       return achievementService.applyEvent(
         userId,
         {
-          raceCompletions: 1,
-          raceBestTimeMs: event.durationMs,
+          runCompletions: 1,
+          runBestTimeMs: event.durationMs,
         },
         {
-          type: "race.completed",
+          type: "run.completed",
           durationMs: event.durationMs,
           noDamage: event.noDamage,
         }
       );
-    case "race.goalReached":
+    case "run.goalReached":
       return achievementService.applyEvent(
         userId,
         { goalsCleared: 1 },

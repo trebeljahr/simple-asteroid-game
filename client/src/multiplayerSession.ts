@@ -1766,7 +1766,7 @@ class MultiplayerClientSession {
   }
 
   private getShipAsset(shipVariant: ShipVariant) {
-    return assets.multiplayerShips[shipVariant] ?? assets.raceShip;
+    return assets.multiplayerShips[shipVariant] ?? assets.runShip;
   }
 
   private drawPlayerArrivalPortals(p: p5, players: MatchPlayerSnapshot[]) {

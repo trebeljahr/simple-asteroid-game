@@ -10,9 +10,9 @@ import type { PublicAchievement } from "../../shared/src";
 const DEVICE_TOKEN_STORAGE_KEY = "simple-asteroid-game-device-token";
 
 export interface AccountStats {
-  raceAttempts: number;
-  raceCompletions: number;
-  raceBestTimeMs: number | null;
+  runAttempts: number;
+  runCompletions: number;
+  runBestTimeMs: number | null;
   multiplayerWins: number;
   multiplayerLosses: number;
   multiplayerDraws: number;
@@ -50,9 +50,9 @@ export interface AccountState {
 type AccountListener = (state: AccountState) => void;
 
 const emptyStats = (): AccountStats => ({
-  raceAttempts: 0,
-  raceCompletions: 0,
-  raceBestTimeMs: null,
+  runAttempts: 0,
+  runCompletions: 0,
+  runBestTimeMs: null,
   multiplayerWins: 0,
   multiplayerLosses: 0,
   multiplayerDraws: 0,
@@ -158,10 +158,10 @@ export const applyLocalStatDelta = (delta: Partial<AccountStats>) => {
     [keyof AccountStats, number | null | undefined]
   >) {
     if (typeof value !== "number") continue;
-    if (key === "raceBestTimeMs") {
-      const current = nextStats.raceBestTimeMs;
+    if (key === "runBestTimeMs") {
+      const current = nextStats.runBestTimeMs;
       if (current === null || value < current) {
-        nextStats.raceBestTimeMs = value;
+        nextStats.runBestTimeMs = value;
       }
       continue;
     }

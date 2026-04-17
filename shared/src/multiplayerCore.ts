@@ -212,7 +212,7 @@ export const MULTIPLAYER_ARENA: ArenaConfig = {
   width: 3200,
   height: 2000,
 };
-export const DEFAULT_RACE_SHIP_VARIANT: ShipVariant = "orbit-dart";
+export const DEFAULT_SHIP_VARIANT: ShipVariant = "orbit-dart";
 export const MULTIPLAYER_SHIP_VARIANTS = [
   "aurora-sprint",
   "comet-lance",
@@ -363,7 +363,7 @@ export const createRuntimePlayerState = (
   id: string,
   slot: PlayerSlot,
   arena: ArenaConfig = MULTIPLAYER_ARENA,
-  shipVariant: ShipVariant = DEFAULT_RACE_SHIP_VARIANT
+  shipVariant: ShipVariant = DEFAULT_SHIP_VARIANT
 ): RuntimePlayerState => {
   const spawn = getPlayerSpawnPosition(slot, arena);
 

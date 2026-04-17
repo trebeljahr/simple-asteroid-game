@@ -2,7 +2,7 @@
 //
 // The server is authoritative for multiplayer/BR achievements
 // (dispatched directly from the match services). Singleplayer events
-// (race attempts/completions, asteroid destructions, pickups) are
+// (run attempts/completions, asteroid destructions, pickups) are
 // reported here through tRPC; the server applies the stat deltas and
 // returns any newly-unlocked achievements so the toast layer can show
 // them immediately.
@@ -16,9 +16,9 @@ import {
 } from "./account";
 
 type ClientAchievementEvent =
-  | { type: "race.attempted" }
-  | { type: "race.completed"; durationMs: number; noDamage: boolean }
-  | { type: "race.goalReached" }
+  | { type: "run.attempted" }
+  | { type: "run.completed"; durationMs: number; noDamage: boolean }
+  | { type: "run.goalReached" }
   | { type: "asteroid.destroyed" }
   | { type: "heart.collected" }
   | { type: "ammo.collected" }
@@ -47,14 +47,14 @@ const scheduleFlush = () => {
 const applyOptimisticDelta = (event: ClientAchievementEvent) => {
   const delta: Partial<AccountStats> = {};
   switch (event.type) {
-    case "race.attempted":
-      delta.raceAttempts = 1;
+    case "run.attempted":
+      delta.runAttempts = 1;
       break;
-    case "race.completed":
-      delta.raceCompletions = 1;
-      delta.raceBestTimeMs = event.durationMs;
+    case "run.completed":
+      delta.runCompletions = 1;
+      delta.runBestTimeMs = event.durationMs;
       break;
-    case "race.goalReached":
+    case "run.goalReached":
       delta.goalsCleared = 1;
       break;
     case "asteroid.destroyed":

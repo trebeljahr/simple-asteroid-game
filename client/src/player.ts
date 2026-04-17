@@ -23,7 +23,7 @@ import { isShipActionActive } from "./input";
 import { shipDebris } from "./shipDebris";
 import { playSound } from "./audio";
 import { reportAchievementEvent } from "./achievementEvents";
-import { markRaceDamageTaken } from "./raceSession";
+import { markRunDamageTaken } from "./runSession";
 import {
   getShipCollider,
   getShipColliderSpec,
@@ -177,7 +177,7 @@ export class Player {
         Math.floor(this.collisionRecoveryFrames / 3) % 2 === 0 ? 170 : 105;
       this.p.tint(255, blinkAlpha);
     }
-    this.p.image(assets.raceShip, 0, 0, spec.renderWidth, spec.renderHeight);
+    this.p.image(assets.runShip, 0, 0, spec.renderWidth, spec.renderHeight);
     this.p.noTint();
     this.p.noFill();
 
@@ -234,7 +234,7 @@ export class Player {
     hearts.createLossEffect(this.life - 1);
     this.life--;
     this.collisionRecoveryFrames = PLAYER_DAMAGE_RECOVERY_FRAMES;
-    markRaceDamageTaken();
+    markRunDamageTaken();
     if (this.life <= 0) {
       explosions.createExplosion(
         this.p.createVector(

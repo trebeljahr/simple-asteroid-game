@@ -1,24 +1,24 @@
 // Persistent per-device play statistics.
 //
-// Stores things like singleplayer race best time and multiplayer
+// Stores things like singleplayer best run time and multiplayer
 // win/loss record in localStorage, keyed under a single JSON blob so
 // future fields can be added without new keys.
 
 const STATS_STORAGE_KEY = "simple-asteroid-game-stats";
 
 export interface PersistentStats {
-  raceBestTimeMs: number | null;
-  raceCompletionCount: number;
-  raceAttemptCount: number;
+  runBestTimeMs: number | null;
+  runCompletionCount: number;
+  runAttemptCount: number;
   multiplayerWins: number;
   multiplayerLosses: number;
   multiplayerDraws: number;
 }
 
 const createEmptyStats = (): PersistentStats => ({
-  raceBestTimeMs: null,
-  raceCompletionCount: 0,
-  raceAttemptCount: 0,
+  runBestTimeMs: null,
+  runCompletionCount: 0,
+  runAttemptCount: 0,
   multiplayerWins: 0,
   multiplayerLosses: 0,
   multiplayerDraws: 0,
@@ -79,33 +79,33 @@ export const subscribeToStats = (
   };
 };
 
-export interface RaceCompletionResult {
+export interface RunCompletionResult {
   previousBestMs: number | null;
   newBestMs: number;
   isNewRecord: boolean;
 }
 
-export const recordRaceAttempt = () => {
+export const recordRunAttempt = () => {
   const current = getCachedStats();
   commitStats({
     ...current,
-    raceAttemptCount: current.raceAttemptCount + 1,
+    runAttemptCount: current.runAttemptCount + 1,
   });
 };
 
-export const recordRaceCompletion = (
+export const recordRunCompletion = (
   durationMs: number
-): RaceCompletionResult => {
+): RunCompletionResult => {
   const current = getCachedStats();
-  const previousBestMs = current.raceBestTimeMs;
+  const previousBestMs = current.runBestTimeMs;
   const isNewRecord =
     previousBestMs === null || durationMs < previousBestMs;
   const newBestMs = isNewRecord ? durationMs : previousBestMs!;
 
   commitStats({
     ...current,
-    raceBestTimeMs: newBestMs,
-    raceCompletionCount: current.raceCompletionCount + 1,
+    runBestTimeMs: newBestMs,
+    runCompletionCount: current.runCompletionCount + 1,
   });
 
   return {

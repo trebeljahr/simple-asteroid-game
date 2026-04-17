@@ -1,5 +1,5 @@
 {
-  "id": "d59def32-5a0e-45af-9bdf-ab8bea204124",
+  "id": "4691ce7f-65ef-4635-be9f-213b232bac1c",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -68,22 +68,22 @@
           "primaryKey": true,
           "notNull": true
         },
-        "race_attempts": {
-          "name": "race_attempts",
+        "run_attempts": {
+          "name": "run_attempts",
           "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "default": 0
         },
-        "race_completions": {
-          "name": "race_completions",
+        "run_completions": {
+          "name": "run_completions",
           "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "default": 0
         },
-        "race_best_time_ms": {
-          "name": "race_best_time_ms",
+        "run_best_time_ms": {
+          "name": "run_best_time_ms",
           "type": "integer",
           "primaryKey": false,
           "notNull": false

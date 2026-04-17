@@ -1,7 +1,7 @@
 import { isCollisionDebugAvailable } from "./collisionDebug";
 import {
   ShipVariant,
-  DEFAULT_RACE_SHIP_VARIANT,
+  DEFAULT_SHIP_VARIANT,
   MULTIPLAYER_SHIP_VARIANTS,
 } from "../../shared/src";
 
@@ -109,9 +109,9 @@ const readShipVariantSetting = (): ShipVariant => {
     ) {
       return storedValue as ShipVariant;
     }
-    return DEFAULT_RACE_SHIP_VARIANT;
+    return DEFAULT_SHIP_VARIANT;
   } catch (_error) {
-    return DEFAULT_RACE_SHIP_VARIANT;
+    return DEFAULT_SHIP_VARIANT;
   }
 };
 
@@ -431,6 +431,6 @@ export const isSingleplayerScene = (state: GameState) => {
   return state.scene.type === "mode" && state.scene.mode === "singleplayer";
 };
 
-export const shouldAdvanceRaceSimulation = (state: GameState) => {
+export const shouldAdvanceRunSimulation = (state: GameState) => {
   return isSingleplayerScene(state) && state.overlay === null;
 };

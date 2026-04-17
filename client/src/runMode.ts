@@ -7,16 +7,16 @@ import { resetHearts } from "./hearts";
 import { asteroids, resetAsteroids } from "./asteroids";
 import { resetBorder } from "./border";
 import { refreshGoalsAfterResize, resetGoals } from "./goals";
-import { resetRaceStartTime } from "./raceSession";
+import { resetRunStartTime } from "./runSession";
 import { clearShipInput } from "./input";
 import { resetShipDebris } from "./shipDebris";
-import { recordRaceAttempt } from "./stats";
+import { recordRunAttempt } from "./stats";
 import { reportAchievementEvent } from "./achievementEvents";
 
-export const resetRaceMode = (p: p5) => {
-  recordRaceAttempt();
-  reportAchievementEvent({ type: "race.attempted" });
-  resetRaceStartTime();
+export const resetRunMode = (p: p5) => {
+  recordRunAttempt();
+  reportAchievementEvent({ type: "run.attempted" });
+  resetRunStartTime();
   clearShipInput();
   resetPlayer(p);
   player.ammunition = 0;
@@ -33,7 +33,7 @@ export const resetRaceMode = (p: p5) => {
   resetBorder(p);
 };
 
-export const refreshRaceViewport = () => {
+export const refreshRunViewport = () => {
   clearShipInput();
   clampPlayerToWorldBounds();
   refreshGoalsAfterResize();

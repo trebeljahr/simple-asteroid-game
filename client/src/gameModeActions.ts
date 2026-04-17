@@ -1,7 +1,7 @@
 import p5 from "p5";
 import { GameMode, getGameState, gameStateMachine } from "./gameState";
 import { requestLandscapeOrientationLock } from "./input";
-import { resetRaceMode } from "./raceMode";
+import { resetRunMode } from "./runMode";
 
 let activeP5Instance: p5 | null = null;
 
@@ -22,7 +22,7 @@ export const activateGameMode = (mode: GameMode) => {
     if (activeP5Instance === null) {
       return;
     }
-    resetRaceMode(activeP5Instance);
+    resetRunMode(activeP5Instance);
   }
   gameStateMachine.send({
     type: "START_MODE",

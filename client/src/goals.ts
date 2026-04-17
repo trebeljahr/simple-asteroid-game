@@ -327,7 +327,7 @@ class Goals {
 
     this.currentGoalIndex++;
     playSound("goalReached");
-    reportAchievementEvent({ type: "race.goalReached" });
+    reportAchievementEvent({ type: "run.goalReached" });
   }
 }
 

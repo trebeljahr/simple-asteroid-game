@@ -1,27 +1,27 @@
-let raceStartTime = Date.now();
-let raceTookDamage = false;
+let runStartTime = Date.now();
+let runTookDamage = false;
 
-export const resetRaceStartTime = () => {
-  raceStartTime = Date.now();
-  raceTookDamage = false;
+export const resetRunStartTime = () => {
+  runStartTime = Date.now();
+  runTookDamage = false;
 };
 
-export const markRaceDamageTaken = () => {
-  raceTookDamage = true;
+export const markRunDamageTaken = () => {
+  runTookDamage = true;
 };
 
-export const didTakeDamageInCurrentRace = () => raceTookDamage;
+export const didTakeDamageInCurrentRun = () => runTookDamage;
 
-export const getRaceDurationMilliseconds = () => {
-  return Date.now() - raceStartTime;
+export const getRunDurationMilliseconds = () => {
+  return Date.now() - runStartTime;
 };
 
-export const getRaceDurationSeconds = () => {
-  return Math.floor(getRaceDurationMilliseconds() / 1000);
+export const getRunDurationSeconds = () => {
+  return Math.floor(getRunDurationMilliseconds() / 1000);
 };
 
-export const formatRaceDuration = (
-  durationMilliseconds = getRaceDurationMilliseconds(),
+export const formatRunDuration = (
+  durationMilliseconds = getRunDurationMilliseconds(),
   fractionalDigits = 1
 ) => {
   const totalMinutes = Math.floor(durationMilliseconds / 60000);

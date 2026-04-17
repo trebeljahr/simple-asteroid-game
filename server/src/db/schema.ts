@@ -38,9 +38,9 @@ export const userStats = pgTable("user_stats", {
   userId: uuid("user_id")
     .primaryKey()
     .references(() => users.id, { onDelete: "cascade" }),
-  raceAttempts: integer("race_attempts").notNull().default(0),
-  raceCompletions: integer("race_completions").notNull().default(0),
-  raceBestTimeMs: integer("race_best_time_ms"),
+  runAttempts: integer("run_attempts").notNull().default(0),
+  runCompletions: integer("run_completions").notNull().default(0),
+  runBestTimeMs: integer("run_best_time_ms"),
   multiplayerWins: integer("multiplayer_wins").notNull().default(0),
   multiplayerLosses: integer("multiplayer_losses").notNull().default(0),
   multiplayerDraws: integer("multiplayer_draws").notNull().default(0),

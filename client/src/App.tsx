@@ -23,7 +23,7 @@ import {
   PersistentStats,
   subscribeToStats,
 } from "./stats";
-import { formatRaceDuration } from "./raceSession";
+import { formatRunDuration } from "./runSession";
 import {
   isFullscreenActive,
   isFullscreenAvailable,
@@ -341,9 +341,9 @@ const StatsLine: React.FC<{ label: string; value: string }> = ({
 const MainMenuPanel: React.FC<{ state: GameState }> = ({ state }) => {
   const stats = useStats();
   const bestTimeLabel =
-    stats.raceBestTimeMs === null
+    stats.runBestTimeMs === null
       ? "—"
-      : formatRaceDuration(stats.raceBestTimeMs, 2);
+      : formatRunDuration(stats.runBestTimeMs, 2);
   const multiplayerRecordLabel = `${stats.multiplayerWins}W · ${stats.multiplayerLosses}L${stats.multiplayerDraws > 0 ? ` · ${stats.multiplayerDraws}D` : ""}`;
 
   return (
@@ -353,8 +353,8 @@ const MainMenuPanel: React.FC<{ state: GameState }> = ({ state }) => {
       <ShipSelection currentVariant={state.settings.shipVariant} />
 
       <div className="menuStats">
-        <StatsLine label="Best course time" value={bestTimeLabel} />
-        <StatsLine label="Courses finished" value={String(stats.raceCompletionCount)} />
+        <StatsLine label="Best run time" value={bestTimeLabel} />
+        <StatsLine label="Runs finished" value={String(stats.runCompletionCount)} />
         <StatsLine label="Multiplayer record" value={multiplayerRecordLabel} />
       </div>
 

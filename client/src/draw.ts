@@ -9,14 +9,14 @@ import {
   isCollisionDebugAvailable,
 } from "./collisionDebug";
 import { explosions } from "./explosions";
-import { GameMode, getGameState, shouldAdvanceRaceSimulation } from "./gameState";
+import { GameMode, getGameState, shouldAdvanceRunSimulation } from "./gameState";
 import { goals } from "./goals";
 import { hearts } from "./hearts";
 import { MAX_PLAYER_HEALTH } from "./healthHud";
 import { isMobileDevice } from "./input";
 import { drawMultiplayerMode } from "./multiplayerSession";
 import { player, playerHitsCollectible } from "./player";
-import { formatRaceDuration } from "./raceSession";
+import { formatRunDuration } from "./runSession";
 import { shipDebris } from "./shipDebris";
 import { createCameraBounds, getViewScale, width, height } from "./utils";
 import { playSound } from "./audio";
@@ -43,7 +43,7 @@ const shieldBlue = {
 export const draw = (p: p5) => {
   const state = getGameState();
   if (state.scene.type === "mode" && state.scene.mode === "singleplayer") {
-    if (!shouldAdvanceRaceSimulation(state)) {
+    if (!shouldAdvanceRunSimulation(state)) {
       return;
     }
 
@@ -66,7 +66,7 @@ export const draw = (p: p5) => {
     player.run();
     gameLogic(cameraBounds);
     if (state.settings.collisionDebugEnabled && isCollisionDebugAvailable()) {
-      drawRaceCollisionDebug(p);
+      drawRunCollisionDebug(p);
     }
     p.pop();
     player.showHealth();
@@ -148,7 +148,7 @@ function handlePlayerAsteroidCollisions(handledAsteroidIds: Set<string>) {
   }
 }
 
-function drawRaceCollisionDebug(p: p5) {
+function drawRunCollisionDebug(p: p5) {
   drawShipCollisionBox(p, player.getCollider());
 
   for (let i = 0; i < asteroids.asteroids.length; i++) {
@@ -285,7 +285,7 @@ function drawGoalProgress(p: p5) {
   const completedGoals = goals.completedGoals;
   const totalGoals = goals.totalGoals;
   const remainingGoals = goals.remainingGoals;
-  const timerLabel = formatRaceDuration(undefined, 1);
+  const timerLabel = formatRunDuration(undefined, 1);
 
   p.push();
   p.rectMode(p.CORNER);

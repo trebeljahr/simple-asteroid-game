@@ -1,11 +1,11 @@
 import { GameMode, gameStateMachine, getGameState } from "./gameState";
 import {
-  didTakeDamageInCurrentRace,
-  formatRaceDuration,
-  getRaceDurationMilliseconds,
-} from "./raceSession";
+  didTakeDamageInCurrentRun,
+  formatRunDuration,
+  getRunDurationMilliseconds,
+} from "./runSession";
 import { playSound } from "./audio";
-import { recordRaceCompletion } from "./stats";
+import { recordRunCompletion } from "./stats";
 import { reportAchievementEvent } from "./achievementEvents";
 
 export const openPauseMenu = () => {
@@ -62,13 +62,13 @@ export const showModeResult = (
 };
 
 export const showSingleplayerVictory = () => {
-  const durationMs = getRaceDurationMilliseconds();
-  const totalTime = formatRaceDuration(durationMs, 2);
-  const completion = recordRaceCompletion(durationMs);
+  const durationMs = getRunDurationMilliseconds();
+  const totalTime = formatRunDuration(durationMs, 2);
+  const completion = recordRunCompletion(durationMs);
   reportAchievementEvent({
-    type: "race.completed",
+    type: "run.completed",
     durationMs,
-    noDamage: !didTakeDamageInCurrentRace(),
+    noDamage: !didTakeDamageInCurrentRun(),
   });
   playSound("victory");
   let subtitle: string;
@@ -76,11 +76,11 @@ export const showSingleplayerVictory = () => {
     if (completion.previousBestMs === null) {
       subtitle = `New personal best: ${totalTime}. Launch again or head back to the menu.`;
     } else {
-      const previousBest = formatRaceDuration(completion.previousBestMs, 2);
+      const previousBest = formatRunDuration(completion.previousBestMs, 2);
       subtitle = `New personal best! Previous best ${previousBest}.`;
     }
   } else {
-    const bestTime = formatRaceDuration(completion.newBestMs, 2);
+    const bestTime = formatRunDuration(completion.newBestMs, 2);
     subtitle = `Personal best still ${bestTime}. Try to beat it.`;
   }
   return showModeResult(

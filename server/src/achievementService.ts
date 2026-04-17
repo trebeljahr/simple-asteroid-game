@@ -17,9 +17,9 @@ import {
 
 const toAchievementStats = (row: UserStats): AchievementStats => {
   return {
-    raceAttempts: row.raceAttempts,
-    raceCompletions: row.raceCompletions,
-    raceBestTimeMs: row.raceBestTimeMs ?? null,
+    runAttempts: row.runAttempts,
+    runCompletions: row.runCompletions,
+    runBestTimeMs: row.runBestTimeMs ?? null,
     multiplayerWins: row.multiplayerWins,
     multiplayerLosses: row.multiplayerLosses,
     multiplayerDraws: row.multiplayerDraws,
@@ -40,9 +40,9 @@ const toAchievementStats = (row: UserStats): AchievementStats => {
  * caller wants to bump are provided; everything else is left alone.
  */
 export type StatDelta = Partial<{
-  raceAttempts: number;
-  raceCompletions: number;
-  raceBestTimeMs: number | null; // overwrite if lower (handled by caller)
+  runAttempts: number;
+  runCompletions: number;
+  runBestTimeMs: number | null; // overwrite if lower (handled by caller)
   multiplayerWins: number;
   multiplayerLosses: number;
   multiplayerDraws: number;
@@ -64,8 +64,8 @@ export interface AchievementUnlockEvent {
 }
 
 /**
- * Per-user lock so concurrent events from the same user don't race
- * each other in the evaluator (double unlock, lost stat update).
+ * Per-user lock so concurrent events from the same user can't collide
+ * in the evaluator (double unlock, lost stat update).
  */
 class UserLock {
   private queues = new Map<string, Promise<unknown>>();
@@ -101,7 +101,7 @@ export class AchievementService extends EventEmitter {
    * Primary entry point used by game code. Applies a set of stat
    * deltas and then re-evaluates every achievement against the new
    * stats. Optionally dispatches an event the achievement predicates
-   * can inspect (e.g. "race.completed" carries durationMs).
+   * can inspect (e.g. "run.completed" carries durationMs).
    */
   async applyEvent(
     userId: string,
@@ -162,7 +162,7 @@ export class AchievementService extends EventEmitter {
       if (definition.progress !== undefined) {
         const value = stats[definition.progress.statKey];
         // Progress is always a number counter. If the stat happens to
-        // be nullable (e.g. raceBestTimeMs), treat null as 0.
+        // be nullable (e.g. runBestTimeMs), treat null as 0.
         progressValue = typeof value === "number" ? value : 0;
       } else if (unlockedAt !== null) {
         progressValue = 1;
@@ -177,9 +177,9 @@ export class AchievementService extends EventEmitter {
 
   private emptyStats(): AchievementStats {
     return {
-      raceAttempts: 0,
-      raceCompletions: 0,
-      raceBestTimeMs: null,
+      runAttempts: 0,
+      runCompletions: 0,
+      runBestTimeMs: null,
       multiplayerWins: 0,
       multiplayerLosses: 0,
       multiplayerDraws: 0,
@@ -197,7 +197,7 @@ export class AchievementService extends EventEmitter {
 
   /**
    * Apply a set of stat deltas atomically. Integer fields are
-   * incremented; raceBestTimeMs is overwritten if the incoming value
+   * incremented; runBestTimeMs is overwritten if the incoming value
    * is strictly lower than the existing one (or if no record exists).
    *
    * Returns the post-update AchievementStats view (or null if the
@@ -219,7 +219,7 @@ export class AchievementService extends EventEmitter {
     for (const [key, value] of Object.entries(delta) as Array<
       [keyof StatDelta, unknown]
     >) {
-      if (key === "raceBestTimeMs") continue;
+      if (key === "runBestTimeMs") continue;
       if (typeof value === "number" && value !== 0) {
         increments.push([key, value]);
       }
@@ -229,17 +229,17 @@ export class AchievementService extends EventEmitter {
       setClauses[key] = sql`${userStats[key as keyof typeof userStats]} + ${value}`;
     }
 
-    // raceBestTimeMs uses "lowest wins" semantics — the incoming time
+    // runBestTimeMs uses "lowest wins" semantics — the incoming time
     // replaces the stored one only if it's lower or not yet set.
     if (
-      delta.raceBestTimeMs !== undefined &&
-      delta.raceBestTimeMs !== null &&
-      Number.isFinite(delta.raceBestTimeMs)
+      delta.runBestTimeMs !== undefined &&
+      delta.runBestTimeMs !== null &&
+      Number.isFinite(delta.runBestTimeMs)
     ) {
-      setClauses.raceBestTimeMs = sql`CASE
-        WHEN ${userStats.raceBestTimeMs} IS NULL OR ${userStats.raceBestTimeMs} > ${delta.raceBestTimeMs}
-          THEN ${delta.raceBestTimeMs}
-        ELSE ${userStats.raceBestTimeMs}
+      setClauses.runBestTimeMs = sql`CASE
+        WHEN ${userStats.runBestTimeMs} IS NULL OR ${userStats.runBestTimeMs} > ${delta.runBestTimeMs}
+          THEN ${delta.runBestTimeMs}
+        ELSE ${userStats.runBestTimeMs}
       END`;
     }
 
@@ -291,8 +291,8 @@ export class AchievementService extends EventEmitter {
       if (!unlocked) continue;
 
       const now = new Date();
-      // ON CONFLICT DO NOTHING handles the rare race where the same
-      // unlock is attempted twice (different events arriving in
+      // ON CONFLICT DO NOTHING handles the rare collision where the
+      // same unlock is attempted twice (different events arriving in
       // parallel) — even with our per-user lock it's a cheap guard.
       const inserted = await db
         .insert(userAchievements)
