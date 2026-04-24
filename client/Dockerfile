@@ -1,17 +1,18 @@
 FROM node:24-bookworm-slim AS build
 WORKDIR /app
 
-COPY client/package*.json client/
-COPY shared/package*.json shared/
-COPY package*.json ./
+RUN npm install -g pnpm@10.33.2
 
-RUN npm ci --workspace @simple-asteroid-game/client
+COPY client/package.json client/
+COPY shared/package.json shared/
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+
+RUN pnpm install --frozen-lockfile --filter @simple-asteroid-game/client...
 
 COPY shared ./shared
 COPY client ./client
-COPY package*.json ./
 
-RUN npm run build:client
+RUN pnpm run build:client
 
 FROM node:24-bookworm-slim AS runtime
 WORKDIR /app

@@ -1,21 +1,22 @@
 FROM node:24-bookworm-slim AS deps
 WORKDIR /app
 
-COPY server/package*.json server/
-COPY shared/package*.json shared/
-COPY package*.json ./
+RUN npm install -g pnpm@10.33.2
 
-RUN npm ci --workspace @simple-asteroid-game/server
+COPY server/package.json server/
+COPY shared/package.json shared/
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+
+RUN pnpm install --frozen-lockfile --filter @simple-asteroid-game/server...
 
 FROM deps AS build
 WORKDIR /app
 
 COPY shared ./shared
 COPY server ./server
-COPY package*.json ./
 
-RUN npm run build:server
-RUN npm prune --omit=dev
+RUN pnpm run build:server
+RUN pnpm install --prod --frozen-lockfile --ignore-scripts --filter @simple-asteroid-game/server...
 
 FROM node:24-bookworm-slim AS runtime
 WORKDIR /app

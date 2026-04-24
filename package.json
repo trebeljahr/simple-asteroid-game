@@ -1,6 +1,7 @@
 {
   "name": "asteroid-game",
   "version": "1.0.0",
+  "packageManager": "pnpm@10.33.2",
   "private": true,
   "description": "This is a small asteroid game for multiplayer using typescript, sockets and p5 canvas.",
   "scripts": {
@@ -40,6 +41,8 @@
   },
   "dependencies": {},
   "lint-staged": {
-    "*.{js,jsx,ts,tsx,json,jsonc,css}": ["biome check --write --no-errors-on-unmatched"]
+    "*.{js,jsx,ts,tsx,json,jsonc,css}": [
+      "biome check --write --no-errors-on-unmatched"
+    ]
   }
 }
