@@ -1,5 +1,18 @@
-import React, { useEffect, useState } from "react";
-import { GameMode, GameState, gameStateMachine } from "./gameState";
+import type React from "react";
+import { useEffect, useState } from "react";
+import { MULTIPLAYER_SHIP_VARIANTS, type ShipVariant } from "../../shared/src";
+import {
+  type AccountAchievement,
+  type AccountState,
+  consumeOldestRecentUnlock,
+  getAccountState,
+  subscribeToAccount,
+} from "./account";
+import { playSound } from "./audio";
+import { isCollisionDebugAvailable } from "./collisionDebug";
+import { isFullscreenActive, isFullscreenAvailable, toggleFullscreenMode } from "./fullscreen";
+import { activateGameMode, restartCurrentMode } from "./gameModeActions";
+import { type GameState, gameStateMachine } from "./gameState";
 import {
   closeAchievementsMenu,
   closeOptionsMenu,
@@ -11,34 +24,14 @@ import {
   toggleNetcodeDebug,
   toggleSoundEnabled,
 } from "./gameUiActions";
-import {
-  activateGameMode,
-  restartCurrentMode,
-} from "./gameModeActions";
-import { isCollisionDebugAvailable } from "./collisionDebug";
-import { MULTIPLAYER_SHIP_VARIANTS, ShipVariant } from "../../shared/src";
-import { playSound } from "./audio";
-import {
-  getStats,
-  PersistentStats,
-  subscribeToStats,
-} from "./stats";
 import { formatRunDuration } from "./runSession";
-import {
-  isFullscreenActive,
-  isFullscreenAvailable,
-  toggleFullscreenMode,
-} from "./fullscreen";
-import {
-  AccountAchievement,
-  AccountState,
-  consumeOldestRecentUnlock,
-  getAccountState,
-  subscribeToAccount,
-} from "./account";
+import { type PersistentStats, getStats, subscribeToStats } from "./stats";
 
 const capitalizeWords = (str: string) => {
-  return str.split("-").map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(" ");
+  return str
+    .split("-")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
 };
 
 const ActionButton: React.FC<{
@@ -102,7 +95,11 @@ const CreditsSection: React.FC = () => (
         Freepik
       </a>{" "}
       and{" "}
-      <a href="https://www.flaticon.com/authors/smashicons" target="_blank" rel="noopener noreferrer">
+      <a
+        href="https://www.flaticon.com/authors/smashicons"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
         Smashicons
       </a>{" "}
       from{" "}
@@ -120,7 +117,14 @@ const ImpressumSection: React.FC = () => {
       <button
         className="creditsLine"
         onClick={() => setOpen(!open)}
-        style={{ background: "none", border: "none", cursor: "pointer", color: "inherit", fontSize: "inherit", padding: 0 }}
+        style={{
+          background: "none",
+          border: "none",
+          cursor: "pointer",
+          color: "inherit",
+          fontSize: "inherit",
+          padding: 0,
+        }}
       >
         Imprint {open ? "▾" : "▸"}
       </button>
@@ -128,14 +132,15 @@ const ImpressumSection: React.FC = () => {
         <div style={{ marginTop: "0.5rem", fontSize: "0.75rem", lineHeight: 1.6, opacity: 0.7 }}>
           <p>Information pursuant to § 5 DDG / § 18 (2) MStV (Germany)</p>
           <p style={{ marginTop: "0.4rem" }}>
-            Rico Trebeljahr<br />
-            c/o Block Services<br />
-            Stuttgarter Str. 106<br />
+            Rico Trebeljahr
+            <br />
+            c/o Block Services
+            <br />
+            Stuttgarter Str. 106
+            <br />
             70736 Fellbach, Germany
           </p>
-          <p style={{ marginTop: "0.4rem" }}>
-            Email: imprint+asteroids@trebeljahr.com
-          </p>
+          <p style={{ marginTop: "0.4rem" }}>Email: imprint+asteroids@trebeljahr.com</p>
         </div>
       )}
     </div>
@@ -185,7 +190,9 @@ const OptionsPanel: React.FC<{ state: GameState }> = ({ state }) => {
         )}
         {isCollisionDebugAvailable() && (
           <ActionButton
-            label={state.settings.collisionDebugEnabled ? "Collision Debug: On" : "Collision Debug: Off"}
+            label={
+              state.settings.collisionDebugEnabled ? "Collision Debug: On" : "Collision Debug: Off"
+            }
             onClick={toggleCollisionDebug}
           />
         )}
@@ -213,9 +220,7 @@ const useAccount = (): AccountState => {
 };
 
 const AchievementToastLayer: React.FC = () => {
-  const [queue, setQueue] = useState<
-    Array<{ achievement: AccountAchievement; id: number }>
-  >([]);
+  const [queue, setQueue] = useState<Array<{ achievement: AccountAchievement; id: number }>>([]);
   useEffect(() => {
     let counter = 0;
     const unsub = subscribeToAccount((next) => {
@@ -235,15 +240,10 @@ const AchievementToastLayer: React.FC = () => {
   return (
     <div className="achievementToastStack">
       {queue.map(({ achievement, id }) => (
-        <div
-          key={id}
-          className={`achievementToast achievementToast--${achievement.rarity}`}
-        >
+        <div key={id} className={`achievementToast achievementToast--${achievement.rarity}`}>
           <div className="achievementToastTitle">Achievement unlocked</div>
           <div className="achievementToastName">{achievement.name}</div>
-          <div className="achievementToastDescription">
-            {achievement.description}
-          </div>
+          <div className="achievementToastDescription">{achievement.description}</div>
         </div>
       ))}
     </div>
@@ -257,10 +257,7 @@ const AchievementsPanel: React.FC = () => {
   return (
     <section className="menuPanel">
       <h1 className="menuTitle menuTitle--compact">Achievements</h1>
-      <PanelCloseButton
-        label="Close achievements"
-        onClick={closeAchievementsMenu}
-      />
+      <PanelCloseButton label="Close achievements" onClick={closeAchievementsMenu} />
       <p className="menuSubtitle">
         {unlocked.length} of {achievements.length} unlocked
       </p>
@@ -287,9 +284,7 @@ const AchievementsPanel: React.FC = () => {
           return (
             <div key={entry.id} className={classes}>
               <div className="achievementRowHeader">
-                <span className="achievementRowName">
-                  {shouldHide ? "???" : entry.name}
-                </span>
+                <span className="achievementRowName">{shouldHide ? "???" : entry.name}</span>
                 <span className="achievementRowStatus">{progressLabel}</span>
               </div>
               <p className="achievementRowDescription">
@@ -310,11 +305,7 @@ const AchievementsPanel: React.FC = () => {
         })}
       </div>
       <div className="menuActions" style={{ marginTop: "1.4rem" }}>
-        <ActionButton
-          label="Back"
-          onClick={closeAchievementsMenu}
-          variant="secondary"
-        />
+        <ActionButton label="Back" onClick={closeAchievementsMenu} variant="secondary" />
       </div>
     </section>
   );
@@ -328,10 +319,7 @@ const useStats = (): PersistentStats => {
   return stats;
 };
 
-const StatsLine: React.FC<{ label: string; value: string }> = ({
-  label,
-  value,
-}) => (
+const StatsLine: React.FC<{ label: string; value: string }> = ({ label, value }) => (
   <p className="statsLine">
     <span className="statsLabel">{label}</span>
     <span className="statsValue">{value}</span>
@@ -341,9 +329,7 @@ const StatsLine: React.FC<{ label: string; value: string }> = ({
 const MainMenuPanel: React.FC<{ state: GameState }> = ({ state }) => {
   const stats = useStats();
   const bestTimeLabel =
-    stats.runBestTimeMs === null
-      ? "—"
-      : formatRunDuration(stats.runBestTimeMs, 2);
+    stats.runBestTimeMs === null ? "—" : formatRunDuration(stats.runBestTimeMs, 2);
   const multiplayerRecordLabel = `${stats.multiplayerWins}W · ${stats.multiplayerLosses}L${stats.multiplayerDraws > 0 ? ` · ${stats.multiplayerDraws}D` : ""}`;
 
   return (
@@ -370,11 +356,7 @@ const MainMenuPanel: React.FC<{ state: GameState }> = ({ state }) => {
           onClick={() => activateGameMode("battle-royale")}
           variant="secondary"
         />
-        <ActionButton
-          label="Achievements"
-          onClick={openAchievementsMenu}
-          variant="ghost"
-        />
+        <ActionButton label="Achievements" onClick={openAchievementsMenu} variant="ghost" />
         <ActionButton label="Options" onClick={openOptionsMenu} variant="ghost" />
       </div>
     </section>
@@ -382,20 +364,19 @@ const MainMenuPanel: React.FC<{ state: GameState }> = ({ state }) => {
 };
 
 const PausePanel: React.FC<{ state: GameState }> = ({ state }) => {
-  const modeLabel = state.scene.type === "mode" 
-    ? (state.scene.mode === "singleplayer" ? "Singleplayer" : capitalizeWords(state.scene.mode)) 
-    : "Game";
+  const modeLabel =
+    state.scene.type === "mode"
+      ? state.scene.mode === "singleplayer"
+        ? "Singleplayer"
+        : capitalizeWords(state.scene.mode)
+      : "Game";
   return (
     <section className="menuPanel menuPanel--pause">
       <h1 className="menuTitle menuTitle--compact">{modeLabel} Paused</h1>
       <PanelCloseButton label="Close pause menu" onClick={resumeGameplay} />
       <div className="menuActions menuActions--pause">
         <ActionButton label="Resume" onClick={resumeGameplay} />
-        <ActionButton
-          label="Achievements"
-          onClick={openAchievementsMenu}
-          variant="secondary"
-        />
+        <ActionButton label="Achievements" onClick={openAchievementsMenu} variant="secondary" />
         <ActionButton label="Options" onClick={openOptionsMenu} variant="secondary" />
         <ActionButton label="Main Menu" onClick={returnToMainMenu} variant="ghost" />
       </div>
@@ -411,7 +392,7 @@ const ResultPanel: React.FC<{ state: GameState; title: string; subtitle: string 
   <section className="menuPanel">
     <h1 className="menuTitle">{title}</h1>
     <p className="menuSubtitle">{subtitle}</p>
-    
+
     <div className="menuActions">
       <ActionButton label="Try Again" onClick={restartCurrentMode} />
       <ActionButton label="Options" onClick={openOptionsMenu} variant="secondary" />
@@ -442,11 +423,61 @@ const MenuRock: React.FC<{ config: any }> = ({ config }) => (
 
 const MenuScene: React.FC = () => {
   const menuRocks = [
-    { src: "/assets/asteroid1.svg", left: "8%", top: "10%", size: "11rem", opacity: "0.38", duration: "26s", delay: "-7s", driftX: "2.5rem", driftY: "1.75rem" },
-    { src: "/assets/asteroid2.svg", left: "78%", top: "14%", size: "9rem", opacity: "0.28", duration: "22s", delay: "-11s", driftX: "-1.25rem", driftY: "2rem" },
-    { src: "/assets/asteroid3.svg", left: "15%", top: "68%", size: "13rem", opacity: "0.2", duration: "31s", delay: "-5s", driftX: "3rem", driftY: "-2.5rem" },
-    { src: "/assets/asteroid2.svg", left: "70%", top: "62%", size: "15rem", opacity: "0.18", duration: "34s", delay: "-13s", driftX: "-2.75rem", driftY: "-1.5rem" },
-    { src: "/assets/asteroid1.svg", left: "47%", top: "6%", size: "7rem", opacity: "0.22", duration: "19s", delay: "-3s", driftX: "1.5rem", driftY: "2.25rem" },
+    {
+      src: "/assets/asteroid1.svg",
+      left: "8%",
+      top: "10%",
+      size: "11rem",
+      opacity: "0.38",
+      duration: "26s",
+      delay: "-7s",
+      driftX: "2.5rem",
+      driftY: "1.75rem",
+    },
+    {
+      src: "/assets/asteroid2.svg",
+      left: "78%",
+      top: "14%",
+      size: "9rem",
+      opacity: "0.28",
+      duration: "22s",
+      delay: "-11s",
+      driftX: "-1.25rem",
+      driftY: "2rem",
+    },
+    {
+      src: "/assets/asteroid3.svg",
+      left: "15%",
+      top: "68%",
+      size: "13rem",
+      opacity: "0.2",
+      duration: "31s",
+      delay: "-5s",
+      driftX: "3rem",
+      driftY: "-2.5rem",
+    },
+    {
+      src: "/assets/asteroid2.svg",
+      left: "70%",
+      top: "62%",
+      size: "15rem",
+      opacity: "0.18",
+      duration: "34s",
+      delay: "-13s",
+      driftX: "-2.75rem",
+      driftY: "-1.5rem",
+    },
+    {
+      src: "/assets/asteroid1.svg",
+      left: "47%",
+      top: "6%",
+      size: "7rem",
+      opacity: "0.22",
+      duration: "19s",
+      delay: "-3s",
+      driftX: "1.5rem",
+      driftY: "2.25rem",
+    },
   ];
 
   return (
@@ -470,21 +501,19 @@ export const App: React.FC = () => {
     });
   }, []);
 
-  const shouldShowMenu = state.scene.type === "main-menu" || state.scene.type === "result" || state.overlay !== null;
+  const shouldShowMenu =
+    state.scene.type === "main-menu" || state.scene.type === "result" || state.overlay !== null;
   const overlayTargetsMenu =
     state.overlay !== null &&
     (state.overlay.type === "options" || state.overlay.type === "achievements") &&
     (state.overlay.returnTarget === "main-menu" || state.overlay.returnTarget === "result");
   const shouldShowDecorativeScene =
-    state.scene.type === "main-menu" ||
-    state.scene.type === "result" ||
-    overlayTargetsMenu;
+    state.scene.type === "main-menu" || state.scene.type === "result" || overlayTargetsMenu;
   const overlayTargetsPause =
     state.overlay !== null &&
     (state.overlay.type === "options" || state.overlay.type === "achievements") &&
     state.overlay.returnTarget === "pause";
-  const shouldShowGameplayShade =
-    state.overlay?.type === "pause" || overlayTargetsPause;
+  const shouldShowGameplayShade = state.overlay?.type === "pause" || overlayTargetsPause;
 
   useEffect(() => {
     const root = document.getElementById("menu");
@@ -505,7 +534,9 @@ export const App: React.FC = () => {
       <div className="menuContent">
         {state.overlay?.type === "options" && <OptionsPanel state={state} />}
         {state.overlay?.type === "achievements" && <AchievementsPanel />}
-        {state.overlay === null && state.scene.type === "main-menu" && <MainMenuPanel state={state} />}
+        {state.overlay === null && state.scene.type === "main-menu" && (
+          <MainMenuPanel state={state} />
+        )}
         {state.overlay?.type === "pause" && <PausePanel state={state} />}
         {state.scene.type === "result" && state.overlay === null && (
           <ResultPanel state={state} title={state.scene.title} subtitle={state.scene.subtitle} />

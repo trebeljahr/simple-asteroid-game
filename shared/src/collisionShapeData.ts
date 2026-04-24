@@ -1,10 +1,7 @@
 import type { NormalizedCollisionShape } from "./collisionGeometry";
 import type { ShipVariant } from "./multiplayerCore";
 
-export const SHIP_COLLISION_SHAPES: Record<
-  ShipVariant,
-  NormalizedCollisionShape
-> = {
+export const SHIP_COLLISION_SHAPES: Record<ShipVariant, NormalizedCollisionShape> = {
   "aurora-sprint": {
     bounds: { minX: -0.41406, maxX: 0.42969, minY: -0.38281, maxY: 0.38281 },
     loops: [

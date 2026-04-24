@@ -169,19 +169,11 @@ export interface ServerToClientEvents {
   "match:world-events": (payload: MatchWorldEventsPayload) => void;
   "matchmaking:status": (payload: MatchmakingStatusPayload) => void;
   "br:lobby": (payload: import("./battleRoyaleCore").BattleRoyaleLobbyPayload) => void;
-  "br:match-found": (
-    payload: import("./battleRoyaleCore").BattleRoyaleMatchFoundPayload
-  ) => void;
-  "br:snapshot": (
-    payload: import("./battleRoyaleCore").BattleRoyaleSnapshotPayload
-  ) => void;
+  "br:match-found": (payload: import("./battleRoyaleCore").BattleRoyaleMatchFoundPayload) => void;
+  "br:snapshot": (payload: import("./battleRoyaleCore").BattleRoyaleSnapshotPayload) => void;
   "br:world-events": (payload: MatchWorldEventsPayload) => void;
-  "br:eliminated": (
-    payload: import("./battleRoyaleCore").BattleRoyaleEliminatedPayload
-  ) => void;
-  "br:match-ended": (
-    payload: import("./battleRoyaleCore").BattleRoyaleMatchEndedPayload
-  ) => void;
+  "br:eliminated": (payload: import("./battleRoyaleCore").BattleRoyaleEliminatedPayload) => void;
+  "br:match-ended": (payload: import("./battleRoyaleCore").BattleRoyaleMatchEndedPayload) => void;
   "achievement:unlocked": (payload: AchievementUnlockedPayload) => void;
 }
 
@@ -265,8 +257,9 @@ export const AMMO_PACKET_AMOUNTS = [3, 3, 4, 4, 5, 5, 6] as const;
 const getAmmoPacketSize = (amount: number) => {
   return 48 + amount * 4;
 };
-export const AMMO_PACKET_MAX_SIZE =
-  getAmmoPacketSize(AMMO_PACKET_AMOUNTS[AMMO_PACKET_AMOUNTS.length - 1]);
+export const AMMO_PACKET_MAX_SIZE = getAmmoPacketSize(
+  AMMO_PACKET_AMOUNTS[AMMO_PACKET_AMOUNTS.length - 1],
+);
 
 export const createEmptyInputState = (): ShipInputState => {
   return {
@@ -288,7 +281,7 @@ export const circlesOverlap = (
   diameter1: number,
   x2: number,
   y2: number,
-  diameter2: number
+  diameter2: number,
 ) => {
   const dx = x2 - x1;
   const dy = y2 - y1;
@@ -301,7 +294,7 @@ export const createCameraBounds = (
   centerY: number,
   viewportWidth: number,
   viewportHeight: number,
-  padding = 0
+  padding = 0,
 ): CameraBounds => {
   return {
     left: centerX - viewportWidth / 2 - padding,
@@ -315,7 +308,7 @@ export const circleIntersectsBounds = (
   x: number,
   y: number,
   diameter: number,
-  bounds: CameraBounds
+  bounds: CameraBounds,
 ) => {
   const radius = diameter / 2;
   return (
@@ -341,17 +334,13 @@ export const createSeededRandom = (seed: number) => {
   };
 };
 
-export const randomBetween = (
-  random: () => number,
-  minValue: number,
-  maxValue: number
-) => {
+export const randomBetween = (random: () => number, minValue: number, maxValue: number) => {
   return minValue + random() * (maxValue - minValue);
 };
 
 export const getPlayerSpawnPosition = (
   slot: PlayerSlot,
-  arena: ArenaConfig = MULTIPLAYER_ARENA
+  arena: ArenaConfig = MULTIPLAYER_ARENA,
 ) => {
   return {
     x: slot === "alpha" ? -arena.width * 0.2 : arena.width * 0.2,
@@ -363,7 +352,7 @@ export const createRuntimePlayerState = (
   id: string,
   slot: PlayerSlot,
   arena: ArenaConfig = MULTIPLAYER_ARENA,
-  shipVariant: ShipVariant = DEFAULT_SHIP_VARIANT
+  shipVariant: ShipVariant = DEFAULT_SHIP_VARIANT,
 ): RuntimePlayerState => {
   const spawn = getPlayerSpawnPosition(slot, arena);
 
@@ -387,7 +376,7 @@ export const createRuntimePlayerState = (
 
 export const createRuntimeBulletState = (
   playerState: RuntimePlayerState,
-  bulletId: string
+  bulletId: string,
 ): RuntimeBulletState => {
   const directionX = Math.cos(playerState.angle);
   const directionY = Math.sin(playerState.angle);
@@ -411,7 +400,7 @@ export const advanceRuntimeBulletState = (bullet: RuntimeBulletState) => {
 
 export const isRuntimeBulletOutOfBounds = (
   bullet: RuntimeBulletState,
-  arena: ArenaConfig = MULTIPLAYER_ARENA
+  arena: ArenaConfig = MULTIPLAYER_ARENA,
 ) => {
   return (
     bullet.ttlTicks <= 0 ||
@@ -441,7 +430,7 @@ export const snapshotPlayerState = (state: RuntimePlayerState): MatchPlayerSnaps
 export const projectPlayerSnapshot = (
   state: MatchPlayerSnapshot,
   predictedTicks: number,
-  arena: ArenaConfig = MULTIPLAYER_ARENA
+  arena: ArenaConfig = MULTIPLAYER_ARENA,
 ): MatchPlayerSnapshot => {
   const xLimit = arena.width / 2 - PLAYER_COLLISION_DIAMETER / 2;
   const yLimit = arena.height / 2 - PLAYER_COLLISION_DIAMETER / 2;
@@ -455,7 +444,7 @@ export const projectPlayerSnapshot = (
 
 export const projectBulletSnapshot = (
   bullet: MatchBulletSnapshot,
-  predictedTicks: number
+  predictedTicks: number,
 ): MatchBulletSnapshot => {
   return {
     ...bullet,
@@ -467,7 +456,7 @@ export const projectBulletSnapshot = (
 export const stepPlayerState = (
   state: RuntimePlayerState,
   input: ShipInputState,
-  arena: ArenaConfig = MULTIPLAYER_ARENA
+  arena: ArenaConfig = MULTIPLAYER_ARENA,
 ) => {
   if (state.health <= 0) {
     state.thrusting = false;
@@ -521,7 +510,7 @@ export const stepPlayerState = (
 export const resolvePlayerCollision = (
   firstPlayer: RuntimePlayerState,
   secondPlayer: RuntimePlayerState,
-  arena: ArenaConfig = MULTIPLAYER_ARENA
+  arena: ArenaConfig = MULTIPLAYER_ARENA,
 ) => {
   const dx = secondPlayer.x - firstPlayer.x;
   const dy = secondPlayer.y - firstPlayer.y;
@@ -545,36 +534,31 @@ export const resolvePlayerCollision = (
   secondPlayer.x = clamp(secondPlayer.x + pushX, -xLimit, xLimit);
   secondPlayer.y = clamp(secondPlayer.y + pushY, -yLimit, yLimit);
 
-  const firstVelocityAlongNormal =
-    firstPlayer.vx * normalX + firstPlayer.vy * normalY;
-  const secondVelocityAlongNormal =
-    secondPlayer.vx * normalX + secondPlayer.vy * normalY;
-  const closingSpeed = Math.max(
-    0,
-    firstVelocityAlongNormal - secondVelocityAlongNormal
-  );
+  const firstVelocityAlongNormal = firstPlayer.vx * normalX + firstPlayer.vy * normalY;
+  const secondVelocityAlongNormal = secondPlayer.vx * normalX + secondPlayer.vy * normalY;
+  const closingSpeed = Math.max(0, firstVelocityAlongNormal - secondVelocityAlongNormal);
   const bounceSpeed = closingSpeed * PLAYER_COLLISION_RESTITUTION;
 
   if (bounceSpeed > 0) {
     firstPlayer.vx = clamp(
       firstPlayer.vx - normalX * bounceSpeed * 0.5,
       -PLAYER_MAX_SPEED,
-      PLAYER_MAX_SPEED
+      PLAYER_MAX_SPEED,
     );
     firstPlayer.vy = clamp(
       firstPlayer.vy - normalY * bounceSpeed * 0.5,
       -PLAYER_MAX_SPEED,
-      PLAYER_MAX_SPEED
+      PLAYER_MAX_SPEED,
     );
     secondPlayer.vx = clamp(
       secondPlayer.vx + normalX * bounceSpeed * 0.5,
       -PLAYER_MAX_SPEED,
-      PLAYER_MAX_SPEED
+      PLAYER_MAX_SPEED,
     );
     secondPlayer.vy = clamp(
       secondPlayer.vy + normalY * bounceSpeed * 0.5,
       -PLAYER_MAX_SPEED,
-      PLAYER_MAX_SPEED
+      PLAYER_MAX_SPEED,
     );
   }
 
@@ -595,7 +579,7 @@ export const createEmptyMatchWorld = (): MatchWorldRuntime => {
 export const addAsteroidToWorld = (
   world: MatchWorldRuntime,
   asteroid: WorldAsteroidState,
-  arena: ArenaConfig = MULTIPLAYER_ARENA
+  arena: ArenaConfig = MULTIPLAYER_ARENA,
 ) => {
   world.asteroids.set(asteroid.id, asteroid);
   addEntityToSpatialHash(world.asteroidHash, asteroid.id, asteroid.x, asteroid.y, arena);
@@ -604,20 +588,14 @@ export const addAsteroidToWorld = (
 export const removeAsteroidFromWorld = (
   world: MatchWorldRuntime,
   asteroidId: string,
-  arena: ArenaConfig = MULTIPLAYER_ARENA
+  arena: ArenaConfig = MULTIPLAYER_ARENA,
 ) => {
   const asteroid = world.asteroids.get(asteroidId);
   if (asteroid === undefined) {
     return false;
   }
 
-  removeEntityFromSpatialHash(
-    world.asteroidHash,
-    asteroidId,
-    asteroid.x,
-    asteroid.y,
-    arena
-  );
+  removeEntityFromSpatialHash(world.asteroidHash, asteroidId, asteroid.x, asteroid.y, arena);
   world.asteroids.delete(asteroidId);
   return true;
 };
@@ -625,7 +603,7 @@ export const removeAsteroidFromWorld = (
 export const addHeartToWorld = (
   world: MatchWorldRuntime,
   heart: WorldHeartState,
-  arena: ArenaConfig = MULTIPLAYER_ARENA
+  arena: ArenaConfig = MULTIPLAYER_ARENA,
 ) => {
   world.hearts.set(heart.id, heart);
   addEntityToSpatialHash(world.heartHash, heart.id, heart.x, heart.y, arena);
@@ -634,7 +612,7 @@ export const addHeartToWorld = (
 export const removeHeartFromWorld = (
   world: MatchWorldRuntime,
   heartId: string,
-  arena: ArenaConfig = MULTIPLAYER_ARENA
+  arena: ArenaConfig = MULTIPLAYER_ARENA,
 ) => {
   const heart = world.hearts.get(heartId);
   if (heart === undefined) {
@@ -649,7 +627,7 @@ export const removeHeartFromWorld = (
 export const addAmmoToWorld = (
   world: MatchWorldRuntime,
   ammo: WorldAmmoState,
-  arena: ArenaConfig = MULTIPLAYER_ARENA
+  arena: ArenaConfig = MULTIPLAYER_ARENA,
 ) => {
   world.ammunitionPackets.set(ammo.id, ammo);
   addEntityToSpatialHash(world.ammoHash, ammo.id, ammo.x, ammo.y, arena);
@@ -658,7 +636,7 @@ export const addAmmoToWorld = (
 export const removeAmmoFromWorld = (
   world: MatchWorldRuntime,
   ammoId: string,
-  arena: ArenaConfig = MULTIPLAYER_ARENA
+  arena: ArenaConfig = MULTIPLAYER_ARENA,
 ) => {
   const ammo = world.ammunitionPackets.get(ammoId);
   if (ammo === undefined) {
@@ -673,7 +651,7 @@ export const removeAmmoFromWorld = (
 export const applyWorldEvent = (
   world: MatchWorldRuntime,
   event: WorldEvent,
-  arena: ArenaConfig = MULTIPLAYER_ARENA
+  arena: ArenaConfig = MULTIPLAYER_ARENA,
 ) => {
   switch (event.type) {
     case "asteroid-spawned":
@@ -700,7 +678,7 @@ export const applyWorldEvent = (
 export const applyWorldEvents = (
   world: MatchWorldRuntime,
   events: WorldEvent[],
-  arena: ArenaConfig = MULTIPLAYER_ARENA
+  arena: ArenaConfig = MULTIPLAYER_ARENA,
 ) => {
   for (let i = 0; i < events.length; i++) {
     applyWorldEvent(world, events[i], arena);
@@ -712,7 +690,7 @@ export const getNearbyAsteroids = (
   x: number,
   y: number,
   radius: number,
-  arena: ArenaConfig = MULTIPLAYER_ARENA
+  arena: ArenaConfig = MULTIPLAYER_ARENA,
 ) => {
   return querySpatialEntities(
     world.asteroidHash,
@@ -721,7 +699,7 @@ export const getNearbyAsteroids = (
     y,
     radius,
     ASTEROID_MAX_SIZE,
-    arena
+    arena,
   );
 };
 
@@ -730,45 +708,31 @@ export const getNearbyHearts = (
   x: number,
   y: number,
   radius: number,
-  arena: ArenaConfig = MULTIPLAYER_ARENA
+  arena: ArenaConfig = MULTIPLAYER_ARENA,
 ) => {
-  return querySpatialEntities(
-    world.heartHash,
-    world.hearts,
-    x,
-    y,
-    radius,
-    HEART_SIZE,
-    arena
-  );
+  return querySpatialEntities(world.heartHash, world.hearts, x, y, radius, HEART_SIZE, arena);
 };
 
 export const getAsteroidsInBounds = (
   world: MatchWorldRuntime,
   bounds: CameraBounds,
-  arena: ArenaConfig = MULTIPLAYER_ARENA
+  arena: ArenaConfig = MULTIPLAYER_ARENA,
 ) => {
   return queryEntitiesInBounds(
     world.asteroidHash,
     world.asteroids,
     bounds,
     ASTEROID_MAX_SIZE,
-    arena
+    arena,
   );
 };
 
 export const getHeartsInBounds = (
   world: MatchWorldRuntime,
   bounds: CameraBounds,
-  arena: ArenaConfig = MULTIPLAYER_ARENA
+  arena: ArenaConfig = MULTIPLAYER_ARENA,
 ) => {
-  return queryEntitiesInBounds(
-    world.heartHash,
-    world.hearts,
-    bounds,
-    HEART_SIZE,
-    arena
-  );
+  return queryEntitiesInBounds(world.heartHash, world.hearts, bounds, HEART_SIZE, arena);
 };
 
 export const getNearbyAmmoPackets = (
@@ -776,7 +740,7 @@ export const getNearbyAmmoPackets = (
   x: number,
   y: number,
   radius: number,
-  arena: ArenaConfig = MULTIPLAYER_ARENA
+  arena: ArenaConfig = MULTIPLAYER_ARENA,
 ) => {
   return querySpatialEntities(
     world.ammoHash,
@@ -785,27 +749,27 @@ export const getNearbyAmmoPackets = (
     y,
     radius,
     AMMO_PACKET_MAX_SIZE,
-    arena
+    arena,
   );
 };
 
 export const getAmmoPacketsInBounds = (
   world: MatchWorldRuntime,
   bounds: CameraBounds,
-  arena: ArenaConfig = MULTIPLAYER_ARENA
+  arena: ArenaConfig = MULTIPLAYER_ARENA,
 ) => {
   return queryEntitiesInBounds(
     world.ammoHash,
     world.ammunitionPackets,
     bounds,
     AMMO_PACKET_MAX_SIZE,
-    arena
+    arena,
   );
 };
 
 export const createInitialMatchWorld = (
   worldSeed: number,
-  arena: ArenaConfig = MULTIPLAYER_ARENA
+  arena: ArenaConfig = MULTIPLAYER_ARENA,
 ) => {
   const random = createSeededRandom(worldSeed);
   const world = createEmptyMatchWorld();
@@ -820,7 +784,7 @@ export const createInitialMatchWorld = (
       playerPositions,
       random,
       `asteroid:init:${asteroidIndex}`,
-      arena
+      arena,
     );
 
     if (asteroid !== null) {
@@ -834,7 +798,7 @@ export const createInitialMatchWorld = (
       playerPositions,
       random,
       `heart:init:${heartIndex}`,
-      arena
+      arena,
     );
 
     if (heart !== null) {
@@ -842,17 +806,13 @@ export const createInitialMatchWorld = (
     }
   }
 
-  for (
-    let ammoPacketIndex = 0;
-    ammoPacketIndex < INITIAL_AMMO_PACKET_COUNT;
-    ammoPacketIndex++
-  ) {
+  for (let ammoPacketIndex = 0; ammoPacketIndex < INITIAL_AMMO_PACKET_COUNT; ammoPacketIndex++) {
     const ammo = spawnAmmoFromRandom(
       world,
       playerPositions,
       random,
       `ammo:init:${ammoPacketIndex}`,
-      arena
+      arena,
     );
 
     if (ammo !== null) {
@@ -868,19 +828,19 @@ export const spawnAsteroidFromRandom = (
   playerPositions: ReadonlyArray<{ x: number; y: number }>,
   random: () => number,
   asteroidId: string,
-  arena: ArenaConfig = MULTIPLAYER_ARENA
+  arena: ArenaConfig = MULTIPLAYER_ARENA,
 ) => {
   for (let attempt = 0; attempt < 240; attempt++) {
     const size = randomBetween(random, ASTEROID_MIN_SIZE, ASTEROID_MAX_SIZE);
     const x = randomBetween(
       random,
       -arena.width / 2 + WORLD_MARGIN,
-      arena.width / 2 - WORLD_MARGIN
+      arena.width / 2 - WORLD_MARGIN,
     );
     const y = randomBetween(
       random,
       -arena.height / 2 + WORLD_MARGIN,
-      arena.height / 2 - WORLD_MARGIN
+      arena.height / 2 - WORLD_MARGIN,
     );
 
     if (!isAsteroidSpawnValid(world, playerPositions, x, y, size, arena)) {
@@ -898,18 +858,18 @@ export const spawnHeartFromRandom = (
   playerPositions: ReadonlyArray<{ x: number; y: number }>,
   random: () => number,
   heartId: string,
-  arena: ArenaConfig = MULTIPLAYER_ARENA
+  arena: ArenaConfig = MULTIPLAYER_ARENA,
 ) => {
   for (let attempt = 0; attempt < 240; attempt++) {
     const x = randomBetween(
       random,
       -arena.width / 2 + WORLD_MARGIN,
-      arena.width / 2 - WORLD_MARGIN
+      arena.width / 2 - WORLD_MARGIN,
     );
     const y = randomBetween(
       random,
       -arena.height / 2 + WORLD_MARGIN,
-      arena.height / 2 - WORLD_MARGIN
+      arena.height / 2 - WORLD_MARGIN,
     );
 
     if (!isHeartSpawnValid(world, playerPositions, x, y, arena)) {
@@ -932,21 +892,20 @@ export const spawnAmmoFromRandom = (
   playerPositions: ReadonlyArray<{ x: number; y: number }>,
   random: () => number,
   ammoId: string,
-  arena: ArenaConfig = MULTIPLAYER_ARENA
+  arena: ArenaConfig = MULTIPLAYER_ARENA,
 ) => {
   for (let attempt = 0; attempt < 240; attempt++) {
     const x = randomBetween(
       random,
       -arena.width / 2 + WORLD_MARGIN,
-      arena.width / 2 - WORLD_MARGIN
+      arena.width / 2 - WORLD_MARGIN,
     );
     const y = randomBetween(
       random,
       -arena.height / 2 + WORLD_MARGIN,
-      arena.height / 2 - WORLD_MARGIN
+      arena.height / 2 - WORLD_MARGIN,
     );
-    const amount =
-      AMMO_PACKET_AMOUNTS[Math.floor(random() * AMMO_PACKET_AMOUNTS.length)];
+    const amount = AMMO_PACKET_AMOUNTS[Math.floor(random() * AMMO_PACKET_AMOUNTS.length)];
     const size = getAmmoPacketSize(amount);
 
     if (!isAmmoSpawnValid(world, playerPositions, x, y, size, arena)) {
@@ -971,7 +930,7 @@ export const isAsteroidSpawnValid = (
   x: number,
   y: number,
   size: number,
-  arena: ArenaConfig = MULTIPLAYER_ARENA
+  arena: ArenaConfig = MULTIPLAYER_ARENA,
 ) => {
   if (!isInsideWorldMargin(x, y, arena)) {
     return false;
@@ -980,14 +939,7 @@ export const isAsteroidSpawnValid = (
   for (let i = 0; i < playerPositions.length; i++) {
     const player = playerPositions[i];
     if (
-      circlesOverlap(
-        x,
-        y,
-        size + PLAYER_SAFE_RADIUS,
-        player.x,
-        player.y,
-        PLAYER_COLLISION_DIAMETER
-      )
+      circlesOverlap(x, y, size + PLAYER_SAFE_RADIUS, player.x, player.y, PLAYER_COLLISION_DIAMETER)
     ) {
       return false;
     }
@@ -1003,7 +955,7 @@ export const isAsteroidSpawnValid = (
         size + ASTEROID_CLEARANCE,
         asteroid.x,
         asteroid.y,
-        asteroid.size + ASTEROID_CLEARANCE
+        asteroid.size + ASTEROID_CLEARANCE,
       )
     ) {
       return false;
@@ -1014,14 +966,7 @@ export const isAsteroidSpawnValid = (
   for (let i = 0; i < nearbyHearts.length; i++) {
     const heart = nearbyHearts[i];
     if (
-      circlesOverlap(
-        x,
-        y,
-        size + HEART_CLEARANCE,
-        heart.x,
-        heart.y,
-        heart.size + HEART_CLEARANCE
-      )
+      circlesOverlap(x, y, size + HEART_CLEARANCE, heart.x, heart.y, heart.size + HEART_CLEARANCE)
     ) {
       return false;
     }
@@ -1037,7 +982,7 @@ export const isAsteroidSpawnValid = (
         size + AMMO_PACKET_CLEARANCE,
         ammo.x,
         ammo.y,
-        ammo.size + AMMO_PACKET_CLEARANCE
+        ammo.size + AMMO_PACKET_CLEARANCE,
       )
     ) {
       return false;
@@ -1052,7 +997,7 @@ export const isHeartSpawnValid = (
   playerPositions: ReadonlyArray<{ x: number; y: number }>,
   x: number,
   y: number,
-  arena: ArenaConfig = MULTIPLAYER_ARENA
+  arena: ArenaConfig = MULTIPLAYER_ARENA,
 ) => {
   if (!isInsideWorldMargin(x, y, arena)) {
     return false;
@@ -1067,7 +1012,7 @@ export const isHeartSpawnValid = (
         HEART_SIZE + HEART_SAFE_RADIUS,
         player.x,
         player.y,
-        PLAYER_COLLISION_DIAMETER
+        PLAYER_COLLISION_DIAMETER,
       )
     ) {
       return false;
@@ -1084,7 +1029,7 @@ export const isHeartSpawnValid = (
         HEART_SIZE + HEART_CLEARANCE,
         asteroid.x,
         asteroid.y,
-        asteroid.size + HEART_CLEARANCE
+        asteroid.size + HEART_CLEARANCE,
       )
     ) {
       return false;
@@ -1101,7 +1046,7 @@ export const isHeartSpawnValid = (
         HEART_SIZE + HEART_CLEARANCE,
         heart.x,
         heart.y,
-        heart.size + HEART_CLEARANCE
+        heart.size + HEART_CLEARANCE,
       )
     ) {
       return false;
@@ -1118,7 +1063,7 @@ export const isHeartSpawnValid = (
         HEART_SIZE + AMMO_PACKET_CLEARANCE,
         ammo.x,
         ammo.y,
-        ammo.size + AMMO_PACKET_CLEARANCE
+        ammo.size + AMMO_PACKET_CLEARANCE,
       )
     ) {
       return false;
@@ -1134,7 +1079,7 @@ export const isAmmoSpawnValid = (
   x: number,
   y: number,
   size: number,
-  arena: ArenaConfig = MULTIPLAYER_ARENA
+  arena: ArenaConfig = MULTIPLAYER_ARENA,
 ) => {
   if (!isInsideWorldMargin(x, y, arena)) {
     return false;
@@ -1143,14 +1088,7 @@ export const isAmmoSpawnValid = (
   for (let i = 0; i < playerPositions.length; i++) {
     const player = playerPositions[i];
     if (
-      circlesOverlap(
-        x,
-        y,
-        size + AMMO_SAFE_RADIUS,
-        player.x,
-        player.y,
-        PLAYER_COLLISION_DIAMETER
-      )
+      circlesOverlap(x, y, size + AMMO_SAFE_RADIUS, player.x, player.y, PLAYER_COLLISION_DIAMETER)
     ) {
       return false;
     }
@@ -1166,7 +1104,7 @@ export const isAmmoSpawnValid = (
         size + AMMO_PACKET_CLEARANCE,
         asteroid.x,
         asteroid.y,
-        asteroid.size + AMMO_PACKET_CLEARANCE
+        asteroid.size + AMMO_PACKET_CLEARANCE,
       )
     ) {
       return false;
@@ -1183,7 +1121,7 @@ export const isAmmoSpawnValid = (
         size + AMMO_PACKET_CLEARANCE,
         heart.x,
         heart.y,
-        heart.size + AMMO_PACKET_CLEARANCE
+        heart.size + AMMO_PACKET_CLEARANCE,
       )
     ) {
       return false;
@@ -1200,7 +1138,7 @@ export const isAmmoSpawnValid = (
         size + AMMO_PACKET_CLEARANCE,
         ammo.x,
         ammo.y,
-        ammo.size + AMMO_PACKET_CLEARANCE
+        ammo.size + AMMO_PACKET_CLEARANCE,
       )
     ) {
       return false;
@@ -1215,7 +1153,7 @@ const createAsteroidState = (
   asteroidId: string,
   x: number,
   y: number,
-  size: number
+  size: number,
 ): WorldAsteroidState => {
   return {
     baseRotation: randomBetween(random, 0, Math.PI * 2),
@@ -1229,11 +1167,7 @@ const createAsteroidState = (
   };
 };
 
-const isInsideWorldMargin = (
-  x: number,
-  y: number,
-  arena: ArenaConfig
-) => {
+const isInsideWorldMargin = (x: number, y: number, arena: ArenaConfig) => {
   return (
     x >= -arena.width / 2 + WORLD_MARGIN &&
     x <= arena.width / 2 - WORLD_MARGIN &&
@@ -1247,7 +1181,7 @@ const addEntityToSpatialHash = (
   entityId: string,
   x: number,
   y: number,
-  arena: ArenaConfig
+  arena: ArenaConfig,
 ) => {
   const column = Math.floor((x + arena.width / 2) / SPATIAL_CELL_SIZE);
   const row = Math.floor((y + arena.height / 2) / SPATIAL_CELL_SIZE);
@@ -1267,7 +1201,7 @@ const removeEntityFromSpatialHash = (
   entityId: string,
   x: number,
   y: number,
-  arena: ArenaConfig
+  arena: ArenaConfig,
 ) => {
   const column = Math.floor((x + arena.width / 2) / SPATIAL_CELL_SIZE);
   const row = Math.floor((y + arena.height / 2) / SPATIAL_CELL_SIZE);
@@ -1286,7 +1220,7 @@ const queryEntityIds = (
   y: number,
   radius: number,
   maxEntitySize: number,
-  arena: ArenaConfig
+  arena: ArenaConfig,
 ) => {
   const searchPadding = radius + maxEntitySize / 2 + SPATIAL_QUERY_PADDING;
   const minColumn = Math.floor((x - searchPadding + arena.width / 2) / SPATIAL_CELL_SIZE);
@@ -1318,7 +1252,7 @@ const querySpatialEntities = <T extends { id: string }>(
   y: number,
   radius: number,
   maxEntitySize: number,
-  arena: ArenaConfig
+  arena: ArenaConfig,
 ) => {
   const entityIds = queryEntityIds(hash, x, y, radius, maxEntitySize, arena);
   const nearbyEntities: T[] = [];
@@ -1338,19 +1272,12 @@ const queryEntitiesInBounds = <T extends { id: string; size: number; x: number; 
   entities: Map<string, T>,
   bounds: CameraBounds,
   maxEntitySize: number,
-  arena: ArenaConfig
+  arena: ArenaConfig,
 ) => {
   const centerX = (bounds.left + bounds.right) / 2;
   const centerY = (bounds.top + bounds.bottom) / 2;
   const radius = Math.max(bounds.right - bounds.left, bounds.bottom - bounds.top) / 2;
-  const candidateIds = queryEntityIds(
-    hash,
-    centerX,
-    centerY,
-    radius,
-    maxEntitySize,
-    arena
-  );
+  const candidateIds = queryEntityIds(hash, centerX, centerY, radius, maxEntitySize, arena);
   const visibleEntities: T[] = [];
 
   for (let i = 0; i < candidateIds.length; i++) {

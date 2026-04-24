@@ -15,9 +15,7 @@ const dropVolumes = process.argv.includes("--volumes");
 
 const probe = spawnSync("docker", ["info"], { stdio: "ignore" });
 if (probe.status !== 0) {
-  console.error(
-    "Docker is not available. Nothing to stop — exiting successfully."
-  );
+  console.error("Docker is not available. Nothing to stop — exiting successfully.");
   process.exit(0);
 }
 
@@ -42,9 +40,7 @@ function resolveComposeCommand() {
 
 const compose = resolveComposeCommand();
 if (compose === null) {
-  console.error(
-    "docker compose not found — install Docker Desktop or the compose plugin."
-  );
+  console.error("docker compose not found — install Docker Desktop or the compose plugin.");
   process.exit(0);
 }
 
@@ -54,7 +50,7 @@ if (compose === null) {
 const stop = spawnSync(
   compose.command,
   [...compose.prefix, "-f", "docker-compose.yaml", "stop", "postgres", "redis"],
-  { stdio: "inherit" }
+  { stdio: "inherit" },
 );
 if (stop.status !== 0) {
   process.exit(stop.status ?? 1);
@@ -71,7 +67,7 @@ const rm = spawnSync(
     "postgres",
     "redis",
   ],
-  { stdio: "inherit" }
+  { stdio: "inherit" },
 );
 if (rm.status !== 0) {
   process.exit(rm.status ?? 1);
@@ -83,11 +79,7 @@ if (dropVolumes) {
   // project name defaults to the repo directory (`asteroid-game`), so
   // the full volume name is `asteroid-game_postgres-data`. If you've
   // set COMPOSE_PROJECT_NAME you'll need to drop the volume manually.
-  spawnSync(
-    "docker",
-    ["volume", "rm", "asteroid-game_postgres-data"],
-    { stdio: "inherit" }
-  );
+  spawnSync("docker", ["volume", "rm", "asteroid-game_postgres-data"], { stdio: "inherit" });
 }
 
 console.log("Dev dependencies stopped.");

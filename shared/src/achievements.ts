@@ -11,11 +11,7 @@
  *   API IDs will map 1:1 to these strings.
  */
 
-export type AchievementCategory =
-  | "singleplayer"
-  | "multiplayer"
-  | "battle-royale"
-  | "general";
+export type AchievementCategory = "singleplayer" | "multiplayer" | "battle-royale" | "general";
 
 export type AchievementRarity = "common" | "rare" | "epic" | "legendary";
 
@@ -84,13 +80,8 @@ export interface AchievementDefinition {
  */
 const hasPlayedAllModes = (stats: AchievementStats): boolean => {
   const playedMultiplayer =
-    stats.multiplayerWins +
-      stats.multiplayerLosses +
-      stats.multiplayerDraws >=
-    1;
-  return (
-    stats.runAttempts >= 1 && playedMultiplayer && stats.brMatches >= 1
-  );
+    stats.multiplayerWins + stats.multiplayerLosses + stats.multiplayerDraws >= 1;
+  return stats.runAttempts >= 1 && playedMultiplayer && stats.brMatches >= 1;
 };
 
 export const ACHIEVEMENT_DEFINITIONS: readonly AchievementDefinition[] = [
@@ -109,8 +100,7 @@ export const ACHIEVEMENT_DEFINITIONS: readonly AchievementDefinition[] = [
     description: "Finish a run in under 60 seconds.",
     category: "singleplayer",
     rarity: "rare",
-    check: (_stats, event) =>
-      event?.type === "run.completed" && event.durationMs < 60_000,
+    check: (_stats, event) => event?.type === "run.completed" && event.durationMs < 60_000,
   },
   {
     id: "run-sub-40",
@@ -118,8 +108,7 @@ export const ACHIEVEMENT_DEFINITIONS: readonly AchievementDefinition[] = [
     description: "Finish a run in under 40 seconds.",
     category: "singleplayer",
     rarity: "epic",
-    check: (_stats, event) =>
-      event?.type === "run.completed" && event.durationMs < 40_000,
+    check: (_stats, event) => event?.type === "run.completed" && event.durationMs < 40_000,
   },
   {
     id: "run-no-damage",
@@ -128,8 +117,7 @@ export const ACHIEVEMENT_DEFINITIONS: readonly AchievementDefinition[] = [
     category: "singleplayer",
     rarity: "epic",
     hidden: true,
-    check: (_stats, event) =>
-      event?.type === "run.completed" && event.noDamage === true,
+    check: (_stats, event) => event?.type === "run.completed" && event.noDamage === true,
   },
   {
     id: "run-completions-10",
@@ -271,17 +259,14 @@ export const ACHIEVEMENT_DEFINITIONS: readonly AchievementDefinition[] = [
   {
     id: "try-all-modes",
     name: "Explorer",
-    description:
-      "Play at least once in singleplayer, multiplayer, and battle royale.",
+    description: "Play at least once in singleplayer, multiplayer, and battle royale.",
     category: "general",
     rarity: "rare",
     check: hasPlayedAllModes,
   },
 ] as const;
 
-export const getAchievementById = (
-  id: string
-): AchievementDefinition | undefined => {
+export const getAchievementById = (id: string): AchievementDefinition | undefined => {
   return ACHIEVEMENT_DEFINITIONS.find((definition) => definition.id === id);
 };
 
@@ -302,9 +287,7 @@ export interface PublicAchievement {
   } | null;
 }
 
-export const toPublicAchievement = (
-  definition: AchievementDefinition
-): PublicAchievement => {
+export const toPublicAchievement = (definition: AchievementDefinition): PublicAchievement => {
   return {
     id: definition.id,
     name: definition.name,

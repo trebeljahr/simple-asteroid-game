@@ -1,5 +1,8 @@
-import p5 from "p5";
+import type p5 from "p5";
+import { circleOverlapsCollisionShape, collisionShapesOverlap } from "../../shared/src";
+import { reportAchievementEvent } from "./achievementEvents";
 import { asteroids, maxAsteroidSize } from "./asteroids";
+import { playSound } from "./audio";
 import { border } from "./border";
 import { bullets } from "./bullets";
 import {
@@ -9,22 +12,16 @@ import {
   isCollisionDebugAvailable,
 } from "./collisionDebug";
 import { explosions } from "./explosions";
-import { GameMode, getGameState, shouldAdvanceRunSimulation } from "./gameState";
+import { type GameMode, getGameState, shouldAdvanceRunSimulation } from "./gameState";
 import { goals } from "./goals";
-import { hearts } from "./hearts";
 import { MAX_PLAYER_HEALTH } from "./healthHud";
+import { hearts } from "./hearts";
 import { isMobileDevice } from "./input";
 import { drawMultiplayerMode } from "./multiplayerSession";
 import { player, playerHitsCollectible } from "./player";
 import { formatRunDuration } from "./runSession";
 import { shipDebris } from "./shipDebris";
-import { createCameraBounds, getViewScale, width, height } from "./utils";
-import { playSound } from "./audio";
-import { reportAchievementEvent } from "./achievementEvents";
-import {
-  circleOverlapsCollisionShape,
-  collisionShapesOverlap,
-} from "../../shared/src";
+import { createCameraBounds, getViewScale, height, width } from "./utils";
 
 const modeTitles: Record<GameMode, string> = {
   singleplayer: "Singleplayer Mode",
@@ -50,7 +47,7 @@ export const draw = (p: p5) => {
     const cameraBounds = createCameraBounds(
       player.enginePlayer.position.x,
       player.enginePlayer.position.y,
-      maxAsteroidSize
+      maxAsteroidSize,
     );
 
     p.clear();
@@ -123,7 +120,7 @@ function handlePlayerAsteroidCollisions(handledAsteroidIds: Set<string>) {
   const nearbyAsteroids = asteroids.queryNearby(
     player.enginePlayer.position.x,
     player.enginePlayer.position.y,
-    player.getCollisionSearchDiameter() / 2
+    player.getCollisionSearchDiameter() / 2,
   );
 
   for (let i = 0; i < nearbyAsteroids.length; i++) {
@@ -132,9 +129,7 @@ function handlePlayerAsteroidCollisions(handledAsteroidIds: Set<string>) {
     if (handledAsteroidIds.has(asteroid.id)) {
       continue;
     }
-    if (
-      !collisionShapesOverlap(playerCollider.shape, asteroid.getCollisionShape())
-    ) {
+    if (!collisionShapesOverlap(playerCollider.shape, asteroid.getCollisionShape())) {
       continue;
     }
     if (!player.damage()) {
@@ -175,11 +170,7 @@ function drawRunCollisionDebug(p: p5) {
 function handleBulletAsteroidCollisions(handledAsteroidIds: Set<string>) {
   for (let bulletIndex = bullets.bullets.length - 1; bulletIndex >= 0; bulletIndex--) {
     const bullet = bullets.bullets[bulletIndex];
-    const nearbyAsteroids = asteroids.queryNearby(
-      bullet.pos.x,
-      bullet.pos.y,
-      bullet.size / 2
-    );
+    const nearbyAsteroids = asteroids.queryNearby(bullet.pos.x, bullet.pos.y, bullet.size / 2);
 
     for (let i = 0; i < nearbyAsteroids.length; i++) {
       const asteroidIndex = nearbyAsteroids[i];
@@ -192,7 +183,7 @@ function handleBulletAsteroidCollisions(handledAsteroidIds: Set<string>) {
           bullet.pos.x,
           bullet.pos.y,
           bullet.size,
-          asteroid.getCollisionShape()
+          asteroid.getCollisionShape(),
         )
       ) {
         continue;
@@ -228,7 +219,7 @@ function handleHeartCollection() {
       heart.pos,
       Math.min(player.life + collectedHeartIndices.size, MAX_PLAYER_HEALTH - 1),
       player.enginePlayer.position.x,
-      player.enginePlayer.position.y
+      player.enginePlayer.position.y,
     );
     player.life = Math.min(player.life + 1, MAX_PLAYER_HEALTH);
     collectedHeartIndices.add(i);
@@ -271,7 +262,7 @@ function drawPlaceholderMode(p: p5, mode: GameMode) {
   drawCenterMessage(
     p,
     modeTitles[mode],
-    "This mode is wired into the state machine as a placeholder for now. Press Esc to open the in-game menu and switch back out."
+    "This mode is wired into the state machine as a placeholder for now. Press Esc to open the in-game menu and switch back out.",
   );
   drawHudHint(p, "Esc: menu", "Placeholder");
 }
@@ -292,12 +283,7 @@ function drawGoalProgress(p: p5) {
   p.noStroke();
   p.fill(shieldBlue.fill[0], shieldBlue.fill[1], shieldBlue.fill[2], shieldBlue.fill[3]);
   p.rect(panelX, panelY, panelWidth, panelHeight, 18);
-  p.stroke(
-    shieldBlue.stroke[0],
-    shieldBlue.stroke[1],
-    shieldBlue.stroke[2],
-    shieldBlue.stroke[3]
-  );
+  p.stroke(shieldBlue.stroke[0], shieldBlue.stroke[1], shieldBlue.stroke[2], shieldBlue.stroke[3]);
   p.strokeWeight(1.5);
   p.noFill();
   p.rect(panelX, panelY, panelWidth, panelHeight, 18);
@@ -316,11 +302,7 @@ function drawGoalProgress(p: p5) {
   p.fill(shieldBlue.glow[0], shieldBlue.glow[1], shieldBlue.glow[2], 238);
   p.textAlign(p.LEFT, p.TOP);
   p.textSize(Math.max(14, panelHeight * 0.21));
-  p.text(
-    `${completedGoals} cleared • ${remainingGoals} remaining`,
-    panelX + 16,
-    panelY + 36
-  );
+  p.text(`${completedGoals} cleared • ${remainingGoals} remaining`, panelX + 16, panelY + 36);
 
   const capsuleGap = 10;
   const capsuleWidth = Math.min(44, (panelWidth - 32 - capsuleGap * (totalGoals - 1)) / totalGoals);
@@ -336,12 +318,7 @@ function drawGoalProgress(p: p5) {
     const alpha = isCleared ? 240 : isCurrent ? 145 + pulse * 55 : 42;
 
     p.noStroke();
-    p.fill(
-      shieldBlue.glow[0],
-      shieldBlue.glow[1],
-      shieldBlue.glow[2],
-      alpha
-    );
+    p.fill(shieldBlue.glow[0], shieldBlue.glow[1], shieldBlue.glow[2], alpha);
     p.rect(capsuleX, rowY, capsuleWidth, capsuleHeight, 999);
 
     if (isCurrent) {

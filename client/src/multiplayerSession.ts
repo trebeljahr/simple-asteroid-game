@@ -1,83 +1,75 @@
 import p5 from "p5";
-import { io, Socket } from "socket.io-client";
+import { type Socket, io } from "socket.io-client";
 
-import { drawCollisionCircle, drawShipCollisionBox, isCollisionDebugAvailable } from "./collisionDebug";
-import { ExplosionSystem } from "./explosions";
-import { gameStateMachine, getGameState, GameState } from "./gameState";
-import { showMultiplayerResult } from "./gameUiActions";
 import {
-  clearShipInput,
-  isMobileDevice,
-  isShipActionActive,
-} from "./input";
-import {
-  getHudHeartSize,
-  getHudHeartTopLeft,
-} from "./healthHud";
-import { assets } from "./sketch";
-import { ShipDebrisSystem } from "./shipDebris";
-import { playSound } from "./audio";
-import { recordMultiplayerResult } from "./stats";
-import { getOrCreateDeviceToken, recordLocalUnlock } from "./account";
-import { ThrusterExhaustSystem } from "./thruster";
-import { trpcClient } from "./trpcClient";
-import { createCameraBounds, getViewScale, height, width } from "./utils";
-import {
-  applyWorldEvents,
-  BATTLE_ROYALE_ARENA,
-  BATTLE_ROYALE_MATCH_COUNTDOWN_MS,
-  BATTLE_ROYALE_MAX_PLAYERS,
-  BATTLE_ROYALE_MIN_PLAYERS,
-  BattleRoyaleEliminatedPayload,
-  BattleRoyaleLobbyPayload,
-  BattleRoyaleMatchEndedPayload,
-  BattleRoyaleMatchFoundPayload,
-  BattleRoyaleSnapshotPayload,
   BULLET_DIAMETER,
+  type BattleRoyaleEliminatedPayload,
+  type BattleRoyaleLobbyPayload,
+  type BattleRoyaleMatchEndedPayload,
+  type BattleRoyaleMatchFoundPayload,
+  type BattleRoyaleSnapshotPayload,
+  type ClientToServerEvents,
+  LOCAL_INPUT_PUSH_INTERVAL_MS,
+  MATCH_COUNTDOWN_MS,
+  type MatchEndReason,
+  type MatchEndedPayload,
+  type MatchFoundPayload,
+  type MatchOutcome,
+  type MatchPlayerSnapshot,
+  type MatchSnapshotPayload,
+  type MatchWorldEventsPayload,
+  type MatchWorldRuntime,
+  type MatchmakingStatusPayload,
+  type MultiplayerRuntimeConfig,
+  PLAYER_DAMAGE_RECOVERY_TICKS,
+  PLAYER_MAX_AMMO,
+  PLAYER_MAX_HEALTH,
+  type PlayerSlot,
+  type RuntimePlayerState,
+  type ServerToClientEvents,
+  type ShipCollider,
+  type ShipInputState,
+  type ShipVariant,
+  TICK_INTERVAL_MS,
+  type WorldEvent,
+  applyWorldEvents,
   circleIntersectsBounds,
   circleOverlapsShipCollider,
-  ClientToServerEvents,
-  createEmptyMatchWorld,
   createInitialBattleRoyaleWorld,
   createInitialMatchWorld,
-  getShipCollider,
-  getShipCollisionBoundingDiameter,
   getAmmoPacketsInBounds,
   getAsteroidsInBounds,
   getHeartsInBounds,
   getNearbyAmmoPackets,
   getNearbyAsteroids,
   getNearbyHearts,
-  LOCAL_INPUT_PUSH_INTERVAL_MS,
-  MatchEndedPayload,
-  MatchEndReason,
-  MatchFoundPayload,
-  MATCH_COUNTDOWN_MS,
-  MatchOutcome,
-  MatchPlayerSnapshot,
-  MatchSnapshotPayload,
-  MatchWorldEventsPayload,
-  MatchWorldRuntime,
-  MatchmakingStatusPayload,
-  MultiplayerRuntimeConfig,
-  PLAYER_DAMAGE_RECOVERY_TICKS,
-  PLAYER_MAX_AMMO,
-  PLAYER_MAX_HEALTH,
-  PlayerSlot,
+  getShipCollider,
+  getShipCollisionBoundingDiameter,
   projectBulletSnapshot,
   projectPlayerSnapshot,
   removeAmmoFromWorld,
   removeAsteroidFromWorld,
   removeHeartFromWorld,
-  ServerToClientEvents,
-  ShipCollider,
-  ShipVariant,
-  ShipInputState,
-  RuntimePlayerState,
   stepPlayerState,
-  TICK_INTERVAL_MS,
-  WorldEvent,
 } from "../../shared/src";
+import { getOrCreateDeviceToken, recordLocalUnlock } from "./account";
+import { playSound } from "./audio";
+import {
+  drawCollisionCircle,
+  drawShipCollisionBox,
+  isCollisionDebugAvailable,
+} from "./collisionDebug";
+import { ExplosionSystem } from "./explosions";
+import { type GameState, gameStateMachine, getGameState } from "./gameState";
+import { showMultiplayerResult } from "./gameUiActions";
+import { getHudHeartSize, getHudHeartTopLeft } from "./healthHud";
+import { clearShipInput, isMobileDevice, isShipActionActive } from "./input";
+import { ShipDebrisSystem } from "./shipDebris";
+import { assets } from "./sketch";
+import { recordMultiplayerResult } from "./stats";
+import { ThrusterExhaustSystem } from "./thruster";
+import { trpcClient } from "./trpcClient";
+import { createCameraBounds, getViewScale, height, width } from "./utils";
 
 type MultiplayerStatus = "connecting" | "error" | "idle" | "matched" | "queueing";
 
@@ -165,7 +157,7 @@ const createInitialViewState = (): MultiplayerViewState => {
 
 const getResultCopy = (
   outcome: MatchOutcome,
-  reason: MatchEndReason
+  reason: MatchEndReason,
 ): { subtitle: string; title: string } => {
   if (reason === "opponent-left") {
     if (outcome === "win") {
@@ -197,7 +189,8 @@ const getResultCopy = (
 
   if (outcome === "loss") {
     return {
-      subtitle: "Your hull gave out under the barrage. Queue again and try a new route through the field.",
+      subtitle:
+        "Your hull gave out under the barrage. Queue again and try a new route through the field.",
       title: "Ship destroyed",
     };
   }
@@ -302,8 +295,7 @@ class MultiplayerClientSession {
 
     const isNetworkedMode = (scene: GameState["scene"]): boolean => {
       return (
-        scene.type === "mode" &&
-        (scene.mode === "multiplayer" || scene.mode === "battle-royale")
+        scene.type === "mode" && (scene.mode === "multiplayer" || scene.mode === "battle-royale")
       );
     };
 
@@ -351,10 +343,7 @@ class MultiplayerClientSession {
       return;
     }
 
-    if (
-      activeMatch.snapshot === null ||
-      activeMatch.snapshot.phase === "countdown"
-    ) {
+    if (activeMatch.snapshot === null || activeMatch.snapshot.phase === "countdown") {
       this.drawBackdrop(p);
       this.drawMatchFoundOverlay(p, activeMatch);
       this.drawHint(p, "Esc: menu");
@@ -427,7 +416,7 @@ class MultiplayerClientSession {
       if (hadActiveMatch) {
         showMultiplayerResult(
           "Connection lost",
-          "The arena link dropped before the match could finish. Rejoin multiplayer to battle again."
+          "The arena link dropped before the match could finish. Rejoin multiplayer to battle again.",
         );
         return;
       }
@@ -505,200 +494,173 @@ class MultiplayerClientSession {
       this.viewState.status = "queueing";
     });
 
-    socket.on(
-      "br:match-found",
-      (payload: BattleRoyaleMatchFoundPayload) => {
-        if (!this.isMultiplayerModeActive()) return;
-        if (this.getActiveModeMode() !== "battle-royale") return;
+    socket.on("br:match-found", (payload: BattleRoyaleMatchFoundPayload) => {
+      if (!this.isMultiplayerModeActive()) return;
+      if (this.getActiveModeMode() !== "battle-royale") return;
 
-        this.viewState.errorMessage = null;
-        this.viewState.battleRoyaleLobby = null;
-        this.viewState.match = {
-          mode: "battle-royale",
-          arena: payload.arena,
-          foundAt: performance.now(),
-          matchId: payload.matchId,
-          maxHealth: payload.maxHealth,
-          opponentId: null,
-          allPlayerIds: payload.playerIds.slice(),
-          playerId: payload.playerId,
-          // Slot is unused in BR but the field remains for duel
-          // compatibility.
-          slot: "alpha",
-          snapshot: null,
-          snapshotReceivedAt: performance.now(),
-          world: createInitialBattleRoyaleWorld(
-            payload.worldSeed,
-            payload.playerIds.map((_, index) => {
-              // The spawn ring is recomputed on the client to match the
-              // server. This mirrors the createInitialBattleRoyaleWorld
-              // input on the server.
-              const total = payload.playerIds.length;
-              const angle = (index / total) * Math.PI * 2;
-              const arena = payload.arena;
-              const safeH = arena.width / 2 - 280;
-              const safeV = arena.height / 2 - 280;
-              const radius = Math.min(safeH, safeV) * 0.82;
-              return {
-                x: Math.cos(angle) * radius,
-                y: Math.sin(angle) * radius,
-              };
-            }),
-            payload.arena
-          ),
-          worldVersion: 0,
-          survivorsRemaining: payload.playerIds.length,
-          placement: null,
-        };
-        this.viewState.queuePosition = 0;
-        this.viewState.queueSize = 0;
-        this.viewState.status = "matched";
-        this.lastSentAt = 0;
-        this.lastSentInput = {
-          fire: false,
-          inputSeq: 0,
-          thrust: false,
-          turnLeft: false,
-          turnRight: false,
-        };
-        this.resetClientEffects();
+      this.viewState.errorMessage = null;
+      this.viewState.battleRoyaleLobby = null;
+      this.viewState.match = {
+        mode: "battle-royale",
+        arena: payload.arena,
+        foundAt: performance.now(),
+        matchId: payload.matchId,
+        maxHealth: payload.maxHealth,
+        opponentId: null,
+        allPlayerIds: payload.playerIds.slice(),
+        playerId: payload.playerId,
+        // Slot is unused in BR but the field remains for duel
+        // compatibility.
+        slot: "alpha",
+        snapshot: null,
+        snapshotReceivedAt: performance.now(),
+        world: createInitialBattleRoyaleWorld(
+          payload.worldSeed,
+          payload.playerIds.map((_, index) => {
+            // The spawn ring is recomputed on the client to match the
+            // server. This mirrors the createInitialBattleRoyaleWorld
+            // input on the server.
+            const total = payload.playerIds.length;
+            const angle = (index / total) * Math.PI * 2;
+            const arena = payload.arena;
+            const safeH = arena.width / 2 - 280;
+            const safeV = arena.height / 2 - 280;
+            const radius = Math.min(safeH, safeV) * 0.82;
+            return {
+              x: Math.cos(angle) * radius,
+              y: Math.sin(angle) * radius,
+            };
+          }),
+          payload.arena,
+        ),
+        worldVersion: 0,
+        survivorsRemaining: payload.playerIds.length,
+        placement: null,
+      };
+      this.viewState.queuePosition = 0;
+      this.viewState.queueSize = 0;
+      this.viewState.status = "matched";
+      this.lastSentAt = 0;
+      this.lastSentInput = {
+        fire: false,
+        inputSeq: 0,
+        thrust: false,
+        turnLeft: false,
+        turnRight: false,
+      };
+      this.resetClientEffects();
+    });
+
+    socket.on("br:snapshot", (payload: BattleRoyaleSnapshotPayload) => {
+      if (!this.isMultiplayerModeActive() || this.viewState.match === null) {
+        return;
       }
-    );
+      if (this.viewState.match.mode !== "battle-royale") return;
+      if (payload.matchId !== this.viewState.match.matchId) return;
 
-    socket.on(
-      "br:snapshot",
-      (payload: BattleRoyaleSnapshotPayload) => {
-        if (!this.isMultiplayerModeActive() || this.viewState.match === null) {
-          return;
-        }
-        if (this.viewState.match.mode !== "battle-royale") return;
-        if (payload.matchId !== this.viewState.match.matchId) return;
+      const previousSnapshot = this.viewState.match.snapshot;
+      if (previousSnapshot !== null && payload.sequence <= previousSnapshot.sequence) {
+        return;
+      }
 
-        const previousSnapshot = this.viewState.match.snapshot;
-        if (
-          previousSnapshot !== null &&
-          payload.sequence <= previousSnapshot.sequence
-        ) {
-          return;
-        }
+      // Adapt the BR snapshot to the duel's MatchSnapshotPayload shape so
+      // the render pipeline can be reused as-is.
+      const adaptedSnapshot: MatchSnapshotPayload = {
+        bullets: payload.bullets,
+        countdownMs: payload.countdownMs,
+        matchId: payload.matchId,
+        phase: payload.phase,
+        players: payload.players,
+        sequence: payload.sequence,
+      };
 
-        // Adapt the BR snapshot to the duel's MatchSnapshotPayload shape so
-        // the render pipeline can be reused as-is.
-        const adaptedSnapshot: MatchSnapshotPayload = {
-          bullets: payload.bullets,
-          countdownMs: payload.countdownMs,
-          matchId: payload.matchId,
-          phase: payload.phase,
-          players: payload.players,
-          sequence: payload.sequence,
-        };
+      if (previousSnapshot !== null) {
+        this.playSnapshotEffects(previousSnapshot, adaptedSnapshot);
+      }
 
-        if (previousSnapshot !== null) {
-          this.playSnapshotEffects(previousSnapshot, adaptedSnapshot);
-        }
+      if (
+        (previousSnapshot === null && payload.phase === "active") ||
+        (previousSnapshot !== null &&
+          previousSnapshot.phase === "countdown" &&
+          payload.phase === "active")
+      ) {
+        this.triggerPlayerArrivals(payload.players);
+      }
 
-        if (
-          (previousSnapshot === null && payload.phase === "active") ||
-          (previousSnapshot !== null &&
-            previousSnapshot.phase === "countdown" &&
-            payload.phase === "active")
-        ) {
-          this.triggerPlayerArrivals(payload.players);
-        }
+      const now = performance.now();
+      this.viewState.match.snapshot = adaptedSnapshot;
+      this.viewState.match.snapshotReceivedAt = now;
+      this.viewState.match.survivorsRemaining = payload.survivorsRemaining;
+      this.viewState.status = "matched";
 
-        const now = performance.now();
-        this.viewState.match.snapshot = adaptedSnapshot;
-        this.viewState.match.snapshotReceivedAt = now;
-        this.viewState.match.survivorsRemaining = payload.survivorsRemaining;
-        this.viewState.status = "matched";
+      if (payload.phase !== "active") {
+        return;
+      }
 
-        if (payload.phase !== "active") {
-          return;
-        }
-
-        const serverSelf = payload.players.find(
-          (player) => player.id === this.viewState.match?.playerId
-        );
-        if (serverSelf !== undefined) {
-          const wasFirstActiveSnapshot = this.predictedSelf === null;
-          this.reconcilePredictedSelf(
-            serverSelf,
-            this.viewState.match.arena
-          );
-          if (wasFirstActiveSnapshot) {
-            this.startPredictionLoop();
-          }
+      const serverSelf = payload.players.find(
+        (player) => player.id === this.viewState.match?.playerId,
+      );
+      if (serverSelf !== undefined) {
+        const wasFirstActiveSnapshot = this.predictedSelf === null;
+        this.reconcilePredictedSelf(serverSelf, this.viewState.match.arena);
+        if (wasFirstActiveSnapshot) {
+          this.startPredictionLoop();
         }
       }
-    );
+    });
 
-    socket.on(
-      "br:world-events",
-      (payload: MatchWorldEventsPayload) => {
-        if (!this.isMultiplayerModeActive() || this.viewState.match === null) {
-          return;
-        }
-        if (this.viewState.match.mode !== "battle-royale") return;
-        if (payload.matchId !== this.viewState.match.matchId) return;
-        if (payload.worldVersion <= this.viewState.match.worldVersion) return;
-
-        this.playWorldEventEffects(this.viewState.match, payload.events);
-        applyWorldEvents(
-          this.viewState.match.world,
-          payload.events,
-          this.viewState.match.arena
-        );
-        this.viewState.match.worldVersion = payload.worldVersion;
+    socket.on("br:world-events", (payload: MatchWorldEventsPayload) => {
+      if (!this.isMultiplayerModeActive() || this.viewState.match === null) {
+        return;
       }
-    );
+      if (this.viewState.match.mode !== "battle-royale") return;
+      if (payload.matchId !== this.viewState.match.matchId) return;
+      if (payload.worldVersion <= this.viewState.match.worldVersion) return;
 
-    socket.on(
-      "br:eliminated",
-      (payload: BattleRoyaleEliminatedPayload) => {
-        if (!this.isMultiplayerModeActive() || this.viewState.match === null) {
-          return;
-        }
-        if (payload.matchId !== this.viewState.match.matchId) return;
-        if (payload.playerId !== this.viewState.match.playerId) return;
-        this.viewState.match.placement = payload.placement;
+      this.playWorldEventEffects(this.viewState.match, payload.events);
+      applyWorldEvents(this.viewState.match.world, payload.events, this.viewState.match.arena);
+      this.viewState.match.worldVersion = payload.worldVersion;
+    });
+
+    socket.on("br:eliminated", (payload: BattleRoyaleEliminatedPayload) => {
+      if (!this.isMultiplayerModeActive() || this.viewState.match === null) {
+        return;
       }
-    );
+      if (payload.matchId !== this.viewState.match.matchId) return;
+      if (payload.playerId !== this.viewState.match.playerId) return;
+      this.viewState.match.placement = payload.placement;
+    });
 
-    socket.on(
-      "br:match-ended",
-      (payload: BattleRoyaleMatchEndedPayload) => {
-        if (!this.isMultiplayerModeActive() || this.viewState.match === null) {
-          return;
-        }
-        if (payload.matchId !== this.viewState.match.matchId) return;
-
-        const placement = this.viewState.match.placement;
-        clearShipInput();
-
-        let title: string;
-        let subtitle: string;
-        if (payload.youWon) {
-          title = "Victory Royale";
-          subtitle = "Last ship standing. The arena is yours.";
-        } else if (payload.reason === "inactive") {
-          title = "Match closed";
-          subtitle =
-            "The match ended after a long period of inactivity. Queue again to try another round.";
-        } else if (placement !== null) {
-          title = `Eliminated — ${formatPlacement(placement)} place`;
-          subtitle =
-            "Your ship was destroyed. Queue again to jump back into the next battle royale.";
-        } else {
-          title = "Battle over";
-          subtitle =
-            "The last ship standing claimed the match. Queue again for another try.";
-        }
-
-        recordMultiplayerResult(payload.youWon ? "win" : "loss");
-        this.resetViewState();
-        showMultiplayerResult(title, subtitle);
+    socket.on("br:match-ended", (payload: BattleRoyaleMatchEndedPayload) => {
+      if (!this.isMultiplayerModeActive() || this.viewState.match === null) {
+        return;
       }
-    );
+      if (payload.matchId !== this.viewState.match.matchId) return;
+
+      const placement = this.viewState.match.placement;
+      clearShipInput();
+
+      let title: string;
+      let subtitle: string;
+      if (payload.youWon) {
+        title = "Victory Royale";
+        subtitle = "Last ship standing. The arena is yours.";
+      } else if (payload.reason === "inactive") {
+        title = "Match closed";
+        subtitle =
+          "The match ended after a long period of inactivity. Queue again to try another round.";
+      } else if (placement !== null) {
+        title = `Eliminated — ${formatPlacement(placement)} place`;
+        subtitle = "Your ship was destroyed. Queue again to jump back into the next battle royale.";
+      } else {
+        title = "Battle over";
+        subtitle = "The last ship standing claimed the match. Queue again for another try.";
+      }
+
+      recordMultiplayerResult(payload.youWon ? "win" : "loss");
+      this.resetViewState();
+      showMultiplayerResult(title, subtitle);
+    });
 
     socket.on("match:world-events", (payload: MatchWorldEventsPayload) => {
       if (!this.isMultiplayerModeActive() || this.viewState.match === null) {
@@ -712,11 +674,7 @@ class MultiplayerClientSession {
       }
 
       this.playWorldEventEffects(this.viewState.match, payload.events);
-      applyWorldEvents(
-        this.viewState.match.world,
-        payload.events,
-        this.viewState.match.arena
-      );
+      applyWorldEvents(this.viewState.match.world, payload.events, this.viewState.match.arena);
       this.viewState.match.worldVersion = payload.worldVersion;
     });
 
@@ -764,7 +722,7 @@ class MultiplayerClientSession {
       }
 
       const serverSelf = payload.players.find(
-        (player) => player.id === this.viewState.match?.playerId
+        (player) => player.id === this.viewState.match?.playerId,
       );
       if (serverSelf !== undefined) {
         const wasFirstActiveSnapshot = this.predictedSelf === null;
@@ -778,9 +736,7 @@ class MultiplayerClientSession {
         }
 
         if (getGameState().settings.netcodeDebugEnabled) {
-          const snapshotInterval = previousSnapshot !== null
-            ? now - prevSnapshotReceivedAt
-            : 0;
+          const snapshotInterval = previousSnapshot !== null ? now - prevSnapshotReceivedAt : 0;
           const playerDebug = payload.debug?.[this.viewState.match.playerId];
           this.debugHistory.push({
             bufferSize: this.inputBuffer.length,
@@ -822,10 +778,7 @@ class MultiplayerClientSession {
         if (latestSnapshot !== null) {
           for (let i = 0; i < latestSnapshot.players.length; i++) {
             const player = latestSnapshot.players[i];
-            if (
-              payload.winnerId !== null &&
-              player.id === payload.winnerId
-            ) {
+            if (payload.winnerId !== null && player.id === payload.winnerId) {
               continue;
             }
 
@@ -854,10 +807,7 @@ class MultiplayerClientSession {
 
     this.collisionExplosions.createExplosion(this.p.createVector(x, y));
     for (let i = 0; i < extraBursts; i++) {
-      const offset = p5.Vector.fromAngle(
-        this.p.random(0, this.p.TWO_PI),
-        this.p.random(8, 24)
-      );
+      const offset = p5.Vector.fromAngle(this.p.random(0, this.p.TWO_PI), this.p.random(8, 24));
       const burstPos = this.p.createVector(x + offset.x, y + offset.y);
       this.collisionExplosions.createExplosion(burstPos);
     }
@@ -868,7 +818,7 @@ class MultiplayerClientSession {
     worldX: number,
     worldY: number,
     cameraCenterX: number,
-    cameraCenterY: number
+    cameraCenterY: number,
   ) {
     if (this.p === null) {
       return;
@@ -876,13 +826,11 @@ class MultiplayerClientSession {
 
     const startScreenPos = this.p.createVector(
       width / 2 + (worldX - cameraCenterX),
-      height / 2 + (worldY - cameraCenterY)
+      height / 2 + (worldY - cameraCenterY),
     );
 
     for (let i = 0; i < HUD_EFFECT_PARTICLE_COUNT; i++) {
-      const angle =
-        (this.p.TWO_PI * i) / HUD_EFFECT_PARTICLE_COUNT +
-        this.p.random(-0.2, 0.2);
+      const angle = (this.p.TWO_PI * i) / HUD_EFFECT_PARTICLE_COUNT + this.p.random(-0.2, 0.2);
       const burstDistance = this.p.random(18, 34);
       this.ammoHudEffects.push({
         age: this.p.random(3),
@@ -901,17 +849,12 @@ class MultiplayerClientSession {
     const startedAt = performance.now();
     this.playerDestructions.set(player.id, { startedAt });
     this.createCollisionExplosion(player.x, player.y, 2);
-    this.shipDebrisEffects?.createShipBreakup(
-      player.x,
-      player.y,
-      player.angle,
-      player.shipVariant
-    );
+    this.shipDebrisEffects?.createShipBreakup(player.x, player.y, player.angle, player.shipVariant);
 
     if (this.pendingResult !== null) {
       this.pendingResult.showAt = Math.max(
         this.pendingResult.showAt,
-        startedAt + SHIP_DESTRUCTION_DURATION_MS
+        startedAt + SHIP_DESTRUCTION_DURATION_MS,
       );
     }
   }
@@ -932,7 +875,7 @@ class MultiplayerClientSession {
       const easedBurst = 1 - (1 - burstProgress) * (1 - burstProgress);
       const burstPos = p5.Vector.add(
         effect.startScreenPos,
-        p5.Vector.mult(effect.burstOffset, easedBurst)
+        p5.Vector.mult(effect.burstOffset, easedBurst),
       ).add(0, -8 * easedBurst);
 
       let drawX = burstPos.x;
@@ -941,10 +884,8 @@ class MultiplayerClientSession {
       let drawAlpha = 230;
 
       if (effect.age >= HUD_EFFECT_BURST_FRAMES) {
-        const flightProgress =
-          (effect.age - HUD_EFFECT_BURST_FRAMES) / HUD_EFFECT_FLIGHT_FRAMES;
-        const easedFlight =
-          1 - (1 - flightProgress) * (1 - flightProgress) * (1 - flightProgress);
+        const flightProgress = (effect.age - HUD_EFFECT_BURST_FRAMES) / HUD_EFFECT_FLIGHT_FRAMES;
+        const easedFlight = 1 - (1 - flightProgress) * (1 - flightProgress) * (1 - flightProgress);
         drawX = p.lerp(burstPos.x, target.x, easedFlight);
         drawY = p.lerp(burstPos.y, target.y, easedFlight);
         drawSize = p.lerp(20 * effect.scale, 16, easedFlight);
@@ -995,7 +936,7 @@ class MultiplayerClientSession {
   private drawAmmoCollectible(
     p: p5,
     ammoPacket: ReturnType<typeof getAmmoPacketsInBounds>[number],
-    highlighted: boolean
+    highlighted: boolean,
   ) {
     p.push();
     p.imageMode(p.CENTER);
@@ -1014,7 +955,7 @@ class MultiplayerClientSession {
       ammoPacket.x,
       ammoPacket.y,
       ammoPacket.size / 1.5,
-      ammoPacket.size / 1.5
+      ammoPacket.size / 1.5,
     );
     p.pop();
   }
@@ -1056,7 +997,7 @@ class MultiplayerClientSession {
   private drawAsteroid(
     p: p5,
     asteroid: ReturnType<typeof getAsteroidsInBounds>[number],
-    predictedSequence: number
+    predictedSequence: number,
   ) {
     const asteroidTexture = assets.asteroids[asteroid.variant] ?? assets.asteroids[0];
 
@@ -1083,7 +1024,7 @@ class MultiplayerClientSession {
   private drawBullet(
     p: p5,
     bullet: MatchSnapshotPayload["bullets"][number],
-    isLocalBullet: boolean
+    isLocalBullet: boolean,
   ) {
     p.push();
     p.noStroke();
@@ -1096,12 +1037,7 @@ class MultiplayerClientSession {
     p.pop();
   }
 
-  private drawCenterCard(
-    p: p5,
-    title: string,
-    subtitle: string,
-    cardHeight = 224
-  ) {
+  private drawCenterCard(p: p5, title: string, subtitle: string, cardHeight = 224) {
     const cardWidth = Math.min(540, width - 40);
     const cardX = width / 2 - cardWidth / 2;
     const cardY = height / 2 - cardHeight / 2;
@@ -1135,10 +1071,7 @@ class MultiplayerClientSession {
       match.snapshot?.countdownMs ??
       Math.max(0, MATCH_COUNTDOWN_MS - (performance.now() - match.foundAt));
     const progress = 1 - remainingCountdownMs / MATCH_COUNTDOWN_MS;
-    const countdownValue = Math.max(
-      1,
-      Math.min(3, Math.ceil(remainingCountdownMs / 1000))
-    );
+    const countdownValue = Math.max(1, Math.min(3, Math.ceil(remainingCountdownMs / 1000)));
     const cardWidth = Math.min(560, width - 40);
     const cardHeight = 244;
     const cardX = width / 2 - cardWidth / 2;
@@ -1176,7 +1109,7 @@ class MultiplayerClientSession {
       cardX + 36,
       cardY + 98,
       cardWidth - 72,
-      58
+      58,
     );
 
     p.noStroke();
@@ -1195,7 +1128,7 @@ class MultiplayerClientSession {
   private drawHeartCollectible(
     p: p5,
     heart: ReturnType<typeof getHeartsInBounds>[number],
-    highlighted: boolean
+    highlighted: boolean,
   ) {
     p.push();
     p.imageMode(p.CENTER);
@@ -1218,7 +1151,7 @@ class MultiplayerClientSession {
     label: string,
     health: number,
     maxHealth: number,
-    align: "left" | "right"
+    align: "left" | "right",
   ) {
     const heartSize = getHudHeartSize();
     const heartGap = heartSize * 0.08;
@@ -1279,7 +1212,7 @@ class MultiplayerClientSession {
 
     const predictedTicks = Math.min(
       4,
-      (performance.now() - match.snapshotReceivedAt) / SNAPSHOT_TICK_MS
+      (performance.now() - match.snapshotReceivedAt) / SNAPSHOT_TICK_MS,
     );
     const renderedBullets = match.snapshot.bullets.map((bullet) => {
       return projectBulletSnapshot(bullet, predictedTicks);
@@ -1288,22 +1221,20 @@ class MultiplayerClientSession {
     // Use locally predicted state for self (updated by tick loop),
     // fall back to server snapshot if prediction hasn't started yet
     const selfPlayer: MatchPlayerSnapshot | null =
-      this.predictedSelf
-      ?? match.snapshot.players.find((player) => player.id === match.playerId)
-      ?? null;
+      this.predictedSelf ??
+      match.snapshot.players.find((player) => player.id === match.playerId) ??
+      null;
 
     const opponentSnapshots = match.snapshot.players.filter(
-      (player) => player.id !== match.playerId
+      (player) => player.id !== match.playerId,
     );
-    const opponentPlayers: MatchPlayerSnapshot[] = opponentSnapshots.map(
-      (snapshot) => projectPlayerSnapshot(snapshot, predictedTicks, match.arena)
+    const opponentPlayers: MatchPlayerSnapshot[] = opponentSnapshots.map((snapshot) =>
+      projectPlayerSnapshot(snapshot, predictedTicks, match.arena),
     );
     // For the duel-only radar HUD we still want a single reference
     // opponent. Pick the first alive one (fallback: first entry).
     const primaryOpponent =
-      opponentPlayers.find((player) => player.health > 0)
-      ?? opponentPlayers[0]
-      ?? null;
+      opponentPlayers.find((player) => player.health > 0) ?? opponentPlayers[0] ?? null;
 
     const renderedPlayers: MatchPlayerSnapshot[] = [];
     if (selfPlayer !== null) renderedPlayers.push(selfPlayer);
@@ -1314,24 +1245,16 @@ class MultiplayerClientSession {
       this.drawCenterCard(
         p,
         "Waiting for own ship",
-        "The shared simulation is live, but the latest player snapshot has not arrived yet."
+        "The shared simulation is live, but the latest player snapshot has not arrived yet.",
       );
       return;
     }
 
-    const cameraBounds = createCameraBounds(
-      selfPlayer.x,
-      selfPlayer.y,
-      WORLD_CULL_PADDING
-    );
+    const cameraBounds = createCameraBounds(selfPlayer.x, selfPlayer.y, WORLD_CULL_PADDING);
     const selfCollider = this.getPlayerCollider(selfPlayer);
     const visibleAsteroids = getAsteroidsInBounds(match.world, cameraBounds, match.arena);
     const visibleHearts = getHeartsInBounds(match.world, cameraBounds, match.arena);
-    const visibleAmmoPackets = getAmmoPacketsInBounds(
-      match.world,
-      cameraBounds,
-      match.arena
-    );
+    const visibleAmmoPackets = getAmmoPacketsInBounds(match.world, cameraBounds, match.arena);
 
     const collidingHeartIds = new Set(
       getNearbyHearts(
@@ -1339,17 +1262,12 @@ class MultiplayerClientSession {
         selfPlayer.x,
         selfPlayer.y,
         getShipCollisionBoundingDiameter(selfPlayer.shipVariant),
-        match.arena
+        match.arena,
       )
         .filter((heart) => {
-          return circleOverlapsShipCollider(
-            heart.x,
-            heart.y,
-            heart.size,
-            selfCollider
-          );
+          return circleOverlapsShipCollider(heart.x, heart.y, heart.size, selfCollider);
         })
-        .map((heart) => heart.id)
+        .map((heart) => heart.id),
     );
 
     const collidingAmmoIds = new Set(
@@ -1358,17 +1276,17 @@ class MultiplayerClientSession {
         selfPlayer.x,
         selfPlayer.y,
         getShipCollisionBoundingDiameter(selfPlayer.shipVariant),
-        match.arena
+        match.arena,
       )
         .filter((ammoPacket) => {
           return circleOverlapsShipCollider(
             ammoPacket.x,
             ammoPacket.y,
             ammoPacket.size,
-            selfCollider
+            selfCollider,
           );
         })
-        .map((ammoPacket) => ammoPacket.id)
+        .map((ammoPacket) => ammoPacket.id),
     );
 
     this.drawBackdrop(p, selfPlayer.x, selfPlayer.y);
@@ -1386,19 +1304,15 @@ class MultiplayerClientSession {
       this.drawHeartCollectible(
         p,
         visibleHearts[heartIndex],
-        collidingHeartIds.has(visibleHearts[heartIndex].id)
+        collidingHeartIds.has(visibleHearts[heartIndex].id),
       );
     }
 
-    for (
-      let ammoPacketIndex = 0;
-      ammoPacketIndex < visibleAmmoPackets.length;
-      ammoPacketIndex++
-    ) {
+    for (let ammoPacketIndex = 0; ammoPacketIndex < visibleAmmoPackets.length; ammoPacketIndex++) {
       this.drawAmmoCollectible(
         p,
         visibleAmmoPackets[ammoPacketIndex],
-        collidingAmmoIds.has(visibleAmmoPackets[ammoPacketIndex].id)
+        collidingAmmoIds.has(visibleAmmoPackets[ammoPacketIndex].id),
       );
     }
 
@@ -1409,7 +1323,7 @@ class MultiplayerClientSession {
       this.drawAsteroid(
         p,
         visibleAsteroids[asteroidIndex],
-        match.snapshot.sequence + predictedTicks
+        match.snapshot.sequence + predictedTicks,
       );
     }
 
@@ -1429,7 +1343,7 @@ class MultiplayerClientSession {
       this.drawShip(
         p,
         renderedPlayers[playerIndex],
-        renderedPlayers[playerIndex].id === match.playerId
+        renderedPlayers[playerIndex].id === match.playerId,
       );
     }
 
@@ -1440,7 +1354,7 @@ class MultiplayerClientSession {
         renderedBullets,
         visibleAsteroids,
         visibleHearts,
-        visibleAmmoPackets
+        visibleAmmoPackets,
       );
     }
 
@@ -1453,7 +1367,7 @@ class MultiplayerClientSession {
       p,
       selfPlayer,
       match.mode === "battle-royale" ? opponentPlayers : primaryOpponent,
-      match.arena
+      match.arena,
     );
 
     if (getGameState().settings.netcodeDebugEnabled && isCollisionDebugAvailable()) {
@@ -1509,7 +1423,7 @@ class MultiplayerClientSession {
       label: string,
       values: number[],
       color: [number, number, number],
-      fixedMax?: number
+      fixedMax?: number,
     ) => {
       const gx = panelX + 8;
       const gy = panelY + textBlockH + yOffset;
@@ -1569,7 +1483,7 @@ class MultiplayerClientSession {
       this.drawCenterCard(
         p,
         "Connecting to matchmaking",
-        "Reaching the battle server and preparing the multiplayer queue."
+        "Reaching the battle server and preparing the multiplayer queue.",
       );
       return;
     }
@@ -1581,7 +1495,7 @@ class MultiplayerClientSession {
         this.drawCenterCard(
           p,
           "Joining Battle Royale lobby",
-          "Connecting you to the next arena drop. Stand by."
+          "Connecting you to the next arena drop. Stand by.",
         );
         return;
       }
@@ -1592,7 +1506,7 @@ class MultiplayerClientSession {
         this.drawCenterCard(
           p,
           "Waiting for more pilots",
-          `${lobby.playerCount} in lobby. Need ${needed} more ${plural} before the match can launch. Up to ${lobby.maxPlayers} ships per arena.`
+          `${lobby.playerCount} in lobby. Need ${needed} more ${plural} before the match can launch. Up to ${lobby.maxPlayers} ships per arena.`,
         );
         return;
       }
@@ -1601,7 +1515,7 @@ class MultiplayerClientSession {
       this.drawCenterCard(
         p,
         `Battle Royale: ${lobby.playerCount}/${lobby.maxPlayers}`,
-        `Dropping in ${seconds}s. Late arrivals can still join until the timer hits zero.`
+        `Dropping in ${seconds}s. Late arrivals can still join until the timer hits zero.`,
       );
       return;
     }
@@ -1619,7 +1533,7 @@ class MultiplayerClientSession {
     p: p5,
     selfPlayer: MatchPlayerSnapshot,
     opponents: MatchPlayerSnapshot | MatchPlayerSnapshot[] | null,
-    arena: MatchFoundPayload["arena"]
+    arena: MatchFoundPayload["arena"],
   ) {
     const opponentList: MatchPlayerSnapshot[] = Array.isArray(opponents)
       ? opponents
@@ -1681,19 +1595,12 @@ class MultiplayerClientSession {
     p.pop();
   }
 
-  private drawShip(
-    p: p5,
-    player: MatchPlayerSnapshot,
-    _isSelf: boolean
-  ) {
+  private drawShip(p: p5, player: MatchPlayerSnapshot, _isSelf: boolean) {
     const destruction = this.playerDestructions.get(player.id);
     const destructionProgress =
       destruction === undefined
         ? null
-        : Math.min(
-            1,
-            (performance.now() - destruction.startedAt) / SHIP_DESTRUCTION_DURATION_MS
-          );
+        : Math.min(1, (performance.now() - destruction.startedAt) / SHIP_DESTRUCTION_DURATION_MS);
 
     if (destructionProgress === 1) {
       return;
@@ -1710,18 +1617,10 @@ class MultiplayerClientSession {
         ? baseRecoveryAlpha
         : p.lerp(baseRecoveryAlpha, 0, destructionProgress);
     const arrivalProgress = this.getPlayerArrivalProgress(player.id);
-    const arrivalReveal =
-      arrivalProgress === null
-        ? 1
-        : 1 - Math.pow(1 - arrivalProgress, 3);
-    const arrivalAlpha =
-      arrivalProgress === null ? 255 : p.lerp(0, 255, arrivalReveal);
-    const shipScale =
-      destructionProgress === null
-        ? 1
-        : p.lerp(1, 0.32, destructionProgress);
-    const arrivalScale =
-      arrivalProgress === null ? 1 : p.lerp(0.56, 1.04, arrivalReveal);
+    const arrivalReveal = arrivalProgress === null ? 1 : 1 - Math.pow(1 - arrivalProgress, 3);
+    const arrivalAlpha = arrivalProgress === null ? 255 : p.lerp(0, 255, arrivalReveal);
+    const shipScale = destructionProgress === null ? 1 : p.lerp(1, 0.32, destructionProgress);
+    const arrivalScale = arrivalProgress === null ? 1 : p.lerp(0.56, 1.04, arrivalReveal);
 
     p.push();
     p.translate(player.x, player.y);
@@ -1742,7 +1641,7 @@ class MultiplayerClientSession {
     bullets: MatchSnapshotPayload["bullets"],
     asteroids: ReturnType<typeof getAsteroidsInBounds>,
     hearts: ReturnType<typeof getHeartsInBounds>,
-    ammoPackets: ReturnType<typeof getAmmoPacketsInBounds>
+    ammoPackets: ReturnType<typeof getAmmoPacketsInBounds>,
   ) {
     for (let i = 0; i < asteroids.length; i++) {
       drawCollisionCircle(p, asteroids[i].x, asteroids[i].y, asteroids[i].size);
@@ -1809,17 +1708,12 @@ class MultiplayerClientSession {
       return null;
     }
 
-    return Math.min(
-      1,
-      (performance.now() - arrival.startedAt) / SHIP_ARRIVAL_DURATION_MS
-    );
+    return Math.min(1, (performance.now() - arrival.startedAt) / SHIP_ARRIVAL_DURATION_MS);
   }
 
   private prunePlayerArrivals() {
     this.playerArrivals.forEach((arrival, playerId) => {
-      if (
-        performance.now() - arrival.startedAt >= SHIP_ARRIVAL_DURATION_MS
-      ) {
+      if (performance.now() - arrival.startedAt >= SHIP_ARRIVAL_DURATION_MS) {
         this.playerArrivals.delete(playerId);
       }
     });
@@ -1832,11 +1726,7 @@ class MultiplayerClientSession {
     }
   }
 
-  private drawThrusters(
-    p: p5,
-    players: MatchPlayerSnapshot[],
-    localPlayerId: string
-  ) {
+  private drawThrusters(p: p5, players: MatchPlayerSnapshot[], localPlayerId: string) {
     const activePlayerIds = new Set<string>();
 
     for (let playerIndex = 0; playerIndex < players.length; playerIndex++) {
@@ -1848,14 +1738,14 @@ class MultiplayerClientSession {
         thruster = new ThrusterExhaustSystem(
           p,
           p.createVector(player.x, player.y),
-          player.angle - p.PI
+          player.angle - p.PI,
         );
         this.thrusters.set(player.id, thruster);
       }
 
       const exhaustPos = p5.Vector.add(
         p.createVector(player.x, player.y),
-        p5.Vector.fromAngle(player.angle - p.PI, SHIP_WIDTH * 0.94)
+        p5.Vector.fromAngle(player.angle - p.PI, SHIP_WIDTH * 0.94),
       );
       thruster.updatePos(exhaustPos, player.angle - p.PI);
 
@@ -1902,8 +1792,7 @@ class MultiplayerClientSession {
     const state = getGameState();
     return (
       state.scene.type === "mode" &&
-      (state.scene.mode === "multiplayer" ||
-        state.scene.mode === "battle-royale")
+      (state.scene.mode === "multiplayer" || state.scene.mode === "battle-royale")
     );
   }
 
@@ -1935,8 +1824,7 @@ class MultiplayerClientSession {
         return;
       }
 
-      this.viewState.errorMessage =
-        "Unable to enter matchmaking through the typed control plane.";
+      this.viewState.errorMessage = "Unable to enter matchmaking through the typed control plane.";
       this.viewState.status = "error";
     }
   }
@@ -1950,16 +1838,12 @@ class MultiplayerClientSession {
         // Best-effort leave on both queues — we don't always know
         // which mode the session was in, and the server silently
         // no-ops on sockets that aren't in the corresponding queue.
-        void trpcClient.multiplayer.leaveQueue
-          .mutate({ socketId: this.socket.id })
-          .catch(() => {
-            // Best-effort shutdown.
-          });
-        void trpcClient.battleRoyale.leaveQueue
-          .mutate({ socketId: this.socket.id })
-          .catch(() => {
-            // Best-effort shutdown.
-          });
+        void trpcClient.multiplayer.leaveQueue.mutate({ socketId: this.socket.id }).catch(() => {
+          // Best-effort shutdown.
+        });
+        void trpcClient.battleRoyale.leaveQueue.mutate({ socketId: this.socket.id }).catch(() => {
+          // Best-effort shutdown.
+        });
       }
       this.socket.disconnect();
     }
@@ -1978,7 +1862,7 @@ class MultiplayerClientSession {
 
   private playSnapshotEffects(
     previousSnapshot: MatchSnapshotPayload,
-    nextSnapshot: MatchSnapshotPayload
+    nextSnapshot: MatchSnapshotPayload,
   ) {
     const previousPlayers = new Map<string, MatchPlayerSnapshot>();
     for (let i = 0; i < previousSnapshot.players.length; i++) {
@@ -1995,8 +1879,7 @@ class MultiplayerClientSession {
       }
 
       const isLocalPlayer =
-        this.viewState.match !== null &&
-        nextPlayer.id === this.viewState.match.playerId;
+        this.viewState.match !== null && nextPlayer.id === this.viewState.match.playerId;
       if (
         isLocalPlayer &&
         previousPlayer !== undefined &&
@@ -2043,7 +1926,7 @@ class MultiplayerClientSession {
             heart.x,
             heart.y,
             heart.size,
-            this.getPlayerCollider(localPlayer)
+            this.getPlayerCollider(localPlayer),
           )
         ) {
           playSound("heartPickup");
@@ -2063,29 +1946,25 @@ class MultiplayerClientSession {
             ammoPacket.x,
             ammoPacket.y,
             ammoPacket.size,
-            this.getPlayerCollider(localPlayer)
+            this.getPlayerCollider(localPlayer),
           )
         ) {
-          this.createAmmoPickupEffect(
-            ammoPacket.x,
-            ammoPacket.y,
-            localPlayer.x,
-            localPlayer.y
-          );
+          this.createAmmoPickupEffect(ammoPacket.x, ammoPacket.y, localPlayer.x, localPlayer.y);
           playSound("ammoPickup");
         }
       }
     }
   }
 
-  private reconcilePredictedSelf(serverState: MatchPlayerSnapshot, arena: ActiveMatchState["arena"]) {
+  private reconcilePredictedSelf(
+    serverState: MatchPlayerSnapshot,
+    arena: ActiveMatchState["arena"],
+  ) {
     // Accept authoritative server state as base
     this.predictedSelf = { ...serverState, fireCooldownTicks: 0 };
 
     // Discard inputs the server has already processed
-    this.inputBuffer = this.inputBuffer.filter(
-      (entry) => entry.seq > serverState.lastInputSeq
-    );
+    this.inputBuffer = this.inputBuffer.filter((entry) => entry.seq > serverState.lastInputSeq);
 
     // Replay unacknowledged inputs on top of server state.
     // Each buffered entry was produced by one tick of the client
@@ -2144,11 +2023,9 @@ class MultiplayerClientSession {
       this.predictedSelf.x,
       this.predictedSelf.y,
       this.predictedSelf.angle,
-      this.predictedSelf.shipVariant
+      this.predictedSelf.shipVariant,
     );
-    const broadDiameter = getShipCollisionBoundingDiameter(
-      this.predictedSelf.shipVariant
-    );
+    const broadDiameter = getShipCollisionBoundingDiameter(this.predictedSelf.shipVariant);
 
     if (this.predictedSelf.health < match.maxHealth) {
       const nearbyHearts = getNearbyHearts(
@@ -2156,22 +2033,12 @@ class MultiplayerClientSession {
         this.predictedSelf.x,
         this.predictedSelf.y,
         broadDiameter,
-        match.arena
+        match.arena,
       );
       for (let i = 0; i < nearbyHearts.length; i++) {
         const heart = nearbyHearts[i];
-        if (
-          circleOverlapsShipCollider(
-            heart.x,
-            heart.y,
-            heart.size,
-            selfCollider
-          )
-        ) {
-          this.predictedSelf.health = Math.min(
-            PLAYER_MAX_HEALTH,
-            this.predictedSelf.health + 1
-          );
+        if (circleOverlapsShipCollider(heart.x, heart.y, heart.size, selfCollider)) {
+          this.predictedSelf.health = Math.min(PLAYER_MAX_HEALTH, this.predictedSelf.health + 1);
           removeHeartFromWorld(match.world, heart.id, match.arena);
           break;
         }
@@ -2184,21 +2051,14 @@ class MultiplayerClientSession {
         this.predictedSelf.x,
         this.predictedSelf.y,
         broadDiameter,
-        match.arena
+        match.arena,
       );
       for (let i = 0; i < nearbyAmmo.length; i++) {
         const ammoPacket = nearbyAmmo[i];
-        if (
-          circleOverlapsShipCollider(
-            ammoPacket.x,
-            ammoPacket.y,
-            ammoPacket.size,
-            selfCollider
-          )
-        ) {
+        if (circleOverlapsShipCollider(ammoPacket.x, ammoPacket.y, ammoPacket.size, selfCollider)) {
           this.predictedSelf.ammo = Math.min(
             PLAYER_MAX_AMMO,
-            this.predictedSelf.ammo + ammoPacket.amount
+            this.predictedSelf.ammo + ammoPacket.amount,
           );
           removeAmmoFromWorld(match.world, ammoPacket.id, match.arena);
           break;
@@ -2212,22 +2072,12 @@ class MultiplayerClientSession {
         this.predictedSelf.x,
         this.predictedSelf.y,
         broadDiameter,
-        match.arena
+        match.arena,
       );
       for (let i = 0; i < nearbyAsteroids.length; i++) {
         const asteroid = nearbyAsteroids[i];
-        if (
-          circleOverlapsShipCollider(
-            asteroid.x,
-            asteroid.y,
-            asteroid.size,
-            selfCollider
-          )
-        ) {
-          this.predictedSelf.health = Math.max(
-            0,
-            this.predictedSelf.health - 1
-          );
+        if (circleOverlapsShipCollider(asteroid.x, asteroid.y, asteroid.size, selfCollider)) {
+          this.predictedSelf.health = Math.max(0, this.predictedSelf.health - 1);
           this.predictedSelf.damageRecoveryTicks = PLAYER_DAMAGE_RECOVERY_TICKS;
           removeAsteroidFromWorld(match.world, asteroid.id, match.arena);
           break;

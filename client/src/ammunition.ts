@@ -1,4 +1,5 @@
-import p5, { Vector } from "p5";
+import type p5 from "p5";
+import type { Vector } from "p5";
 import { assets } from "./sketch";
 import { randomSpawnPoint } from "./utils";
 
@@ -14,10 +15,7 @@ const defaultConfig: AmmunitionConfig = {
   spawnEnabled: true,
 };
 
-export const resetAmmunition = (
-  p: p5,
-  config: Partial<AmmunitionConfig> = {}
-) => {
+export const resetAmmunition = (p: p5, config: Partial<AmmunitionConfig> = {}) => {
   ammunition = new AmmunitionPackages(p, {
     ...defaultConfig,
     ...config,
@@ -39,11 +37,7 @@ class AmmunitionPackages {
     for (let i = 0; i < amount; i++) {
       const possibleSizes = [150, 150, 150, 150, 150, 200, 200, 250];
       this.ammunitionPackages.push(
-        new Ammunition(
-          this.p,
-          randomSpawnPoint(this.p),
-          this.p.random(possibleSizes)
-        )
+        new Ammunition(this.p, randomSpawnPoint(this.p), this.p.random(possibleSizes)),
       );
     }
   }
@@ -76,12 +70,6 @@ export class Ammunition {
     this.p.fill("rgb(200, 240, 255)");
     this.p.imageMode(this.p.CENTER);
     this.p.ellipse(this.pos.x, this.pos.y, this.size, this.size);
-    this.p.image(
-      assets.ammoAsset,
-      this.pos.x,
-      this.pos.y,
-      this.size / 1.5,
-      this.size / 1.5
-    );
+    this.p.image(assets.ammoAsset, this.pos.x, this.pos.y, this.size / 1.5, this.size / 1.5);
   }
 }

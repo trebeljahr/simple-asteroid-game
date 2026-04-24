@@ -8,28 +8,28 @@
 
 import {
   AMMO_PACKET_AMOUNTS,
-  ArenaConfig,
   ASTEROID_MAX_SIZE,
   ASTEROID_MIN_SIZE,
+  type ArenaConfig,
+  DEFAULT_SHIP_VARIANT,
+  type MatchBulletSnapshot,
+  type MatchPhase,
+  type MatchPlayerSnapshot,
+  type MatchWorldRuntime,
+  PLAYER_MAX_HEALTH,
+  PLAYER_STARTING_AMMO,
+  type RuntimePlayerState,
+  type ShipVariant,
+  WORLD_MARGIN,
   addAmmoToWorld,
   addAsteroidToWorld,
   addHeartToWorld,
   createEmptyMatchWorld,
   createSeededRandom,
-  DEFAULT_SHIP_VARIANT,
   isAmmoSpawnValid,
   isAsteroidSpawnValid,
   isHeartSpawnValid,
-  MatchBulletSnapshot,
-  MatchPhase,
-  MatchPlayerSnapshot,
-  MatchWorldRuntime,
-  PLAYER_MAX_HEALTH,
-  PLAYER_STARTING_AMMO,
   randomBetween,
-  RuntimePlayerState,
-  ShipVariant,
-  WORLD_MARGIN,
 } from "./multiplayerCore";
 
 export const BATTLE_ROYALE_ARENA: ArenaConfig = {
@@ -112,7 +112,7 @@ export interface BattleRoyaleEliminatedPayload {
 export const getBattleRoyaleSpawnPosition = (
   spawnIndex: number,
   totalPlayers: number,
-  arena: ArenaConfig = BATTLE_ROYALE_ARENA
+  arena: ArenaConfig = BATTLE_ROYALE_ARENA,
 ) => {
   if (totalPlayers <= 0) {
     return { x: 0, y: 0 };
@@ -132,7 +132,7 @@ export const createBattleRoyalePlayerState = (
   spawnIndex: number,
   totalPlayers: number,
   shipVariant: ShipVariant = DEFAULT_SHIP_VARIANT,
-  arena: ArenaConfig = BATTLE_ROYALE_ARENA
+  arena: ArenaConfig = BATTLE_ROYALE_ARENA,
 ): RuntimePlayerState => {
   const spawn = getBattleRoyaleSpawnPosition(spawnIndex, totalPlayers, arena);
   // Face the arena center so the first moments feel purposeful.
@@ -167,7 +167,7 @@ export const createBattleRoyalePlayerState = (
 export const createInitialBattleRoyaleWorld = (
   worldSeed: number,
   playerPositions: ReadonlyArray<{ x: number; y: number }>,
-  arena: ArenaConfig = BATTLE_ROYALE_ARENA
+  arena: ArenaConfig = BATTLE_ROYALE_ARENA,
 ): MatchWorldRuntime => {
   const random = createSeededRandom(worldSeed);
   const world = createEmptyMatchWorld();
@@ -178,7 +178,7 @@ export const createInitialBattleRoyaleWorld = (
       playerPositions,
       random,
       `br-asteroid:init:${i}`,
-      arena
+      arena,
     );
     if (asteroid !== null) {
       addAsteroidToWorld(world, asteroid, arena);
@@ -191,7 +191,7 @@ export const createInitialBattleRoyaleWorld = (
       playerPositions,
       random,
       `br-heart:init:${i}`,
-      arena
+      arena,
     );
     if (heart !== null) {
       addHeartToWorld(world, heart, arena);
@@ -199,13 +199,7 @@ export const createInitialBattleRoyaleWorld = (
   }
 
   for (let i = 0; i < BATTLE_ROYALE_INITIAL_AMMO_PACKET_COUNT; i++) {
-    const ammo = spawnBattleRoyaleAmmo(
-      world,
-      playerPositions,
-      random,
-      `br-ammo:init:${i}`,
-      arena
-    );
+    const ammo = spawnBattleRoyaleAmmo(world, playerPositions, random, `br-ammo:init:${i}`, arena);
     if (ammo !== null) {
       addAmmoToWorld(world, ammo, arena);
     }
@@ -222,19 +216,19 @@ export const spawnBattleRoyaleAsteroid = (
   playerPositions: ReadonlyArray<{ x: number; y: number }>,
   random: () => number,
   asteroidId: string,
-  arena: ArenaConfig = BATTLE_ROYALE_ARENA
+  arena: ArenaConfig = BATTLE_ROYALE_ARENA,
 ) => {
   for (let attempt = 0; attempt < 240; attempt++) {
     const size = randomBetween(random, ASTEROID_MIN_SIZE, ASTEROID_MAX_SIZE);
     const x = randomBetween(
       random,
       -arena.width / 2 + WORLD_MARGIN,
-      arena.width / 2 - WORLD_MARGIN
+      arena.width / 2 - WORLD_MARGIN,
     );
     const y = randomBetween(
       random,
       -arena.height / 2 + WORLD_MARGIN,
-      arena.height / 2 - WORLD_MARGIN
+      arena.height / 2 - WORLD_MARGIN,
     );
 
     if (!isAsteroidSpawnValid(world, playerPositions, x, y, size, arena)) {
@@ -260,18 +254,18 @@ export const spawnBattleRoyaleHeart = (
   playerPositions: ReadonlyArray<{ x: number; y: number }>,
   random: () => number,
   heartId: string,
-  arena: ArenaConfig = BATTLE_ROYALE_ARENA
+  arena: ArenaConfig = BATTLE_ROYALE_ARENA,
 ) => {
   for (let attempt = 0; attempt < 240; attempt++) {
     const x = randomBetween(
       random,
       -arena.width / 2 + WORLD_MARGIN,
-      arena.width / 2 - WORLD_MARGIN
+      arena.width / 2 - WORLD_MARGIN,
     );
     const y = randomBetween(
       random,
       -arena.height / 2 + WORLD_MARGIN,
-      arena.height / 2 - WORLD_MARGIN
+      arena.height / 2 - WORLD_MARGIN,
     );
     if (!isHeartSpawnValid(world, playerPositions, x, y, arena)) {
       continue;
@@ -291,21 +285,20 @@ export const spawnBattleRoyaleAmmo = (
   playerPositions: ReadonlyArray<{ x: number; y: number }>,
   random: () => number,
   ammoId: string,
-  arena: ArenaConfig = BATTLE_ROYALE_ARENA
+  arena: ArenaConfig = BATTLE_ROYALE_ARENA,
 ) => {
   for (let attempt = 0; attempt < 240; attempt++) {
-    const amount =
-      AMMO_PACKET_AMOUNTS[Math.floor(random() * AMMO_PACKET_AMOUNTS.length)];
+    const amount = AMMO_PACKET_AMOUNTS[Math.floor(random() * AMMO_PACKET_AMOUNTS.length)];
     const size = 48 + amount * 4;
     const x = randomBetween(
       random,
       -arena.width / 2 + WORLD_MARGIN,
-      arena.width / 2 - WORLD_MARGIN
+      arena.width / 2 - WORLD_MARGIN,
     );
     const y = randomBetween(
       random,
       -arena.height / 2 + WORLD_MARGIN,
-      arena.height / 2 - WORLD_MARGIN
+      arena.height / 2 - WORLD_MARGIN,
     );
 
     if (!isAmmoSpawnValid(world, playerPositions, x, y, size, arena)) {

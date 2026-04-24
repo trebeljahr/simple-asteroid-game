@@ -43,16 +43,12 @@ class RectangleBoundary {
   }
 }
 
-const createChildBoundary = (
-  boundary: RectangleBoundary,
-  xOffset: number,
-  yOffset: number
-) => {
+const createChildBoundary = (boundary: RectangleBoundary, xOffset: number, yOffset: number) => {
   return new RectangleBoundary(
     boundary.x + xOffset * (boundary.halfWidth / 2),
     boundary.y + yOffset * (boundary.halfHeight / 2),
     boundary.halfWidth / 2,
-    boundary.halfHeight / 2
+    boundary.halfHeight / 2,
   );
 };
 
@@ -60,7 +56,7 @@ export const createQueryRange = (
   x: number,
   y: number,
   halfWidth: number,
-  halfHeight: number
+  halfHeight: number,
 ): QueryRange => {
   return {
     x,
@@ -85,7 +81,7 @@ export class QuadTree<T> {
       boundary.x,
       boundary.y,
       boundary.halfWidth,
-      boundary.halfHeight
+      boundary.halfHeight,
     );
     this.capacity = capacity;
     this.items = [];
@@ -97,22 +93,10 @@ export class QuadTree<T> {
   }
 
   subdivide() {
-    this.northeast = new QuadTree<T>(
-      createChildBoundary(this.boundary, 1, -1),
-      this.capacity
-    );
-    this.northwest = new QuadTree<T>(
-      createChildBoundary(this.boundary, -1, -1),
-      this.capacity
-    );
-    this.southeast = new QuadTree<T>(
-      createChildBoundary(this.boundary, 1, 1),
-      this.capacity
-    );
-    this.southwest = new QuadTree<T>(
-      createChildBoundary(this.boundary, -1, 1),
-      this.capacity
-    );
+    this.northeast = new QuadTree<T>(createChildBoundary(this.boundary, 1, -1), this.capacity);
+    this.northwest = new QuadTree<T>(createChildBoundary(this.boundary, -1, -1), this.capacity);
+    this.southeast = new QuadTree<T>(createChildBoundary(this.boundary, 1, 1), this.capacity);
+    this.southwest = new QuadTree<T>(createChildBoundary(this.boundary, -1, 1), this.capacity);
     this.divided = true;
   }
 

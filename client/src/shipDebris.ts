@@ -1,6 +1,6 @@
-import p5 from "p5";
-import { ShipVariant } from "../../shared/src";
-import { CameraBounds, circleIntersectsBounds } from "./utils";
+import type p5 from "p5";
+import type { ShipVariant } from "../../shared/src";
+import { type CameraBounds, circleIntersectsBounds } from "./utils";
 
 interface LocalPoint {
   x: number;
@@ -179,20 +179,19 @@ export class ShipDebrisSystem {
       const escapeSpeed = this.p.random(2.2, 5.2);
       const velocity = this.p.createVector(
         (radialX / radialMagnitude) * escapeSpeed + forwardX * this.p.random(-0.5, 1.4),
-        (radialY / radialMagnitude) * escapeSpeed + forwardY * this.p.random(-0.5, 1.4)
+        (radialY / radialMagnitude) * escapeSpeed + forwardY * this.p.random(-0.5, 1.4),
       );
 
       this.pieces.push(
         new ShipDebrisPiece(this.p, {
           angle: angle + this.p.random(-0.12, 0.12),
           angularVelocity: this.p.random(-0.16, 0.16),
-          fill:
-            template.fill === "core" ? palette.core : palette.trim,
+          fill: template.fill === "core" ? palette.core : palette.trim,
           points: template.points,
           pos: this.p.createVector(pieceX, pieceY),
           stroke: palette.stroke,
           vel: velocity,
-        })
+        }),
       );
     }
   }
@@ -230,7 +229,7 @@ class ShipDebrisPiece {
       pos: p5.Vector;
       stroke: [number, number, number];
       vel: p5.Vector;
-    }
+    },
   ) {
     this.p = p;
     this.angle = options.angle;
@@ -272,12 +271,7 @@ class ShipDebrisPiece {
 
     if (
       cameraBounds === undefined ||
-      circleIntersectsBounds(
-        this.pos.x,
-        this.pos.y,
-        this.maxRadius * 2,
-        cameraBounds
-      )
+      circleIntersectsBounds(this.pos.x, this.pos.y, this.maxRadius * 2, cameraBounds)
     ) {
       this.show();
     }

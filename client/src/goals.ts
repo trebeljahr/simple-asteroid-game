@@ -1,16 +1,16 @@
-import p5, { Vector } from "p5";
+import p5, { type Vector } from "p5";
+import { reportAchievementEvent } from "./achievementEvents";
+import { playSound } from "./audio";
 import { showSingleplayerVictory } from "./gameUiActions";
+import { player, playerHitsCollectible } from "./player";
 import {
+  type CameraBounds,
   boardSizeX,
   boardSizeY,
-  CameraBounds,
   circleIntersectsBounds,
   clamp,
   distSquare,
 } from "./utils";
-import { player, playerHitsCollectible } from "./player";
-import { playSound } from "./audio";
-import { reportAchievementEvent } from "./achievementEvents";
 
 interface GoalLeg {
   distance: number;
@@ -25,9 +25,7 @@ const GOAL_RANDOM_FALLBACK_ATTEMPTS = 240;
 
 const createGoalLegs = (): GoalLeg[] => {
   const worldDistance = Math.min(boardSizeX, boardSizeY);
-  const worldDiagonal = Math.sqrt(
-    boardSizeX * boardSizeX + boardSizeY * boardSizeY
-  );
+  const worldDiagonal = Math.sqrt(boardSizeX * boardSizeX + boardSizeY * boardSizeY);
 
   return [
     {
@@ -89,23 +87,16 @@ class Goals {
     let previousHeading: number | null = null;
     let origin = this.p.createVector(
       player.enginePlayer.position.x,
-      player.enginePlayer.position.y
+      player.enginePlayer.position.y,
     );
 
     const legs = createGoalLegs();
 
     for (let i = 0; i < legs.length; i++) {
-      const nextGoal = this.createGoalPosition(
-        origin,
-        legs[i].distance,
-        route,
-        previousHeading
-      );
+      const nextGoal = this.createGoalPosition(origin, legs[i].distance, route, previousHeading);
       previousHeading = nextGoal.heading;
       origin = nextGoal.pos.copy();
-      route.push(
-        new Goal(this.p, nextGoal.pos, i + 1, legs.length, legs[i].label)
-      );
+      route.push(new Goal(this.p, nextGoal.pos, i + 1, legs.length, legs[i].label));
     }
 
     return route;
@@ -116,7 +107,7 @@ class Goals {
     let previousHeading: number | null = null;
     let origin = this.p.createVector(
       player.enginePlayer.position.x,
-      player.enginePlayer.position.y
+      player.enginePlayer.position.y,
     );
 
     for (let i = 0; i < this.route.length; i++) {
@@ -127,13 +118,13 @@ class Goals {
       if (!this.isGoalPositionValid(clampedPosition, refreshedRoute)) {
         const fallbackDistance = Math.max(
           GOAL_SEPARATION * 1.15,
-          p5.Vector.dist(origin, existingGoal.pos)
+          p5.Vector.dist(origin, existingGoal.pos),
         );
         const nextGoal = this.createGoalPosition(
           origin,
           fallbackDistance,
           refreshedRoute,
-          previousHeading
+          previousHeading,
         );
         nextGoalPosition = nextGoal.pos;
       }
@@ -145,8 +136,8 @@ class Goals {
           nextGoalPosition,
           existingGoal.index,
           existingGoal.totalGoals,
-          existingGoal.label
-        )
+          existingGoal.label,
+        ),
       );
       previousHeading = nextHeading;
       origin = nextGoalPosition.copy();
@@ -160,14 +151,11 @@ class Goals {
     origin: Vector,
     distance: number,
     existingRoute: Goal[],
-    previousHeading: number | null
+    previousHeading: number | null,
   ) {
     for (let attempt = 0; attempt < GOAL_POSITION_ATTEMPTS; attempt++) {
       const nextHeading = this.sampleHeading(previousHeading, attempt);
-      const candidate = p5.Vector.add(
-        origin,
-        p5.Vector.fromAngle(nextHeading, distance)
-      );
+      const candidate = p5.Vector.add(origin, p5.Vector.fromAngle(nextHeading, distance));
       if (this.isGoalPositionValid(candidate, existingRoute)) {
         return {
           heading: nextHeading,
@@ -178,10 +166,7 @@ class Goals {
 
     for (let step = 0; step < GOAL_SCAN_STEPS; step++) {
       const nextHeading = (this.p.TWO_PI * step) / GOAL_SCAN_STEPS;
-      const candidate = p5.Vector.add(
-        origin,
-        p5.Vector.fromAngle(nextHeading, distance)
-      );
+      const candidate = p5.Vector.add(origin, p5.Vector.fromAngle(nextHeading, distance));
       if (this.isGoalPositionValid(candidate, existingRoute)) {
         return {
           heading: nextHeading,
@@ -192,13 +177,10 @@ class Goals {
 
     const centerHeading = p5.Vector.sub(this.p.createVector(0, 0), origin).heading();
     for (let step = 0; step < GOAL_SCAN_STEPS; step++) {
-      const offset = ((step % 2 === 0 ? 1 : -1) * Math.ceil(step / 2) * this.p.PI) /
-        GOAL_SCAN_STEPS;
+      const offset =
+        ((step % 2 === 0 ? 1 : -1) * Math.ceil(step / 2) * this.p.PI) / GOAL_SCAN_STEPS;
       const nextHeading = centerHeading + offset;
-      const candidate = p5.Vector.add(
-        origin,
-        p5.Vector.fromAngle(nextHeading, distance)
-      );
+      const candidate = p5.Vector.add(origin, p5.Vector.fromAngle(nextHeading, distance));
       if (this.isGoalPositionValid(candidate, existingRoute)) {
         return {
           heading: nextHeading,
@@ -222,31 +204,23 @@ class Goals {
       pos: this.clampGoalPosition(
         this.p.createVector(
           origin.x + this.p.cos(centerHeading) * distance,
-          origin.y + this.p.sin(centerHeading) * distance
-        )
+          origin.y + this.p.sin(centerHeading) * distance,
+        ),
       ),
     };
   }
 
   clampGoalPosition(candidate: Vector) {
     return this.p.createVector(
-      clamp(
-        candidate.x,
-        -boardSizeX + GOAL_WORLD_MARGIN,
-        boardSizeX - GOAL_WORLD_MARGIN
-      ),
-      clamp(
-        candidate.y,
-        -boardSizeY + GOAL_WORLD_MARGIN,
-        boardSizeY - GOAL_WORLD_MARGIN
-      )
+      clamp(candidate.x, -boardSizeX + GOAL_WORLD_MARGIN, boardSizeX - GOAL_WORLD_MARGIN),
+      clamp(candidate.y, -boardSizeY + GOAL_WORLD_MARGIN, boardSizeY - GOAL_WORLD_MARGIN),
     );
   }
 
   randomBoundedGoalPosition() {
     return this.p.createVector(
       this.p.random(-boardSizeX + GOAL_WORLD_MARGIN, boardSizeX - GOAL_WORLD_MARGIN),
-      this.p.random(-boardSizeY + GOAL_WORLD_MARGIN, boardSizeY - GOAL_WORLD_MARGIN)
+      this.p.random(-boardSizeY + GOAL_WORLD_MARGIN, boardSizeY - GOAL_WORLD_MARGIN),
     );
   }
 
@@ -260,7 +234,7 @@ class Goals {
       0,
       GOAL_POSITION_ATTEMPTS - 1,
       this.p.PI * 0.72,
-      this.p.PI
+      this.p.PI,
     );
     return previousHeading + this.p.random(-turnWindow, turnWindow);
   }
@@ -280,7 +254,7 @@ class Goals {
         candidate.x,
         candidate.y,
         player.enginePlayer.position.x,
-        player.enginePlayer.position.y
+        player.enginePlayer.position.y,
       ) <
       GOAL_SEPARATION * GOAL_SEPARATION
     ) {
@@ -304,12 +278,7 @@ class Goals {
     const currentGoal = this.goal;
     if (
       cameraBounds === undefined ||
-      circleIntersectsBounds(
-        currentGoal.pos.x,
-        currentGoal.pos.y,
-        currentGoal.size,
-        cameraBounds
-      )
+      circleIntersectsBounds(currentGoal.pos.x, currentGoal.pos.y, currentGoal.size, cameraBounds)
     ) {
       currentGoal.draw();
     }
@@ -340,13 +309,7 @@ export class Goal {
   size: number;
   totalGoals: number;
 
-  constructor(
-    p: p5,
-    pos: Vector,
-    index: number,
-    totalGoals: number,
-    label: string
-  ) {
+  constructor(p: p5, pos: Vector, index: number, totalGoals: number, label: string) {
     this.pos = pos.copy();
     this.size = 120;
     this.p = p;

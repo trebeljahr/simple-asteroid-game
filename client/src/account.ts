@@ -97,9 +97,7 @@ const generateDeviceToken = (): string => {
   }
   const bytes = new Uint8Array(16);
   window.crypto.getRandomValues(bytes);
-  return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join(
-    ""
-  );
+  return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
 };
 
 let state: AccountState = {
@@ -187,9 +185,7 @@ export const recordLocalUnlock = (achievementId: string, unlockedAt: Date) => {
   });
   const just = achievements.find((entry) => entry.id === achievementId);
   const recentUnlocks =
-    just !== undefined
-      ? [...state.recentUnlocks, just].slice(-8)
-      : state.recentUnlocks;
+    just !== undefined ? [...state.recentUnlocks, just].slice(-8) : state.recentUnlocks;
   commit({ ...state, achievements, recentUnlocks });
 };
 

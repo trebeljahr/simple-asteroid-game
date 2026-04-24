@@ -1,5 +1,6 @@
-import p5, { Vector } from "p5";
-import { width, height, boardSizeX, boardSizeY } from "./utils";
+import type p5 from "p5";
+import type { Vector } from "p5";
+import { boardSizeX, boardSizeY, height, width } from "./utils";
 
 export class Mover {
   p: p5;

@@ -1,37 +1,37 @@
+import { Bodies, Body, Vector, World } from "matter-js";
 import p5 from "p5";
 import {
-  width,
-  height,
-  boardSizeX,
-  boardSizeY,
-  clamp,
-  playerHitsCircularTarget,
-  REFERENCE_VIEWPORT_HEIGHT,
-  REFERENCE_VIEWPORT_WIDTH,
-} from "./utils";
-import { showSingleplayerDefeat } from "./gameUiActions";
-import { explosions } from "./explosions";
-import { MAX_PLAYER_HEALTH, getHudHeartSize, getHudHeartTopLeft } from "./healthHud";
-import { ThrusterExhaustSystem } from "./thruster";
-import { bullets } from "./bullets";
-import { hearts } from "./hearts";
-import { assets } from "./sketch";
-import { World, Body, Bodies, Vector } from "matter-js";
-import { engine } from "./engine";
-import { goals } from "./goals";
-import { isShipActionActive } from "./input";
-import { shipDebris } from "./shipDebris";
-import { playSound } from "./audio";
-import { reportAchievementEvent } from "./achievementEvents";
-import { markRunDamageTaken } from "./runSession";
-import {
+  type ShipCollider,
+  type ShipVariant,
   getShipCollider,
   getShipColliderSpec,
   getShipCollisionBoundingDiameter,
-  ShipCollider,
-  ShipVariant,
 } from "../../shared/src";
+import { reportAchievementEvent } from "./achievementEvents";
+import { playSound } from "./audio";
+import { bullets } from "./bullets";
+import { engine } from "./engine";
+import { explosions } from "./explosions";
 import { getGameState } from "./gameState";
+import { showSingleplayerDefeat } from "./gameUiActions";
+import { goals } from "./goals";
+import { MAX_PLAYER_HEALTH, getHudHeartSize, getHudHeartTopLeft } from "./healthHud";
+import { hearts } from "./hearts";
+import { isShipActionActive } from "./input";
+import { markRunDamageTaken } from "./runSession";
+import { shipDebris } from "./shipDebris";
+import { assets } from "./sketch";
+import { ThrusterExhaustSystem } from "./thruster";
+import {
+  REFERENCE_VIEWPORT_HEIGHT,
+  REFERENCE_VIEWPORT_WIDTH,
+  boardSizeX,
+  boardSizeY,
+  clamp,
+  height,
+  playerHitsCircularTarget,
+  width,
+} from "./utils";
 
 export let player = {} as Player;
 export const maxSpeed = 10;
@@ -41,11 +41,7 @@ export const resetPlayer = (p: p5) => {
   if (player && player.enginePlayer) {
     World.remove(engine.world, player.enginePlayer);
   }
-  player = new Player(
-    p,
-    p.random(REFERENCE_VIEWPORT_WIDTH),
-    p.random(REFERENCE_VIEWPORT_HEIGHT)
-  );
+  player = new Player(p, p.random(REFERENCE_VIEWPORT_WIDTH), p.random(REFERENCE_VIEWPORT_HEIGHT));
 };
 
 export const clampPlayerToWorldBounds = () => {
@@ -57,7 +53,7 @@ export const clampPlayerToWorldBounds = () => {
   const clampedY = clamp(player.enginePlayer.position.y, -boardSizeY, boardSizeY);
   const nextVelocity = Vector.create(
     player.enginePlayer.velocity.x,
-    player.enginePlayer.velocity.y
+    player.enginePlayer.velocity.y,
   );
 
   if (clampedX !== player.enginePlayer.position.x) {
@@ -118,11 +114,7 @@ export class Player {
     this.size = colliderSpec.renderWidth;
     this.life = MAX_PLAYER_HEALTH;
     this.ammunition = 1000;
-    this.thruster = new ThrusterExhaustSystem(
-      p,
-      this.p.createVector(width / 2, height),
-      0
-    );
+    this.thruster = new ThrusterExhaustSystem(p, this.p.createVector(width / 2, height), 0);
     this.enginePlayer = Bodies.rectangle(x, y, colliderSpec.length, colliderSpec.width, {
       frictionAir: 0,
       angle: 0,
@@ -135,7 +127,7 @@ export class Player {
       this.enginePlayer.position.x,
       this.enginePlayer.position.y,
       this.enginePlayer.angle,
-      this.shipVariant
+      this.shipVariant,
     );
   }
 
@@ -153,11 +145,8 @@ export class Player {
     const spec = getShipColliderSpec(this.shipVariant);
 
     this.thruster.updatePos(
-      p5.Vector.add(
-        playerPos,
-        p5.Vector.fromAngle(angle - this.p.PI, spec.renderHeight / 2)
-      ),
-      angle - this.p.PI
+      p5.Vector.add(playerPos, p5.Vector.fromAngle(angle - this.p.PI, spec.renderHeight / 2)),
+      angle - this.p.PI,
     );
 
     if (isShipActionActive("thrust")) {
@@ -173,8 +162,7 @@ export class Player {
     this.p.imageMode(this.p.CENTER);
     this.p.rotate(this.p.PI / 2);
     if (this.collisionRecoveryFrames > 0) {
-      const blinkAlpha =
-        Math.floor(this.collisionRecoveryFrames / 3) % 2 === 0 ? 170 : 105;
+      const blinkAlpha = Math.floor(this.collisionRecoveryFrames / 3) % 2 === 0 ? 170 : 105;
       this.p.tint(255, blinkAlpha);
     }
     this.p.image(assets.runShip, 0, 0, spec.renderWidth, spec.renderHeight);
@@ -211,14 +199,7 @@ export class Player {
     this.p.line(tailStart, 0, tailEnd, 0);
     this.p.noStroke();
     this.p.fill(255, 225, 110, 220);
-    this.p.triangle(
-      arrowTip,
-      0,
-      arrowBase,
-      -renderRadius * 0.22,
-      arrowBase,
-      renderRadius * 0.22
-    );
+    this.p.triangle(arrowTip, 0, arrowBase, -renderRadius * 0.22, arrowBase, renderRadius * 0.22);
     this.p.noFill();
     this.p.stroke(255, 225, 110, 120);
     this.p.strokeWeight(2);
@@ -237,16 +218,13 @@ export class Player {
     markRunDamageTaken();
     if (this.life <= 0) {
       explosions.createExplosion(
-        this.p.createVector(
-          this.enginePlayer.position.x,
-          this.enginePlayer.position.y
-        )
+        this.p.createVector(this.enginePlayer.position.x, this.enginePlayer.position.y),
       );
       shipDebris.createShipBreakup(
         this.enginePlayer.position.x,
         this.enginePlayer.position.y,
         this.enginePlayer.angle,
-        this.shipVariant
+        this.shipVariant,
       );
       this.deathCountDown = 255;
       playSound("playerDeath");
@@ -303,7 +281,7 @@ export class Player {
       Body.applyForce(
         this.enginePlayer,
         this.enginePlayer.position,
-        Vector.rotate(Vector.create(0.01, 0), angle)
+        Vector.rotate(Vector.create(0.01, 0), angle),
       );
     }
     if (velocity.x > maxSpeed) {
@@ -338,10 +316,7 @@ export class Player {
       let fired = 0;
       for (let i = 0; i < 2; i++) {
         const newPos = this.p
-          .createVector(
-            this.enginePlayer.position.x,
-            this.enginePlayer.position.y
-          )
+          .createVector(this.enginePlayer.position.x, this.enginePlayer.position.y)
           .add(p5.Vector.fromAngle(this.enginePlayer.angle, spec.renderHeight / 2));
         this.ammunition--;
         bullets.addBullet(newPos, this.enginePlayer.angle);

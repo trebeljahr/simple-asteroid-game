@@ -50,8 +50,7 @@ const getCtx = (): AudioContext | null => {
   }
   const Ctor =
     window.AudioContext ??
-    (window as unknown as { webkitAudioContext?: typeof AudioContext })
-      .webkitAudioContext;
+    (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
   if (!Ctor) {
     return null;
   }
@@ -95,11 +94,7 @@ export const initAudio = (initiallyEnabled: boolean) => {
     return;
   }
   unlockAttached = true;
-  const events: Array<keyof WindowEventMap> = [
-    "pointerdown",
-    "keydown",
-    "touchstart",
-  ];
+  const events: Array<keyof WindowEventMap> = ["pointerdown", "keydown", "touchstart"];
   const unlockOnce = () => {
     handleUnlock();
   };
@@ -149,10 +144,7 @@ const playTone = (opts: {
   osc.type = type;
   osc.frequency.setValueAtTime(freq, t);
   if (freqEnd !== undefined) {
-    osc.frequency.exponentialRampToValueAtTime(
-      Math.max(freqEnd, 0.01),
-      t + duration
-    );
+    osc.frequency.exponentialRampToValueAtTime(Math.max(freqEnd, 0.01), t + duration);
   }
   if (detune !== 0) {
     osc.detune.setValueAtTime(detune, t);
@@ -191,10 +183,7 @@ const playNoiseBurst = (opts: {
   filter.type = "lowpass";
   filter.frequency.setValueAtTime(filterFreq, t);
   if (filterFreqEnd !== undefined) {
-    filter.frequency.exponentialRampToValueAtTime(
-      Math.max(filterFreqEnd, 40),
-      t + duration
-    );
+    filter.frequency.exponentialRampToValueAtTime(Math.max(filterFreqEnd, 40), t + duration);
   }
 
   const gain = ctx.createGain();
@@ -414,4 +403,3 @@ export const playSound = (name: SoundName) => {
       return;
   }
 };
-

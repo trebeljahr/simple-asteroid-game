@@ -1,8 +1,9 @@
-import p5, { Image, Vector } from "p5";
+import type p5 from "p5";
+import type { Image, Vector } from "p5";
 import { v4 } from "uuid";
 import {
   ASTEROID_COLLISION_SHAPES,
-  TransformedCollisionShape,
+  type TransformedCollisionShape,
   transformCollisionShape,
 } from "../../shared/src";
 
@@ -11,12 +12,12 @@ import { Mover } from "./mover";
 import { player } from "./player";
 import { assets } from "./sketch";
 import {
+  type CameraBounds,
   boardSizeX,
   boardSizeY,
-  CameraBounds,
   circleIntersectsBounds,
-  clamp,
   circlesOverlap,
+  clamp,
   distSquare,
   distanceToSegmentSquare,
 } from "./utils";
@@ -96,10 +97,7 @@ class Asteroids {
 
   createRouteSegments() {
     const routeAnchors = [
-      this.p.createVector(
-        player.enginePlayer.position.x,
-        player.enginePlayer.position.y
-      ),
+      this.p.createVector(player.enginePlayer.position.x, player.enginePlayer.position.y),
       ...goals.route.map((goal) => goal.pos.copy()),
     ];
     const segments: RouteSegment[] = [];
@@ -120,13 +118,13 @@ class Asteroids {
     const baseMinDistance = clamp(
       Math.sqrt(worldArea / (this.asteroidTargetCount * 4.8)),
       MIN_ASTEROID_SEPARATION,
-      290
+      290,
     );
 
     for (let i = 0; i < SPAWN_DISTANCE_SCALES.length; i++) {
       const nextPoints = this.generatePoissonSpawnPoints(
         baseMinDistance * SPAWN_DISTANCE_SCALES[i],
-        targetSpawnPoints
+        targetSpawnPoints,
       );
       if (nextPoints.length >= this.asteroidTargetCount) {
         return shuffle(this.p, nextPoints);
@@ -137,16 +135,14 @@ class Asteroids {
       this.p,
       this.generateFallbackSpawnPoints(
         Math.max(MIN_ASTEROID_SEPARATION, baseMinDistance * 0.92),
-        targetSpawnPoints
-      )
+        targetSpawnPoints,
+      ),
     );
   }
 
   getAsteroidTargetCount() {
     const worldArea = boardSizeX * 2 * boardSizeY * 2;
-    const scaledCount = Math.round(
-      maxAsteroids * Math.sqrt(worldArea / REFERENCE_WORLD_AREA)
-    );
+    const scaledCount = Math.round(maxAsteroids * Math.sqrt(worldArea / REFERENCE_WORLD_AREA));
     return clamp(scaledCount, MIN_ASTEROID_COUNT, maxAsteroids);
   }
 
@@ -184,10 +180,7 @@ class Asteroids {
           if (neighbor === null) {
             continue;
           }
-          if (
-            distSquare(point.x, point.y, neighbor.x, neighbor.y) <
-            minDistance * minDistance
-          ) {
+          if (distSquare(point.x, point.y, neighbor.x, neighbor.y) < minDistance * minDistance) {
             return false;
           }
         }
@@ -249,12 +242,7 @@ class Asteroids {
       let isFarEnough = true;
       for (let i = 0; i < spawnPoints.length; i++) {
         if (
-          distSquare(
-            candidate.x,
-            candidate.y,
-            spawnPoints[i].x,
-            spawnPoints[i].y
-          ) <
+          distSquare(candidate.x, candidate.y, spawnPoints[i].x, spawnPoints[i].y) <
           minDistance * minDistance
         ) {
           isFarEnough = false;
@@ -273,14 +261,8 @@ class Asteroids {
   findSeedPoint() {
     for (let attempt = 0; attempt < 240; attempt++) {
       const candidate = {
-        x: this.p.random(
-          -boardSizeX + HASH_WORLD_MARGIN,
-          boardSizeX - HASH_WORLD_MARGIN
-        ),
-        y: this.p.random(
-          -boardSizeY + HASH_WORLD_MARGIN,
-          boardSizeY - HASH_WORLD_MARGIN
-        ),
+        x: this.p.random(-boardSizeX + HASH_WORLD_MARGIN, boardSizeX - HASH_WORLD_MARGIN),
+        y: this.p.random(-boardSizeY + HASH_WORLD_MARGIN, boardSizeY - HASH_WORLD_MARGIN),
       };
 
       if (this.isSpawnPointAllowed(candidate)) {
@@ -302,12 +284,7 @@ class Asteroids {
     }
 
     if (
-      distSquare(
-        point.x,
-        point.y,
-        player.enginePlayer.position.x,
-        player.enginePlayer.position.y
-      ) <
+      distSquare(point.x, point.y, player.enginePlayer.position.x, player.enginePlayer.position.y) <
       PLAYER_SAFE_RADIUS * PLAYER_SAFE_RADIUS
     ) {
       return false;
@@ -332,7 +309,7 @@ class Asteroids {
           segment.start.x,
           segment.start.y,
           segment.end.x,
-          segment.end.y
+          segment.end.y,
         ) <
         ROUTE_CORRIDOR_RADIUS * ROUTE_CORRIDOR_RADIUS
       ) {
@@ -375,7 +352,7 @@ class Asteroids {
           asteroidSize + ASTEROID_SPAWN_CLEARANCE,
           asteroid.pos.x,
           asteroid.pos.y,
-          asteroid.size + ASTEROID_SPAWN_CLEARANCE
+          asteroid.size + ASTEROID_SPAWN_CLEARANCE,
         )
       ) {
         return false;
@@ -395,7 +372,7 @@ class Asteroids {
       this.p.createVector(0, 0),
       asteroidSize,
       asteroidHitPoints,
-      spawnPointIndex
+      spawnPointIndex,
     );
   }
 
@@ -487,14 +464,7 @@ class Asteroids {
   run(cameraBounds: CameraBounds) {
     for (let i = 0; i < this.asteroids.length; i++) {
       const asteroid = this.asteroids[i];
-      if (
-        !circleIntersectsBounds(
-          asteroid.pos.x,
-          asteroid.pos.y,
-          asteroid.size,
-          cameraBounds
-        )
-      ) {
+      if (!circleIntersectsBounds(asteroid.pos.x, asteroid.pos.y, asteroid.size, cameraBounds)) {
         continue;
       }
       asteroid.draw();
@@ -555,11 +525,7 @@ class Asteroids {
   findOverlappingAsteroidIndex() {
     for (let asteroidIndex = 0; asteroidIndex < this.asteroids.length; asteroidIndex++) {
       const asteroid = this.asteroids[asteroidIndex];
-      const nearbyAsteroids = this.queryNearby(
-        asteroid.pos.x,
-        asteroid.pos.y,
-        asteroid.size / 2
-      );
+      const nearbyAsteroids = this.queryNearby(asteroid.pos.x, asteroid.pos.y, asteroid.size / 2);
 
       for (let i = 0; i < nearbyAsteroids.length; i++) {
         const otherAsteroidIndex = nearbyAsteroids[i];
@@ -575,7 +541,7 @@ class Asteroids {
             asteroid.size + ASTEROID_SPAWN_CLEARANCE,
             otherAsteroid.pos.x,
             otherAsteroid.pos.y,
-            otherAsteroid.size + ASTEROID_SPAWN_CLEARANCE
+            otherAsteroid.size + ASTEROID_SPAWN_CLEARANCE,
           )
         ) {
           return otherAsteroidIndex;
@@ -659,7 +625,7 @@ export class Asteroid extends Mover {
     vel: Vector,
     r: number,
     hitPoints: number,
-    spawnPointIndex: number | null
+    spawnPointIndex: number | null,
   ) {
     super(p, pos, vel, r);
     this.p = p;
@@ -679,10 +645,7 @@ export class Asteroid extends Mover {
   }
 
   getCollisionShape(frameCount: number = this.p.frameCount) {
-    if (
-      this.collisionShapeCache !== null &&
-      this.collisionShapeFrame === frameCount
-    ) {
+    if (this.collisionShapeCache !== null && this.collisionShapeFrame === frameCount) {
       return this.collisionShapeCache;
     }
 
@@ -692,7 +655,7 @@ export class Asteroid extends Mover {
       this.pos.y,
       this.getRotation(frameCount),
       this.size,
-      this.size
+      this.size,
     );
     this.collisionShapeFrame = frameCount;
     return this.collisionShapeCache;

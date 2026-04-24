@@ -1,12 +1,5 @@
-import {
-  integer,
-  pgTable,
-  primaryKey,
-  text,
-  timestamp,
-  uuid,
-} from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
+import { integer, pgTable, primaryKey, text, timestamp, uuid } from "drizzle-orm/pg-core";
 
 /**
  * Every player gets a server-side account keyed by a persistent
@@ -21,12 +14,8 @@ export const users = pgTable("users", {
   email: text("email").unique(),
   passwordHash: text("password_hash"),
   displayName: text("display_name").notNull(),
-  createdAt: timestamp("created_at", { withTimezone: true })
-    .notNull()
-    .default(sql`now()`),
-  lastSeenAt: timestamp("last_seen_at", { withTimezone: true })
-    .notNull()
-    .default(sql`now()`),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().default(sql`now()`),
+  lastSeenAt: timestamp("last_seen_at", { withTimezone: true }).notNull().default(sql`now()`),
 });
 
 /**
@@ -53,9 +42,7 @@ export const userStats = pgTable("user_stats", {
   ammoCollected: integer("ammo_collected").notNull().default(0),
   goalsCleared: integer("goals_cleared").notNull().default(0),
   opponentsEliminated: integer("opponents_eliminated").notNull().default(0),
-  updatedAt: timestamp("updated_at", { withTimezone: true })
-    .notNull()
-    .default(sql`now()`),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().default(sql`now()`),
 });
 
 /**
@@ -69,15 +56,13 @@ export const userAchievements = pgTable(
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
     achievementId: text("achievement_id").notNull(),
-    unlockedAt: timestamp("unlocked_at", { withTimezone: true })
-      .notNull()
-      .default(sql`now()`),
+    unlockedAt: timestamp("unlocked_at", { withTimezone: true }).notNull().default(sql`now()`),
   },
   (table) => {
     return {
       pk: primaryKey({ columns: [table.userId, table.achievementId] }),
     };
-  }
+  },
 );
 
 export type User = typeof users.$inferSelect;

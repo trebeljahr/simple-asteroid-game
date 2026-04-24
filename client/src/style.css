@@ -133,8 +133,7 @@ body.app-loading .menuRoot {
 .menuGlow {
   position: absolute;
   inset: 0;
-  background:
-    radial-gradient(circle at 20% 20%, rgba(77, 166, 255, 0.2), transparent 32%),
+  background: radial-gradient(circle at 20% 20%, rgba(77, 166, 255, 0.2), transparent 32%),
     radial-gradient(circle at 75% 24%, rgba(255, 170, 92, 0.16), transparent 24%),
     radial-gradient(circle at 72% 78%, rgba(80, 205, 255, 0.14), transparent 28%);
   z-index: 1;
@@ -159,8 +158,7 @@ body.app-loading .menuRoot {
   top: var(--rock-top);
   width: var(--rock-size);
   opacity: var(--rock-opacity);
-  filter: drop-shadow(0 1rem 2rem rgba(0, 0, 0, 0.5)) saturate(0.7)
-    brightness(0.86);
+  filter: drop-shadow(0 1rem 2rem rgba(0, 0, 0, 0.5)) saturate(0.7) brightness(0.86);
   transform-origin: center;
   animation: menuRockFloat var(--rock-duration) ease-in-out infinite;
   animation-delay: var(--rock-delay);
@@ -183,9 +181,7 @@ body.app-loading .menuRoot {
   border: 1px solid var(--menu-border);
   border-radius: var(--menu-panel-radius);
   background: linear-gradient(180deg, var(--menu-panel-top), var(--menu-panel-bottom));
-  box-shadow:
-    0 1.5rem 4rem var(--menu-shadow),
-    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  box-shadow: 0 1.5rem 4rem var(--menu-shadow), inset 0 1px 0 rgba(255, 255, 255, 0.06);
   backdrop-filter: blur(16px);
   text-align: center;
 }
@@ -220,14 +216,8 @@ body.app-loading .menuRoot {
   font-weight: 800;
   line-height: 1;
   cursor: pointer;
-  box-shadow:
-    0 0.75rem 1.7rem rgba(2, 8, 16, 0.28),
-    inset 0 1px 0 rgba(255, 255, 255, 0.06);
-  transition:
-    transform 120ms ease,
-    border-color 120ms ease,
-    background 120ms ease,
-    color 120ms ease;
+  box-shadow: 0 0.75rem 1.7rem rgba(2, 8, 16, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  transition: transform 120ms ease, border-color 120ms ease, background 120ms ease, color 120ms ease;
 }
 
 .menuPanelClose:hover,
@@ -298,16 +288,10 @@ body.app-loading .menuRoot {
   cursor: pointer;
   color: rgba(237, 247, 255, 0.96);
   background: var(--menu-button-base);
-  box-shadow:
-    0 0.95rem 2.2rem var(--menu-button-shadow),
-    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+  box-shadow: 0 0.95rem 2.2rem var(--menu-button-shadow), inset 0 1px 0 rgba(255, 255, 255, 0.06),
     inset 0 -1px 0 rgba(0, 0, 0, 0.3);
-  transition:
-    transform 120ms ease,
-    box-shadow 120ms ease,
-    background 120ms ease,
-    border-color 120ms ease,
-    color 120ms ease;
+  transition: transform 120ms ease, box-shadow 120ms ease, background 120ms ease, border-color 120ms
+    ease, color 120ms ease;
 }
 
 .menuButton::before {
@@ -331,20 +315,16 @@ body.app-loading .menuRoot {
 .menuButton--primary {
   background: linear-gradient(180deg, rgba(39, 103, 144, 0.98), rgba(18, 53, 81, 0.96));
   border-color: rgba(142, 223, 255, 0.54);
-  box-shadow:
-    0 1rem 2.3rem rgba(4, 18, 31, 0.46),
-    0 0 0 1px rgba(122, 207, 246, 0.18),
-    inset 0 1px 0 rgba(210, 245, 255, 0.14);
+  box-shadow: 0 1rem 2.3rem rgba(4, 18, 31, 0.46), 0 0 0 1px rgba(122, 207, 246, 0.18), inset 0 1px
+    0 rgba(210, 245, 255, 0.14);
 }
 
 .menuButton--primary:hover,
 .menuButton--primary:focus-visible {
   background: linear-gradient(180deg, rgba(50, 121, 165, 1), rgba(26, 70, 105, 0.98));
   border-color: rgba(187, 236, 255, 0.82);
-  box-shadow:
-    0 1.25rem 2.7rem rgba(7, 22, 36, 0.52),
-    0 0 0 1px rgba(154, 231, 255, 0.28),
-    inset 0 1px 0 rgba(232, 250, 255, 0.22);
+  box-shadow: 0 1.25rem 2.7rem rgba(7, 22, 36, 0.52), 0 0 0 1px rgba(154, 231, 255, 0.28), inset 0
+    1px 0 rgba(232, 250, 255, 0.22);
 }
 
 .menuButton--secondary {
@@ -511,13 +491,8 @@ body.app-loading .backgroundImage {
   touch-action: none;
   user-select: none;
   backdrop-filter: blur(12px);
-  box-shadow:
-    0 1rem 2.4rem rgba(1, 5, 12, 0.32),
-    inset 0 1px 0 rgba(255, 255, 255, 0.06);
-  transition:
-    transform 90ms ease,
-    background-color 90ms ease,
-    box-shadow 90ms ease;
+  box-shadow: 0 1rem 2.4rem rgba(1, 5, 12, 0.32), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  transition: transform 90ms ease, background-color 90ms ease, box-shadow 90ms ease;
 }
 
 .mobileControlButton--accent {
@@ -527,9 +502,7 @@ body.app-loading .backgroundImage {
 
 .mobileControlButton.is-pressed {
   transform: translateY(1px) scale(0.98);
-  box-shadow:
-    0 0.5rem 1.2rem rgba(1, 5, 12, 0.28),
-    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  box-shadow: 0 0.5rem 1.2rem rgba(1, 5, 12, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 
 .mobileRotatePrompt {
@@ -541,8 +514,7 @@ body.app-loading .backgroundImage {
   justify-content: center;
   padding: 1.25rem;
   box-sizing: border-box;
-  background:
-    radial-gradient(circle at 20% 18%, rgba(95, 162, 215, 0.24), transparent 30%),
+  background: radial-gradient(circle at 20% 18%, rgba(95, 162, 215, 0.24), transparent 30%),
     rgba(6, 12, 22, 0.88);
   opacity: 0;
   pointer-events: none;
@@ -600,8 +572,7 @@ body.app-loading .backgroundImage {
   }
 
   50% {
-    transform: translate3d(var(--rock-drift-x), var(--rock-drift-y), 0)
-      rotate(180deg);
+    transform: translate3d(var(--rock-drift-x), var(--rock-drift-y), 0) rotate(180deg);
   }
 
   100% {
@@ -922,11 +893,7 @@ body.app-loading .backgroundImage {
 .achievementProgressBarFill {
   height: 100%;
   border-radius: 999px;
-  background: linear-gradient(
-    90deg,
-    rgba(142, 223, 255, 0.85),
-    rgba(255, 174, 96, 0.85)
-  );
+  background: linear-gradient(90deg, rgba(142, 223, 255, 0.85), rgba(255, 174, 96, 0.85));
   transition: width 160ms ease;
 }
 
@@ -948,14 +915,8 @@ body.app-loading .backgroundImage {
   padding: 0.85rem 1rem;
   border: 1px solid rgba(142, 223, 255, 0.55);
   border-radius: 0.85rem;
-  background: linear-gradient(
-    180deg,
-    rgba(16, 34, 55, 0.94),
-    rgba(10, 22, 40, 0.94)
-  );
-  box-shadow:
-    0 1.1rem 2.4rem rgba(0, 0, 0, 0.45),
-    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  background: linear-gradient(180deg, rgba(16, 34, 55, 0.94), rgba(10, 22, 40, 0.94));
+  box-shadow: 0 1.1rem 2.4rem rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.06);
   color: rgba(237, 247, 255, 0.96);
   animation: achievementToastSlide 5200ms ease-out forwards;
   pointer-events: auto;
@@ -971,9 +932,7 @@ body.app-loading .backgroundImage {
 
 .achievementToast--legendary {
   border-color: rgba(255, 212, 110, 0.85);
-  box-shadow:
-    0 1.1rem 2.6rem rgba(0, 0, 0, 0.48),
-    0 0 0 1px rgba(255, 212, 110, 0.35) inset;
+  box-shadow: 0 1.1rem 2.6rem rgba(0, 0, 0, 0.48), 0 0 0 1px rgba(255, 212, 110, 0.35) inset;
 }
 
 .achievementToastTitle {
@@ -1003,7 +962,8 @@ body.app-loading .backgroundImage {
     transform: translateX(120%);
     opacity: 0;
   }
-  8%, 85% {
+  8%,
+  85% {
     transform: translateX(0);
     opacity: 1;
   }

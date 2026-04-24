@@ -72,10 +72,7 @@ const defaultKeyboardBindings: Array<{ action: ShipAction; code: string }> = [
 ];
 
 const isLikelyTouchDevice = () => {
-  return (
-    window.matchMedia("(pointer: coarse)").matches ||
-    window.navigator.maxTouchPoints > 0
-  );
+  return window.matchMedia("(pointer: coarse)").matches || window.navigator.maxTouchPoints > 0;
 };
 
 const onKeyboardInput = (active: boolean) => {

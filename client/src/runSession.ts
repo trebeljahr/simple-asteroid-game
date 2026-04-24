@@ -22,7 +22,7 @@ export const getRunDurationSeconds = () => {
 
 export const formatRunDuration = (
   durationMilliseconds = getRunDurationMilliseconds(),
-  fractionalDigits = 1
+  fractionalDigits = 1,
 ) => {
   const totalMinutes = Math.floor(durationMilliseconds / 60000);
   const totalSeconds = Math.floor(durationMilliseconds / 1000) % 60;
@@ -34,9 +34,7 @@ export const formatRunDuration = (
   }
 
   const fractionalScale = 10 ** fractionalDigits;
-  const fractionalValue = Math.floor(
-    (durationMilliseconds % 1000) / (1000 / fractionalScale)
-  );
+  const fractionalValue = Math.floor((durationMilliseconds % 1000) / (1000 / fractionalScale));
   const fractionalLabel = String(fractionalValue).padStart(fractionalDigits, "0");
 
   return `${minuteLabel}:${secondLabel}.${fractionalLabel}`;

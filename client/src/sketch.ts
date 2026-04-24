@@ -1,30 +1,19 @@
-import { draw } from "./draw";
-import {
-  width,
-  height,
-  ESC_KEYCODE,
-  boardSizeX,
-  boardSizeY,
-  updateWindowSize,
-} from "./utils";
-import p5, { Image } from "p5";
 import { Engine } from "matter-js";
+import p5, { type Image } from "p5";
+import { MULTIPLAYER_SHIP_VARIANTS, type ShipVariant } from "../../shared/src";
+import { getOrCreateDeviceToken, setAccountBootstrap, setAccountOffline } from "./account";
+import { initAudio, setAudioEnabled } from "./audio";
+import { draw } from "./draw";
 import { engine } from "./engine";
+import { configureGameModeActions } from "./gameModeActions";
+import { gameStateMachine, getGameState, shouldAdvanceRunSimulation } from "./gameState";
 import { handleEscapeKey } from "./gameUiActions";
-import { getGameState, gameStateMachine, shouldAdvanceRunSimulation } from "./gameState";
 import { initializeShipInput } from "./input";
 import { initializeMobileControls } from "./mobileControls";
 import { initializeMultiplayerSession } from "./multiplayerSession";
 import { refreshRunViewport } from "./runMode";
-import { ShipVariant, MULTIPLAYER_SHIP_VARIANTS } from "../../shared/src";
-import { configureGameModeActions } from "./gameModeActions";
-import { initAudio, setAudioEnabled } from "./audio";
-import {
-  getOrCreateDeviceToken,
-  setAccountBootstrap,
-  setAccountOffline,
-} from "./account";
 import { trpcClient } from "./trpcClient";
+import { ESC_KEYCODE, boardSizeX, boardSizeY, height, updateWindowSize, width } from "./utils";
 
 const MIN_SPLASH_DURATION_MS = 1000;
 const ASTEROID_TEXTURE_SIZE = 512;
@@ -102,14 +91,14 @@ const sketch = (p: p5) => {
     const asteroid3 = p.loadImage("/assets/asteroid3.svg");
     const heart = p.loadImage("/assets/heart.svg");
     const space = p.loadImage("/assets/background.jpg");
-    
+
     const multiplayerShips: Partial<Record<ShipVariant, Image>> = {};
     for (const variant of MULTIPLAYER_SHIP_VARIANTS) {
       multiplayerShips[variant] = p.loadImage(`/assets/alternatives/ship-alt-${variant}.svg`);
     }
 
     const ammoAsset = p.loadImage("/assets/bullets.svg");
-    
+
     const initialState = getGameState();
 
     assets = {
@@ -167,8 +156,7 @@ const sketch = (p: p5) => {
           stats: payload.stats,
           achievements: payload.achievements.map((entry) => ({
             ...entry,
-            unlockedAt:
-              entry.unlockedAt === null ? null : String(entry.unlockedAt),
+            unlockedAt: entry.unlockedAt === null ? null : String(entry.unlockedAt),
           })),
         });
       })

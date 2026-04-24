@@ -1,18 +1,18 @@
-import cors from "cors";
-import express from "express";
 import { existsSync } from "fs";
 import { createServer } from "http";
 import path from "path";
-import { Server } from "socket.io";
 import { createAdapter } from "@socket.io/redis-adapter";
 import * as trpcExpress from "@trpc/server/adapters/express";
-import { MultiplayerService } from "./multiplayerService";
-import { BattleRoyaleService } from "./battleRoyaleService";
-import { ClientToServerEvents, ServerToClientEvents } from "../../shared/src";
-import { createAppRouter, createTRPCContext } from "./trpc/router";
-import { getRedisClient } from "./redis";
+import cors from "cors";
+import express from "express";
+import { Server } from "socket.io";
+import type { ClientToServerEvents, ServerToClientEvents } from "../../shared/src";
 import { achievementService } from "./achievementService";
+import { BattleRoyaleService } from "./battleRoyaleService";
 import { runMigrations } from "./db/runMigrations";
+import { MultiplayerService } from "./multiplayerService";
+import { getRedisClient } from "./redis";
+import { createAppRouter, createTRPCContext } from "./trpc/router";
 
 const app = express();
 const httpServer = createServer(app);
@@ -33,11 +33,7 @@ if (redisClient) {
 
 const multiplayerService = new MultiplayerService(io);
 const battleRoyaleService = new BattleRoyaleService(io);
-const appRouter = createAppRouter(
-  multiplayerService,
-  battleRoyaleService,
-  achievementService
-);
+const appRouter = createAppRouter(multiplayerService, battleRoyaleService, achievementService);
 
 const clientDistPath = path.resolve(__dirname, "../../client/dist");
 
@@ -45,7 +41,7 @@ app.use(
   cors({
     origin: true,
     credentials: true,
-  })
+  }),
 );
 app.use(express.json());
 app.use(
@@ -53,7 +49,7 @@ app.use(
   trpcExpress.createExpressMiddleware({
     router: appRouter,
     createContext: createTRPCContext,
-  })
+  }),
 );
 
 app.get("/health", (_request, response) => {
@@ -131,15 +127,10 @@ const start = async () => {
     try {
       await runMigrations();
     } catch (error) {
-      console.error(
-        "[db] Startup migration failed. Continuing without persistence:",
-        error
-      );
+      console.error("[db] Startup migration failed. Continuing without persistence:", error);
     }
   } else {
-    console.warn(
-      "[db] DATABASE_URL not set — user accounts and achievements disabled"
-    );
+    console.warn("[db] DATABASE_URL not set — user accounts and achievements disabled");
   }
 
   httpServer.listen(port, () => {

@@ -1,4 +1,4 @@
-import p5, { Vector } from "p5";
+import p5, { type Vector } from "p5";
 import { Mover } from "./mover";
 import { rgba } from "./utils";
 
@@ -22,10 +22,10 @@ export class ThrusterExhaustSystem {
           this.pos,
           p5.Vector.fromAngle(
             this.rotation + this.p.random(-this.p.PI / 10, this.p.PI / 10),
-            this.p.random(5, 10)
+            this.p.random(5, 10),
           ),
-          10
-        )
+          10,
+        ),
       );
     }
   }
@@ -37,7 +37,7 @@ export class ThrusterExhaustSystem {
 
   run() {
     for (let i = this.particles.length - 1; i >= 0; i--) {
-      let particle = this.particles[i];
+      const particle = this.particles[i];
       particle.run();
       if (particle.isDead()) {
         this.particles.splice(i, 1);
@@ -65,9 +65,7 @@ class ExhaustParticle extends Mover {
 
   run() {
     this.update();
-    this.p.fill(
-      rgba(this.redValue, this.greenValue, this.blueValue, this.lifespan)
-    );
+    this.p.fill(rgba(this.redValue, this.greenValue, this.blueValue, this.lifespan));
     this.draw();
     this.decay();
   }

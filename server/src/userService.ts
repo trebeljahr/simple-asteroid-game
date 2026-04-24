@@ -1,14 +1,7 @@
-import { eq } from "drizzle-orm";
 import { randomBytes } from "crypto";
+import { eq } from "drizzle-orm";
 
-import {
-  getDatabase,
-  users,
-  userStats,
-  userAchievements,
-  type User,
-  type UserStats,
-} from "./db";
+import { type User, type UserStats, getDatabase, userAchievements, userStats, users } from "./db";
 
 export interface UserContext {
   user: User;
@@ -35,9 +28,7 @@ const generateDisplayName = () => {
  * to degrade (bootstrap endpoint returns null, game code skips stat
  * writes).
  */
-export const getOrCreateUserByDeviceToken = async (
-  deviceToken: string
-): Promise<UserContext> => {
+export const getOrCreateUserByDeviceToken = async (deviceToken: string): Promise<UserContext> => {
   const db = getDatabase();
   if (db === null) {
     throw new Error("Database unavailable");
@@ -74,18 +65,12 @@ export const getOrCreateUserByDeviceToken = async (
 
   const [statsRow, achievementRows] = await Promise.all([
     db.select().from(userStats).where(eq(userStats.userId, user.id)).limit(1),
-    db
-      .select()
-      .from(userAchievements)
-      .where(eq(userAchievements.userId, user.id)),
+    db.select().from(userAchievements).where(eq(userAchievements.userId, user.id)),
   ]);
 
   let stats: UserStats;
   if (statsRow.length === 0) {
-    const inserted = await db
-      .insert(userStats)
-      .values({ userId: user.id })
-      .returning();
+    const inserted = await db.insert(userStats).values({ userId: user.id }).returning();
     stats = inserted[0];
   } else {
     stats = statsRow[0];
@@ -98,18 +83,12 @@ export const getOrCreateUserByDeviceToken = async (
   };
 };
 
-export const updateDisplayName = async (
-  userId: string,
-  displayName: string
-) => {
+export const updateDisplayName = async (userId: string, displayName: string) => {
   const db = getDatabase();
   if (db === null) return;
   const trimmed = displayName.trim();
   if (trimmed.length === 0 || trimmed.length > 32) {
     throw new Error("Display name must be 1-32 characters");
   }
-  await db
-    .update(users)
-    .set({ displayName: trimmed })
-    .where(eq(users.id, userId));
+  await db.update(users).set({ displayName: trimmed }).where(eq(users.id, userId));
 };

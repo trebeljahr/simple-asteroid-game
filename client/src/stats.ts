@@ -70,9 +70,7 @@ export const getStats = (): PersistentStats => {
   return { ...getCachedStats() };
 };
 
-export const subscribeToStats = (
-  listener: (stats: PersistentStats) => void
-) => {
+export const subscribeToStats = (listener: (stats: PersistentStats) => void) => {
   listeners.add(listener);
   return () => {
     listeners.delete(listener);
@@ -93,13 +91,10 @@ export const recordRunAttempt = () => {
   });
 };
 
-export const recordRunCompletion = (
-  durationMs: number
-): RunCompletionResult => {
+export const recordRunCompletion = (durationMs: number): RunCompletionResult => {
   const current = getCachedStats();
   const previousBestMs = current.runBestTimeMs;
-  const isNewRecord =
-    previousBestMs === null || durationMs < previousBestMs;
+  const isNewRecord = previousBestMs === null || durationMs < previousBestMs;
   const newBestMs = isNewRecord ? durationMs : previousBestMs!;
 
   commitStats({
@@ -121,16 +116,10 @@ export const recordMultiplayerResult = (outcome: MultiplayerResultOutcome) => {
   const current = getCachedStats();
   commitStats({
     ...current,
-    multiplayerWins:
-      outcome === "win" ? current.multiplayerWins + 1 : current.multiplayerWins,
+    multiplayerWins: outcome === "win" ? current.multiplayerWins + 1 : current.multiplayerWins,
     multiplayerLosses:
-      outcome === "loss"
-        ? current.multiplayerLosses + 1
-        : current.multiplayerLosses,
-    multiplayerDraws:
-      outcome === "draw"
-        ? current.multiplayerDraws + 1
-        : current.multiplayerDraws,
+      outcome === "loss" ? current.multiplayerLosses + 1 : current.multiplayerLosses,
+    multiplayerDraws: outcome === "draw" ? current.multiplayerDraws + 1 : current.multiplayerDraws,
   });
 };
 

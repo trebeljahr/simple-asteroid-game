@@ -1,17 +1,17 @@
-import p5 from "p5";
-import { clampPlayerToWorldBounds, player, resetPlayer } from "./player";
-import { resetExplosions } from "./explosions";
+import type p5 from "p5";
+import { reportAchievementEvent } from "./achievementEvents";
 import { resetAmmunition } from "./ammunition";
-import { resetbullets } from "./bullets";
-import { resetHearts } from "./hearts";
 import { asteroids, resetAsteroids } from "./asteroids";
 import { resetBorder } from "./border";
+import { resetbullets } from "./bullets";
+import { resetExplosions } from "./explosions";
 import { refreshGoalsAfterResize, resetGoals } from "./goals";
-import { resetRunStartTime } from "./runSession";
+import { resetHearts } from "./hearts";
 import { clearShipInput } from "./input";
+import { clampPlayerToWorldBounds, player, resetPlayer } from "./player";
+import { resetRunStartTime } from "./runSession";
 import { resetShipDebris } from "./shipDebris";
 import { recordRunAttempt } from "./stats";
-import { reportAchievementEvent } from "./achievementEvents";
 
 export const resetRunMode = (p: p5) => {
   recordRunAttempt();

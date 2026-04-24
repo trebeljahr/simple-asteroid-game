@@ -1,11 +1,7 @@
-import p5, { Vector } from "p5";
+import type p5 from "p5";
+import type { Vector } from "p5";
 
-const collidePointPoly = (
-  px: number,
-  py: number,
-  vertices: Vector[],
-  p: p5
-) => {
+const collidePointPoly = (px: number, py: number, vertices: Vector[], p: p5) => {
   let collision = false;
 
   // go through each of the vertices, plus the next vertex in the list
@@ -30,14 +26,7 @@ const collidePointPoly = (
   return collision;
 };
 
-const collidePointCircle = (
-  x: number,
-  y: number,
-  cx: number,
-  cy: number,
-  d: number,
-  p: p5
-) => {
+const collidePointCircle = (x: number, y: number, cx: number, cy: number, d: number, p: p5) => {
   //2d
   if (p.dist(x, y, cx, cy) <= d / 2) {
     return true;
@@ -53,7 +42,7 @@ const collideLineCircle = (
   cx: number,
   cy: number,
   diameter: number,
-  p: p5
+  p: p5,
 ) => {
   // is either end INSIDE the circle?
   // if so, return true immediately
@@ -94,7 +83,7 @@ const collideCirclePoly = (
   diameter: number,
   vertices: Vector[],
   interior: boolean,
-  p: p5
+  p: p5,
 ) => {
   if (interior == undefined) {
     interior = false;
@@ -112,16 +101,7 @@ const collideCirclePoly = (
     const vn = vertices[next]; // n for "next"
 
     // check for collision between the circle and a line formed between the two vertices
-    const collision = collideLineCircle(
-      vc.x,
-      vc.y,
-      vn.x,
-      vn.y,
-      cx,
-      cy,
-      diameter,
-      p
-    );
+    const collision = collideLineCircle(vc.x, vc.y, vn.x, vn.y, cx, cy, diameter, p);
     if (collision) return true;
   }
 
@@ -143,7 +123,7 @@ const collidePointLine = (
   x2: number,
   y2: number,
   p: p5,
-  buffer: number = 0.1
+  buffer = 0.1,
 ) => {
   // get distance from the point to the two ends of the line
   const d1 = p.dist(px, py, x1, y1);

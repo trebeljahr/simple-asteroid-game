@@ -1,13 +1,13 @@
-import { GameMode, gameStateMachine, getGameState } from "./gameState";
+import { type GameMode, gameStateMachine, getGameState } from "./gameState";
 import { handleEscapeKey } from "./gameUiActions";
 import {
+  type ShipAction,
   clearShipInput,
   dispatchActionCause,
   isMobileDevice,
   isMobilePortrait,
   registerActionCause,
   requestLandscapeOrientationLock,
-  ShipAction,
 } from "./input";
 
 interface MobileButtonConfig {
@@ -51,11 +51,7 @@ const mobileButtons: MobileButtonConfig[] = [
 let initialized = false;
 
 const isSupportedMobileMode = (mode: GameMode | null) => {
-  return (
-    mode === "singleplayer" ||
-    mode === "multiplayer" ||
-    mode === "battle-royale"
-  );
+  return mode === "singleplayer" || mode === "multiplayer" || mode === "battle-royale";
 };
 
 const shouldShowTouchControls = () => {
@@ -230,11 +226,7 @@ export const initializeMobileControls = () => {
     return;
   }
 
-  const {
-    buttonEntries,
-    root: controlsRoot,
-    resetControls,
-  } = createControlsRoot();
+  const { buttonEntries, root: controlsRoot, resetControls } = createControlsRoot();
   const rotatePrompt = createRotatePrompt();
 
   const syncUi = () => {
@@ -246,8 +238,7 @@ export const initializeMobileControls = () => {
     for (let i = 0; i < buttonEntries.length; i++) {
       const { button, config, reset } = buttonEntries[i];
       const isVisible =
-        activeMode !== null &&
-        (config.modes === undefined || config.modes.includes(activeMode));
+        activeMode !== null && (config.modes === undefined || config.modes.includes(activeMode));
       button.hidden = !isVisible;
       if (!isVisible) {
         reset();

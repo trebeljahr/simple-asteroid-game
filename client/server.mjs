@@ -9,10 +9,10 @@
  *   BACKEND_URL=http://server:9777 node server.mjs
  */
 
+import { createReadStream, existsSync, statSync } from "fs";
 import { createServer, request as httpRequest } from "http";
 import { request as httpsRequest } from "https";
-import { existsSync, statSync, createReadStream } from "fs";
-import { join, extname, resolve } from "path";
+import { extname, join, resolve } from "path";
 import { parse } from "url";
 
 const MIME_TYPES = {
@@ -34,7 +34,7 @@ const MIME_TYPES = {
   ".wav": "audio/wav",
 };
 
-const port = parseInt(process.env.PORT || "80", 10);
+const port = Number.parseInt(process.env.PORT || "80", 10);
 const backendTarget =
   process.env.BACKEND_URL || `http://127.0.0.1:${process.env.API_PORT || "9777"}`;
 const backendUrl = new URL(backendTarget);
@@ -84,11 +84,7 @@ function proxyRequest(req, res) {
       headers: { ...req.headers, host: backendUrl.host },
     },
     (proxyRes) => {
-      if (
-        proxyRes.statusCode >= 300 &&
-        proxyRes.statusCode < 400 &&
-        proxyRes.headers.location
-      ) {
+      if (proxyRes.statusCode >= 300 && proxyRes.statusCode < 400 && proxyRes.headers.location) {
         const loc = proxyRes.headers.location;
         if (loc.startsWith(backendTarget)) {
           proxyRes.headers.location = loc.replace(backendTarget, "");
@@ -96,7 +92,7 @@ function proxyRequest(req, res) {
       }
       res.writeHead(proxyRes.statusCode, proxyRes.headers);
       proxyRes.pipe(res, { end: true });
-    }
+    },
   );
 
   proxyReq.on("error", (err) => {
@@ -120,9 +116,7 @@ function proxyWebSocketUpgrade(req, socket, head) {
   });
 
   proxyReq.on("upgrade", (proxyRes, proxySocket, proxyHead) => {
-    const responseLines = [
-      `HTTP/1.1 101 ${proxyRes.statusMessage || "Switching Protocols"}`,
-    ];
+    const responseLines = [`HTTP/1.1 101 ${proxyRes.statusMessage || "Switching Protocols"}`];
     for (const [key, value] of Object.entries(proxyRes.headers)) {
       if (Array.isArray(value)) {
         for (const v of value) responseLines.push(`${key}: ${v}`);
@@ -145,9 +139,7 @@ function proxyWebSocketUpgrade(req, socket, head) {
   });
 
   proxyReq.on("response", (proxyRes) => {
-    const responseLines = [
-      `HTTP/1.1 ${proxyRes.statusCode} ${proxyRes.statusMessage}`,
-    ];
+    const responseLines = [`HTTP/1.1 ${proxyRes.statusCode} ${proxyRes.statusMessage}`];
     for (const [key, value] of Object.entries(proxyRes.headers)) {
       if (Array.isArray(value)) {
         for (const v of value) responseLines.push(`${key}: ${v}`);
@@ -209,7 +201,5 @@ httpServer.on("upgrade", (req, socket, head) => {
 });
 
 httpServer.listen(port, () => {
-  console.log(
-    `> Client ready on http://localhost:${port} (backend: ${backendTarget})`
-  );
+  console.log(`> Client ready on http://localhost:${port} (backend: ${backendTarget})`);
 });

@@ -21,10 +21,7 @@ export const isFullscreenAvailable = () => {
 
 export const isFullscreenActive = () => {
   const fullscreenDocument = document as FullscreenDocument;
-  return (
-    document.fullscreenElement !== null ||
-    fullscreenDocument.webkitFullscreenElement != null
-  );
+  return document.fullscreenElement !== null || fullscreenDocument.webkitFullscreenElement != null;
 };
 
 const requestFullscreen = async () => {

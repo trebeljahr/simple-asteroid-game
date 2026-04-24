@@ -4,13 +4,9 @@ const npmExecutable = process.platform === "win32" ? "npm.cmd" : "npm";
 
 console.log("Installing root and workspace dependencies...");
 
-const result = spawnSync(
-  npmExecutable,
-  ["install", "--workspaces", "--include-workspace-root"],
-  {
-    stdio: "inherit",
-  }
-);
+const result = spawnSync(npmExecutable, ["install", "--workspaces", "--include-workspace-root"], {
+  stdio: "inherit",
+});
 
 if (result.status !== 0) {
   process.exit(result.status ?? 1);

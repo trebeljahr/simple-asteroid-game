@@ -1,15 +1,11 @@
-import { isCollisionDebugAvailable } from "./collisionDebug";
 import {
-  ShipVariant,
   DEFAULT_SHIP_VARIANT,
   MULTIPLAYER_SHIP_VARIANTS,
+  type ShipVariant,
 } from "../../shared/src";
+import { isCollisionDebugAvailable } from "./collisionDebug";
 
-export type GameMode =
-  | "singleplayer"
-  | "multiplayer"
-  | "battle-royale"
-  | "horde";
+export type GameMode = "singleplayer" | "multiplayer" | "battle-royale" | "horde";
 
 export interface MainMenuScene {
   type: "main-menu";
@@ -103,10 +99,7 @@ const writeSoundSetting = (soundEnabled: boolean) => {
 const readShipVariantSetting = (): ShipVariant => {
   try {
     const storedValue = window.localStorage.getItem(SHIP_VARIANT_SETTING_KEY);
-    if (
-      storedValue !== null &&
-      MULTIPLAYER_SHIP_VARIANTS.includes(storedValue as ShipVariant)
-    ) {
+    if (storedValue !== null && MULTIPLAYER_SHIP_VARIANTS.includes(storedValue as ShipVariant)) {
       return storedValue as ShipVariant;
     }
     return DEFAULT_SHIP_VARIANT;
@@ -141,10 +134,7 @@ const writeCollisionDebugSetting = (collisionDebugEnabled: boolean) => {
   }
 
   try {
-    window.localStorage.setItem(
-      COLLISION_DEBUG_SETTING_KEY,
-      String(collisionDebugEnabled)
-    );
+    window.localStorage.setItem(COLLISION_DEBUG_SETTING_KEY, String(collisionDebugEnabled));
   } catch (_error) {
     // Ignore storage issues and keep the session state in memory.
   }
@@ -168,10 +158,7 @@ const writeNetcodeDebugSetting = (netcodeDebugEnabled: boolean) => {
   }
 
   try {
-    window.localStorage.setItem(
-      NETCODE_DEBUG_SETTING_KEY,
-      String(netcodeDebugEnabled)
-    );
+    window.localStorage.setItem(NETCODE_DEBUG_SETTING_KEY, String(netcodeDebugEnabled));
   } catch (_error) {
     // Ignore storage issues and keep the session state in memory.
   }
@@ -190,10 +177,7 @@ const createInitialState = (): GameState => {
   };
 };
 
-const transitionState = (
-  currentState: GameState,
-  event: GameStateEvent
-): GameState => {
+const transitionState = (currentState: GameState, event: GameStateEvent): GameState => {
   switch (event.type) {
     case "START_MODE":
       return {
@@ -277,8 +261,7 @@ const transitionState = (
       let returnTarget: AchievementsOverlay["returnTarget"];
       if (
         currentState.overlay?.type === "pause" ||
-        (currentState.overlay?.type === "options" &&
-          currentState.overlay.returnTarget === "pause")
+        (currentState.overlay?.type === "options" && currentState.overlay.returnTarget === "pause")
       ) {
         returnTarget = "pause";
       } else if (currentState.scene.type === "result") {
@@ -293,10 +276,7 @@ const transitionState = (
       };
     }
     case "CLOSE_ACHIEVEMENTS":
-      if (
-        currentState.overlay === null ||
-        currentState.overlay.type !== "achievements"
-      ) {
+      if (currentState.overlay === null || currentState.overlay.type !== "achievements") {
         return currentState;
       }
       if (currentState.overlay.returnTarget === "pause") {
@@ -392,7 +372,7 @@ class GameStateMachine {
     this.listeners.push(listener);
     return () => {
       this.listeners = this.listeners.filter(
-        (registeredListener) => registeredListener !== listener
+        (registeredListener) => registeredListener !== listener,
       );
     };
   }

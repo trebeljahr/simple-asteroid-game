@@ -1,66 +1,66 @@
-import { Server, Socket } from "socket.io";
+import type { Server, Socket } from "socket.io";
 
 import {
-  advanceRuntimeBulletState,
+  AMMO_PACKET_SPAWN_INTERVAL_MS,
+  ASTEROID_RESPAWN_INTERVAL_MS,
+  ASTEROID_TARGET_COUNT,
+  BULLET_DIAMETER,
+  type ClientToServerEvents,
+  FIRE_COOLDOWN_TICKS,
+  HEART_SPAWN_INTERVAL_MS,
+  INACTIVE_MATCH_TIMEOUT_MS,
+  LOCAL_INPUT_PUSH_INTERVAL_MS,
+  MATCH_COUNTDOWN_MS,
+  MAX_AMMO_PACKET_COUNT,
+  MAX_HEART_COUNT,
+  MULTIPLAYER_ARENA,
+  type MatchEndedPayload,
+  type MatchOutcome,
+  type MatchPhase,
+  type MatchPlayerSnapshot,
+  type MatchSnapshotPayload,
+  type MatchWorldEventsPayload,
+  type MatchWorldRuntime,
+  type MultiplayerRuntimeConfig,
+  PLAYER_DAMAGE_RECOVERY_TICKS,
+  PLAYER_MAX_AMMO,
+  PLAYER_MAX_HEALTH,
+  type PlayerSlot,
+  type RuntimeBulletState,
+  type RuntimePlayerState,
+  SNAPSHOT_INTERVAL_TICKS,
+  type ServerToClientEvents,
+  type ShipInputState,
+  type ShipVariant,
+  TICK_INTERVAL_MS,
+  type WorldEvent,
   addAmmoToWorld,
   addAsteroidToWorld,
   addHeartToWorld,
-  ASTEROID_RESPAWN_INTERVAL_MS,
-  ASTEROID_TARGET_COUNT,
-  AMMO_PACKET_SPAWN_INTERVAL_MS,
-  BULLET_DIAMETER,
+  advanceRuntimeBulletState,
   circleOverlapsShipCollider,
-  ClientToServerEvents,
   circlesOverlap,
   createEmptyInputState,
   createInitialMatchWorld,
   createRuntimeBulletState,
   createRuntimePlayerState,
   createSeededRandom,
-  FIRE_COOLDOWN_TICKS,
+  getNearbyAmmoPackets,
+  getNearbyAsteroids,
+  getNearbyHearts,
   getShipCollider,
   getShipCollisionBoundingDiameter,
-  getNearbyAsteroids,
-  getNearbyAmmoPackets,
-  getNearbyHearts,
-  HEART_SPAWN_INTERVAL_MS,
-  INACTIVE_MATCH_TIMEOUT_MS,
   isRuntimeBulletOutOfBounds,
-  LOCAL_INPUT_PUSH_INTERVAL_MS,
-  MATCH_COUNTDOWN_MS,
-  MatchOutcome,
-  MatchPhase,
-  MatchEndedPayload,
-  MatchPlayerSnapshot,
-  MatchSnapshotPayload,
-  MatchWorldEventsPayload,
-  MatchWorldRuntime,
-  MAX_AMMO_PACKET_COUNT,
-  MAX_HEART_COUNT,
-  MultiplayerRuntimeConfig,
-  MULTIPLAYER_ARENA,
-  PLAYER_DAMAGE_RECOVERY_TICKS,
-  PLAYER_MAX_AMMO,
-  PLAYER_MAX_HEALTH,
-  PlayerSlot,
-  ShipVariant,
-  shipCollidersOverlap,
+  removeAmmoFromWorld,
+  removeAsteroidFromWorld,
+  removeHeartFromWorld,
   resolvePlayerCollision,
-  RuntimeBulletState,
-  RuntimePlayerState,
-  ServerToClientEvents,
-  ShipInputState,
-  SNAPSHOT_INTERVAL_TICKS,
+  shipCollidersOverlap,
   snapshotPlayerState,
   spawnAmmoFromRandom,
   spawnAsteroidFromRandom,
   spawnHeartFromRandom,
   stepPlayerState,
-  WorldEvent,
-  removeAmmoFromWorld,
-  removeAsteroidFromWorld,
-  removeHeartFromWorld,
-  TICK_INTERVAL_MS,
 } from "../../shared/src";
 import { achievementService } from "./achievementService";
 
@@ -96,10 +96,7 @@ interface Match {
   worldVersion: number;
 }
 
-const getOutcomeForPlayer = (
-  playerId: string,
-  winnerId: string | null
-): MatchOutcome => {
+const getOutcomeForPlayer = (playerId: string, winnerId: string | null): MatchOutcome => {
   if (winnerId === null) {
     return "draw";
   }
@@ -192,7 +189,7 @@ export class MultiplayerService {
   private applyAsteroidDamage(
     match: Match,
     asteroidDamageById: Map<string, number>,
-    worldEvents: WorldEvent[]
+    worldEvents: WorldEvent[],
   ) {
     for (const [asteroidId, damage] of asteroidDamageById.entries()) {
       const asteroid = match.world.runtime.asteroids.get(asteroidId);
@@ -217,7 +214,7 @@ export class MultiplayerService {
   private applyHeartCollections(
     match: Match,
     healingByPlayerId: Map<string, number>,
-    worldEvents: WorldEvent[]
+    worldEvents: WorldEvent[],
   ) {
     const collectedHeartIds = new Set<string>();
 
@@ -230,7 +227,7 @@ export class MultiplayerService {
         participant.state.x,
         participant.state.y,
         participant.state.angle,
-        participant.state.shipVariant
+        participant.state.shipVariant,
       );
 
       const nearbyHearts = getNearbyHearts(
@@ -238,7 +235,7 @@ export class MultiplayerService {
         participant.state.x,
         participant.state.y,
         getShipCollisionBoundingDiameter(participant.state.shipVariant),
-        MULTIPLAYER_ARENA
+        MULTIPLAYER_ARENA,
       );
 
       for (let heartIndex = 0; heartIndex < nearbyHearts.length; heartIndex++) {
@@ -247,19 +244,12 @@ export class MultiplayerService {
           continue;
         }
 
-        if (
-          circleOverlapsShipCollider(
-            heart.x,
-            heart.y,
-            heart.size,
-            shipCollider
-          )
-        ) {
+        if (circleOverlapsShipCollider(heart.x, heart.y, heart.size, shipCollider)) {
           collectedHeartIds.add(heart.id);
           if (participant.state.health < PLAYER_MAX_HEALTH) {
             healingByPlayerId.set(
               participant.state.id,
-              (healingByPlayerId.get(participant.state.id) ?? 0) + 1
+              (healingByPlayerId.get(participant.state.id) ?? 0) + 1,
             );
           }
           break;
@@ -289,7 +279,7 @@ export class MultiplayerService {
         participant.state.x,
         participant.state.y,
         participant.state.angle,
-        participant.state.shipVariant
+        participant.state.shipVariant,
       );
 
       const nearbyAmmoPackets = getNearbyAmmoPackets(
@@ -297,31 +287,20 @@ export class MultiplayerService {
         participant.state.x,
         participant.state.y,
         getShipCollisionBoundingDiameter(participant.state.shipVariant),
-        MULTIPLAYER_ARENA
+        MULTIPLAYER_ARENA,
       );
 
-      for (
-        let ammoPacketIndex = 0;
-        ammoPacketIndex < nearbyAmmoPackets.length;
-        ammoPacketIndex++
-      ) {
+      for (let ammoPacketIndex = 0; ammoPacketIndex < nearbyAmmoPackets.length; ammoPacketIndex++) {
         const ammoPacket = nearbyAmmoPackets[ammoPacketIndex];
         if (collectedAmmoIds.has(ammoPacket.id)) {
           continue;
         }
 
-        if (
-          circleOverlapsShipCollider(
-            ammoPacket.x,
-            ammoPacket.y,
-            ammoPacket.size,
-            shipCollider
-          )
-        ) {
+        if (circleOverlapsShipCollider(ammoPacket.x, ammoPacket.y, ammoPacket.size, shipCollider)) {
           collectedAmmoIds.add(ammoPacket.id);
           participant.state.ammo = Math.min(
             PLAYER_MAX_AMMO,
-            participant.state.ammo + ammoPacket.amount
+            participant.state.ammo + ammoPacket.amount,
           );
           break;
         }
@@ -341,7 +320,7 @@ export class MultiplayerService {
   private applyPlayerDamageAndHealing(
     match: Match,
     playerDamageById: Map<string, number>,
-    healingByPlayerId: Map<string, number>
+    healingByPlayerId: Map<string, number>,
   ) {
     for (let playerIndex = 0; playerIndex < match.players.length; playerIndex++) {
       const participant = match.players[playerIndex];
@@ -354,10 +333,7 @@ export class MultiplayerService {
       }
 
       if (participant.state.health > 0 && healing > 0) {
-        participant.state.health = Math.min(
-          PLAYER_MAX_HEALTH,
-          participant.state.health + healing
-        );
+        participant.state.health = Math.min(PLAYER_MAX_HEALTH, participant.state.health + healing);
       }
     }
   }
@@ -401,26 +377,21 @@ export class MultiplayerService {
   private createMatchPlayer(
     socket: TypedSocket,
     slot: PlayerSlot,
-    shipVariant: ShipVariant
+    shipVariant: ShipVariant,
   ): MatchPlayer {
     return {
       input: createEmptyInputState(),
       inputQueue: [],
       socket,
-      state: createRuntimePlayerState(
-        socket.id,
-        slot,
-        MULTIPLAYER_ARENA,
-        shipVariant
-      ),
+      state: createRuntimePlayerState(socket.id, slot, MULTIPLAYER_ARENA, shipVariant),
     };
   }
 
   private createMatch(
     players: [
       { socket: TypedSocket; shipVariant: ShipVariant },
-      { socket: TypedSocket; shipVariant: ShipVariant }
-    ]
+      { socket: TypedSocket; shipVariant: ShipVariant },
+    ],
   ) {
     const matchId = `match-${++this.matchCounter}`;
     const roomId = `multiplayer:${matchId}`;
@@ -548,7 +519,7 @@ export class MultiplayerService {
       excludedSocketId?: string;
       reason: MatchEndedPayload["reason"];
       winnerId: string | null;
-    }
+    },
   ) {
     this.matches.delete(match.id);
 
@@ -565,10 +536,7 @@ export class MultiplayerService {
         continue;
       }
 
-      const outcome = getOutcomeForPlayer(
-        participant.socket.id,
-        options.winnerId
-      );
+      const outcome = getOutcomeForPlayer(participant.socket.id, options.winnerId);
       participant.socket.emit("match:ended", {
         matchId: match.id,
         outcome,
@@ -615,7 +583,7 @@ export class MultiplayerService {
   private handleBulletCollisions(
     match: Match,
     playerDamageById: Map<string, number>,
-    asteroidDamageById: Map<string, number>
+    asteroidDamageById: Map<string, number>,
   ) {
     for (let bulletIndex = match.bullets.length - 1; bulletIndex >= 0; bulletIndex--) {
       const bullet = match.bullets[bulletIndex];
@@ -632,25 +600,15 @@ export class MultiplayerService {
         bullet.x,
         bullet.y,
         BULLET_DIAMETER,
-        MULTIPLAYER_ARENA
+        MULTIPLAYER_ARENA,
       );
 
       for (let asteroidIndex = 0; asteroidIndex < nearbyAsteroids.length; asteroidIndex++) {
         const asteroid = nearbyAsteroids[asteroidIndex];
         if (
-          circlesOverlap(
-            bullet.x,
-            bullet.y,
-            BULLET_DIAMETER,
-            asteroid.x,
-            asteroid.y,
-            asteroid.size
-          )
+          circlesOverlap(bullet.x, bullet.y, BULLET_DIAMETER, asteroid.x, asteroid.y, asteroid.size)
         ) {
-          asteroidDamageById.set(
-            asteroid.id,
-            (asteroidDamageById.get(asteroid.id) ?? 0) + 1
-          );
+          asteroidDamageById.set(asteroid.id, (asteroidDamageById.get(asteroid.id) ?? 0) + 1);
           consumedBullet = true;
           break;
         }
@@ -680,13 +638,13 @@ export class MultiplayerService {
               participant.state.x,
               participant.state.y,
               participant.state.angle,
-              participant.state.shipVariant
-            )
+              participant.state.shipVariant,
+            ),
           )
         ) {
           playerDamageById.set(
             participant.state.id,
-            (playerDamageById.get(participant.state.id) ?? 0) + 1
+            (playerDamageById.get(participant.state.id) ?? 0) + 1,
           );
           consumedBullet = true;
           break;
@@ -725,23 +683,20 @@ export class MultiplayerService {
   private handlePlayerAsteroidCollisions(
     match: Match,
     playerDamageById: Map<string, number>,
-    worldEvents: WorldEvent[]
+    worldEvents: WorldEvent[],
   ) {
     const destroyedAsteroidIds = new Set<string>();
 
     for (let playerIndex = 0; playerIndex < match.players.length; playerIndex++) {
       const participant = match.players[playerIndex];
-      if (
-        participant.state.health <= 0 ||
-        participant.state.damageRecoveryTicks > 0
-      ) {
+      if (participant.state.health <= 0 || participant.state.damageRecoveryTicks > 0) {
         continue;
       }
       const shipCollider = getShipCollider(
         participant.state.x,
         participant.state.y,
         participant.state.angle,
-        participant.state.shipVariant
+        participant.state.shipVariant,
       );
 
       const nearbyAsteroids = getNearbyAsteroids(
@@ -749,7 +704,7 @@ export class MultiplayerService {
         participant.state.x,
         participant.state.y,
         getShipCollisionBoundingDiameter(participant.state.shipVariant),
-        MULTIPLAYER_ARENA
+        MULTIPLAYER_ARENA,
       );
 
       for (let asteroidIndex = 0; asteroidIndex < nearbyAsteroids.length; asteroidIndex++) {
@@ -758,17 +713,10 @@ export class MultiplayerService {
           continue;
         }
 
-        if (
-          circleOverlapsShipCollider(
-            asteroid.x,
-            asteroid.y,
-            asteroid.size,
-            shipCollider
-          )
-        ) {
+        if (circleOverlapsShipCollider(asteroid.x, asteroid.y, asteroid.size, shipCollider)) {
           playerDamageById.set(
             participant.state.id,
-            (playerDamageById.get(participant.state.id) ?? 0) + 1
+            (playerDamageById.get(participant.state.id) ?? 0) + 1,
           );
           destroyedAsteroidIds.add(asteroid.id);
           break;
@@ -786,10 +734,7 @@ export class MultiplayerService {
     });
   }
 
-  private handlePlayerShipCollision(
-    match: Match,
-    playerDamageById: Map<string, number>
-  ) {
+  private handlePlayerShipCollision(match: Match, playerDamageById: Map<string, number>) {
     const alphaPlayer = match.players[0];
     const betaPlayer = match.players[1];
 
@@ -803,36 +748,32 @@ export class MultiplayerService {
           alphaPlayer.state.x,
           alphaPlayer.state.y,
           alphaPlayer.state.angle,
-          alphaPlayer.state.shipVariant
+          alphaPlayer.state.shipVariant,
         ),
         getShipCollider(
           betaPlayer.state.x,
           betaPlayer.state.y,
           betaPlayer.state.angle,
-          betaPlayer.state.shipVariant
-        )
+          betaPlayer.state.shipVariant,
+        ),
       )
     ) {
       return;
     }
 
-    resolvePlayerCollision(
-      alphaPlayer.state,
-      betaPlayer.state,
-      MULTIPLAYER_ARENA
-    );
+    resolvePlayerCollision(alphaPlayer.state, betaPlayer.state, MULTIPLAYER_ARENA);
 
     if (alphaPlayer.state.damageRecoveryTicks === 0) {
       playerDamageById.set(
         alphaPlayer.state.id,
-        (playerDamageById.get(alphaPlayer.state.id) ?? 0) + 1
+        (playerDamageById.get(alphaPlayer.state.id) ?? 0) + 1,
       );
     }
 
     if (betaPlayer.state.damageRecoveryTicks === 0) {
       playerDamageById.set(
         betaPlayer.state.id,
-        (playerDamageById.get(betaPlayer.state.id) ?? 0) + 1
+        (playerDamageById.get(betaPlayer.state.id) ?? 0) + 1,
       );
     }
   }
@@ -844,7 +785,7 @@ export class MultiplayerService {
       x: number;
       y: number;
     }>,
-    previousBulletCount: number
+    previousBulletCount: number,
   ) {
     if (match.bullets.length > 0 || previousBulletCount > 0) {
       return true;
@@ -855,7 +796,7 @@ export class MultiplayerService {
       const previousState = previousStates[playerIndex];
       const positionDelta = Math.hypot(
         participant.state.x - previousState.x,
-        participant.state.y - previousState.y
+        participant.state.y - previousState.y,
       );
       const angleDelta = Math.abs(participant.state.angle - previousState.angle);
       const speed = Math.hypot(participant.state.vx, participant.state.vy);
@@ -917,7 +858,7 @@ export class MultiplayerService {
         const subSteps = Math.max(
           1,
           match.players[0].inputQueue.length,
-          match.players[1].inputQueue.length
+          match.players[1].inputQueue.length,
         );
         for (let subStep = 0; subStep < subSteps; subStep++) {
           this.stepPlayersOnce(match);
@@ -987,10 +928,12 @@ export class MultiplayerService {
         break;
       }
 
-      this.createMatch(matchedPlayers as [
-        { socket: TypedSocket; shipVariant: ShipVariant },
-        { socket: TypedSocket; shipVariant: ShipVariant }
-      ]);
+      this.createMatch(
+        matchedPlayers as [
+          { socket: TypedSocket; shipVariant: ShipVariant },
+          { socket: TypedSocket; shipVariant: ShipVariant },
+        ],
+      );
     }
 
     this.emitQueueStatus();
@@ -1040,10 +983,7 @@ export class MultiplayerService {
         participant.state.ammo > 0
       ) {
         match.bullets.push(
-          createRuntimeBulletState(
-            participant.state,
-            `bullet-${++this.bulletCounter}`
-          )
+          createRuntimeBulletState(participant.state, `bullet-${++this.bulletCounter}`),
         );
         participant.state.ammo--;
         participant.state.fireCooldownTicks = FIRE_COOLDOWN_TICKS;
@@ -1064,7 +1004,7 @@ export class MultiplayerService {
         playerPositions,
         match.world.random,
         `asteroid:spawn:${++this.asteroidCounter}`,
-        MULTIPLAYER_ARENA
+        MULTIPLAYER_ARENA,
       );
 
       if (asteroid !== null) {
@@ -1078,16 +1018,13 @@ export class MultiplayerService {
       match.world.nextAsteroidSpawnAt = now + ASTEROID_RESPAWN_INTERVAL_MS;
     }
 
-    if (
-      match.world.runtime.hearts.size < MAX_HEART_COUNT &&
-      now >= match.world.nextHeartSpawnAt
-    ) {
+    if (match.world.runtime.hearts.size < MAX_HEART_COUNT && now >= match.world.nextHeartSpawnAt) {
       const heart = spawnHeartFromRandom(
         match.world.runtime,
         playerPositions,
         match.world.random,
         `heart:spawn:${++this.heartCounter}`,
-        MULTIPLAYER_ARENA
+        MULTIPLAYER_ARENA,
       );
 
       if (heart !== null) {
@@ -1110,7 +1047,7 @@ export class MultiplayerService {
         playerPositions,
         match.world.random,
         `ammo:spawn:${++this.ammoCounter}`,
-        MULTIPLAYER_ARENA
+        MULTIPLAYER_ARENA,
       );
 
       if (ammo !== null) {

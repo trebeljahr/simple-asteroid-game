@@ -1,5 +1,5 @@
-import { and, eq, sql } from "drizzle-orm";
 import { EventEmitter } from "events";
+import { eq, sql } from "drizzle-orm";
 
 import {
   ACHIEVEMENT_DEFINITIONS,
@@ -8,12 +8,7 @@ import {
   type PublicAchievement,
   toPublicAchievement,
 } from "../../shared/src";
-import {
-  getDatabase,
-  userAchievements,
-  userStats,
-  type UserStats,
-} from "./db";
+import { type UserStats, getDatabase, userAchievements, userStats } from "./db";
 
 const toAchievementStats = (row: UserStats): AchievementStats => {
   return {
@@ -106,7 +101,7 @@ export class AchievementService extends EventEmitter {
   async applyEvent(
     userId: string,
     delta: StatDelta,
-    event?: AchievementEvent
+    event?: AchievementEvent,
   ): Promise<AchievementUnlockEvent[]> {
     const db = getDatabase();
     if (db === null) {
@@ -127,10 +122,8 @@ export class AchievementService extends EventEmitter {
    * unlock state and current progress.
    */
   async listForUser(
-    userId: string
-  ): Promise<
-    Array<PublicAchievement & { unlockedAt: Date | null; progressValue: number }>
-  > {
+    userId: string,
+  ): Promise<Array<PublicAchievement & { unlockedAt: Date | null; progressValue: number }>> {
     const db = getDatabase();
     if (db === null) {
       return ACHIEVEMENT_DEFINITIONS.map((definition) => ({
@@ -142,19 +135,11 @@ export class AchievementService extends EventEmitter {
 
     const [statsRow, unlockRows] = await Promise.all([
       db.select().from(userStats).where(eq(userStats.userId, userId)).limit(1),
-      db
-        .select()
-        .from(userAchievements)
-        .where(eq(userAchievements.userId, userId)),
+      db.select().from(userAchievements).where(eq(userAchievements.userId, userId)),
     ]);
 
-    const stats =
-      statsRow.length === 0
-        ? this.emptyStats()
-        : toAchievementStats(statsRow[0]);
-    const unlockedMap = new Map(
-      unlockRows.map((row) => [row.achievementId, row.unlockedAt])
-    );
+    const stats = statsRow.length === 0 ? this.emptyStats() : toAchievementStats(statsRow[0]);
+    const unlockedMap = new Map(unlockRows.map((row) => [row.achievementId, row.unlockedAt]));
 
     return ACHIEVEMENT_DEFINITIONS.map((definition) => {
       const unlockedAt = unlockedMap.get(definition.id) ?? null;
@@ -204,10 +189,7 @@ export class AchievementService extends EventEmitter {
    * user has no stat row and can't be created, which shouldn't
    * happen in practice).
    */
-  private async applyStatDelta(
-    userId: string,
-    delta: StatDelta
-  ): Promise<AchievementStats | null> {
+  private async applyStatDelta(userId: string, delta: StatDelta): Promise<AchievementStats | null> {
     const db = getDatabase();
     if (db === null) return null;
 
@@ -216,9 +198,7 @@ export class AchievementService extends EventEmitter {
     };
 
     const increments: Array<[keyof StatDelta, number]> = [];
-    for (const [key, value] of Object.entries(delta) as Array<
-      [keyof StatDelta, unknown]
-    >) {
+    for (const [key, value] of Object.entries(delta) as Array<[keyof StatDelta, unknown]>) {
       if (key === "runBestTimeMs") continue;
       if (typeof value === "number" && value !== 0) {
         increments.push([key, value]);
@@ -260,7 +240,7 @@ export class AchievementService extends EventEmitter {
   private async evaluateUnlocks(
     userId: string,
     stats: AchievementStats,
-    event: AchievementEvent | undefined
+    event: AchievementEvent | undefined,
   ): Promise<AchievementUnlockEvent[]> {
     const db = getDatabase();
     if (db === null) return [];
@@ -271,9 +251,7 @@ export class AchievementService extends EventEmitter {
       .select({ achievementId: userAchievements.achievementId })
       .from(userAchievements)
       .where(eq(userAchievements.userId, userId));
-    const alreadyUnlocked = new Set(
-      unlockedRows.map((row) => row.achievementId)
-    );
+    const alreadyUnlocked = new Set(unlockedRows.map((row) => row.achievementId));
 
     const newlyUnlocked: AchievementUnlockEvent[] = [];
 
@@ -283,10 +261,7 @@ export class AchievementService extends EventEmitter {
       try {
         unlocked = definition.check(stats, event);
       } catch (error) {
-        console.error(
-          `[achievements] check threw for ${definition.id}`,
-          error
-        );
+        console.error(`[achievements] check threw for ${definition.id}`, error);
       }
       if (!unlocked) continue;
 

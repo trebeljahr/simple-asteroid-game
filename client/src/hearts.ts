@@ -1,12 +1,9 @@
-import p5, { Vector } from "p5";
+import p5, { type Vector } from "p5";
 import { asteroids } from "./asteroids";
-import {
-  getHudHeartCenter,
-  getHudHeartSize,
-} from "./healthHud";
+import { getHudHeartCenter, getHudHeartSize } from "./healthHud";
 import { assets } from "./sketch";
 import {
-  CameraBounds,
+  type CameraBounds,
   circleIntersectsBounds,
   circlesOverlap,
   height,
@@ -78,7 +75,7 @@ class Hearts {
             size + HEART_ASTEROID_CLEARANCE * 2,
             asteroid.pos.x,
             asteroid.pos.y,
-            asteroid.size
+            asteroid.size,
           )
         ) {
           isOverlapping = true;
@@ -96,7 +93,7 @@ class Hearts {
               size + HEART_ASTEROID_CLEARANCE,
               heart.pos.x,
               heart.pos.y,
-              heart.size
+              heart.size,
             )
           ) {
             isOverlapping = true;
@@ -125,17 +122,15 @@ class Hearts {
     heartPos: Vector,
     targetSlotIndex: number,
     cameraCenterX: number,
-    cameraCenterY: number
+    cameraCenterY: number,
   ) {
     const startScreenPos = this.p.createVector(
       width / 2 + (heartPos.x - cameraCenterX),
-      height / 2 + (heartPos.y - cameraCenterY)
+      height / 2 + (heartPos.y - cameraCenterY),
     );
 
     for (let i = 0; i < HEART_PICKUP_PARTICLE_COUNT; i++) {
-      const angle =
-        (this.p.TWO_PI * i) / HEART_PICKUP_PARTICLE_COUNT +
-        this.p.random(-0.2, 0.2);
+      const angle = (this.p.TWO_PI * i) / HEART_PICKUP_PARTICLE_COUNT + this.p.random(-0.2, 0.2);
       const burstDistance = this.p.random(18, 34);
       this.hudEffects.push({
         age: this.p.random(3),
@@ -151,12 +146,11 @@ class Hearts {
   createLossEffect(slotIndex: number) {
     const startScreenPos = this.p.createVector(
       getHudHeartCenter(slotIndex).x,
-      getHudHeartCenter(slotIndex).y
+      getHudHeartCenter(slotIndex).y,
     );
 
     for (let i = 0; i < HEART_POP_PARTICLE_COUNT; i++) {
-      const angle =
-        (this.p.TWO_PI * i) / HEART_POP_PARTICLE_COUNT + this.p.random(-0.3, 0.3);
+      const angle = (this.p.TWO_PI * i) / HEART_POP_PARTICLE_COUNT + this.p.random(-0.3, 0.3);
       const burstDistance = this.p.random(16, 28);
       this.hudEffects.push({
         age: this.p.random(2),
@@ -196,7 +190,7 @@ class Hearts {
     const easedBurst = 1 - (1 - burstProgress) * (1 - burstProgress);
     const burstPos = p5.Vector.add(
       effect.startScreenPos,
-      p5.Vector.mult(effect.burstOffset, easedBurst)
+      p5.Vector.mult(effect.burstOffset, easedBurst),
     ).add(0, -8 * easedBurst);
 
     let drawX = burstPos.x;
@@ -205,10 +199,8 @@ class Hearts {
     let drawAlpha = 235;
 
     if (effect.age >= HEART_PICKUP_BURST_FRAMES) {
-      const flightProgress =
-        (effect.age - HEART_PICKUP_BURST_FRAMES) / HEART_PICKUP_FLIGHT_FRAMES;
-      const easedFlight =
-        1 - (1 - flightProgress) * (1 - flightProgress) * (1 - flightProgress);
+      const flightProgress = (effect.age - HEART_PICKUP_BURST_FRAMES) / HEART_PICKUP_FLIGHT_FRAMES;
+      const easedFlight = 1 - (1 - flightProgress) * (1 - flightProgress) * (1 - flightProgress);
       drawX = this.p.lerp(burstPos.x, targetPos.x, easedFlight);
       drawY = this.p.lerp(burstPos.y, targetPos.y, easedFlight);
       drawSize = this.p.lerp(getHudHeartSize() * 0.42 * effect.scale, 18, easedFlight);
@@ -223,7 +215,7 @@ class Hearts {
     const easedProgress = 1 - (1 - progress) * (1 - progress);
     const drawPos = p5.Vector.add(
       effect.startScreenPos,
-      p5.Vector.mult(effect.burstOffset, easedProgress)
+      p5.Vector.mult(effect.burstOffset, easedProgress),
     ).add(0, -18 * progress);
     const drawSize = this.p.lerp(getHudHeartSize() * 0.54 * effect.scale, 10, progress);
     const drawAlpha = this.p.lerp(220, 0, progress);
@@ -236,7 +228,7 @@ class Hearts {
     drawY: number,
     drawSize: number,
     drawAlpha: number,
-    isHealing: boolean
+    isHealing: boolean,
   ) {
     this.p.push();
     this.p.noStroke();
@@ -254,10 +246,7 @@ class Hearts {
   }
 
   run(cameraBounds?: CameraBounds) {
-    if (
-      this.p.frameCount % HEART_SPAWN_INTERVAL_FRAMES === 0 &&
-      this.hearts.length < MAX_HEARTS
-    ) {
+    if (this.p.frameCount % HEART_SPAWN_INTERVAL_FRAMES === 0 && this.hearts.length < MAX_HEARTS) {
       this.spawnHearts(1);
     }
     for (let i = this.hearts.length - 1; i >= 0; i--) {
@@ -289,12 +278,6 @@ class Heart {
     this.p.fill(255);
     this.p.imageMode(this.p.CENTER);
     this.p.ellipse(this.pos.x, this.pos.y, this.size, this.size);
-    this.p.image(
-      assets.heart,
-      this.pos.x,
-      this.pos.y,
-      this.size / 1.5,
-      this.size / 1.5
-    );
+    this.p.image(assets.heart, this.pos.x, this.pos.y, this.size / 1.5, this.size / 1.5);
   }
 }

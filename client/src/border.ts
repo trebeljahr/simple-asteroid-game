@@ -1,4 +1,4 @@
-import p5 from "p5";
+import type p5 from "p5";
 import { boardSizeX, boardSizeY } from "./utils";
 
 export let border = {} as Border;

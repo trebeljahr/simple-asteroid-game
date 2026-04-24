@@ -7,13 +7,13 @@
 // returns any newly-unlocked achievements so the toast layer can show
 // them immediately.
 
-import { trpcClient } from "./trpcClient";
 import {
+  type AccountStats,
   applyLocalStatDelta,
   getAccountState,
   recordLocalUnlock,
-  type AccountStats,
 } from "./account";
+import { trpcClient } from "./trpcClient";
 
 type ClientAchievementEvent =
   | { type: "run.attempted" }
@@ -79,9 +79,7 @@ const sendEvent = async (event: ClientAchievementEvent) => {
     return;
   }
   try {
-    const result = await trpcClient.achievements.reportClientEvent.mutate(
-      event
-    );
+    const result = await trpcClient.achievements.reportClientEvent.mutate(event);
     if (result.unlocked.length === 0) return;
     const now = new Date();
     for (const id of result.unlocked) {

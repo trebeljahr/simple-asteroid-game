@@ -1,9 +1,9 @@
-import p5 from "p5";
+import type p5 from "p5";
 import {
-  CollisionAabb,
-  Point2D,
-  ShipCollider,
-  TransformedCollisionShape,
+  type CollisionAabb,
+  type Point2D,
+  type ShipCollider,
+  type TransformedCollisionShape,
   getShipColliderBroadPhaseAabb,
   getShipColliderLoops,
 } from "../../shared/src";
@@ -12,10 +12,7 @@ const LOCAL_DEBUG_HOSTNAMES = new Set(["127.0.0.1", "::1", "localhost"]);
 
 export const isCollisionDebugAvailable = () => {
   const hostName = window.location.hostname;
-  return (
-    LOCAL_DEBUG_HOSTNAMES.has(hostName) ||
-    hostName.endsWith(".localhost")
-  );
+  return LOCAL_DEBUG_HOSTNAMES.has(hostName) || hostName.endsWith(".localhost");
 };
 
 const applyBroadPhaseStyle = (p: p5) => {
@@ -42,12 +39,7 @@ const drawLoop = (p: p5, loop: readonly Point2D[]) => {
   p.endShape(p.CLOSE);
 };
 
-export const drawCollisionCircle = (
-  p: p5,
-  x: number,
-  y: number,
-  diameter: number
-) => {
+export const drawCollisionCircle = (p: p5, x: number, y: number, diameter: number) => {
   p.push();
   applyBroadPhaseStyle(p);
   p.circle(x, y, diameter);
@@ -64,11 +56,9 @@ export const drawCollisionBroadPhaseAabb = (p: p5, aabb: CollisionAabb) => {
 
 export const drawCollisionFineShape = (
   p: p5,
-  shapeOrLoops: TransformedCollisionShape | readonly Point2D[][]
+  shapeOrLoops: TransformedCollisionShape | readonly Point2D[][],
 ) => {
-  const loops = "loops" in shapeOrLoops
-    ? shapeOrLoops.loops
-    : shapeOrLoops;
+  const loops = "loops" in shapeOrLoops ? shapeOrLoops.loops : shapeOrLoops;
 
   p.push();
   applyFinePhaseStyle(p);
@@ -78,10 +68,7 @@ export const drawCollisionFineShape = (
   p.pop();
 };
 
-export const drawCollisionShapeDebug = (
-  p: p5,
-  shape: TransformedCollisionShape
-) => {
+export const drawCollisionShapeDebug = (p: p5, shape: TransformedCollisionShape) => {
   drawCollisionBroadPhaseAabb(p, shape.aabb);
   drawCollisionFineShape(p, shape);
 };

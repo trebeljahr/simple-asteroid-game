@@ -1,3 +1,5 @@
+import { existsSync } from "fs";
+import path from "path";
 /**
  * Standalone migration runner. Invoked via `npm run db:migrate`
  * manually or by the server at startup before accepting connections.
@@ -9,15 +11,11 @@
 import { drizzle } from "drizzle-orm/node-postgres";
 import { migrate } from "drizzle-orm/node-postgres/migrator";
 import { Pool } from "pg";
-import { existsSync } from "fs";
-import path from "path";
 
 export const runMigrations = async (connectionString?: string) => {
   const url = connectionString ?? process.env.DATABASE_URL;
   if (!url) {
-    throw new Error(
-      "DATABASE_URL must be set to run migrations. Aborting migration run."
-    );
+    throw new Error("DATABASE_URL must be set to run migrations. Aborting migration run.");
   }
 
   const pool = new Pool({ connectionString: url, max: 2 });
@@ -40,14 +38,7 @@ const resolveMigrationsFolder = () => {
     return adjacent;
   }
   // Fallback for misconfigured environments — fall back to src.
-  const sourceFallback = path.resolve(
-    __dirname,
-    "..",
-    "..",
-    "src",
-    "db",
-    "migrations"
-  );
+  const sourceFallback = path.resolve(__dirname, "..", "..", "src", "db", "migrations");
   return sourceFallback;
 };
 

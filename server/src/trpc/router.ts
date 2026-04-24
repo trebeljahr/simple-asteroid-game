@@ -1,27 +1,22 @@
-import { initTRPC, TRPCError } from "@trpc/server";
+import { TRPCError, initTRPC } from "@trpc/server";
 import type { CreateExpressContextOptions } from "@trpc/server/adapters/express";
 import { z } from "zod";
 
 import {
   ACHIEVEMENT_DEFINITIONS,
-  MultiplayerRuntimeConfig,
-  ShipVariant,
   MULTIPLAYER_SHIP_VARIANTS,
+  type MultiplayerRuntimeConfig,
+  type ShipVariant,
   toPublicAchievement,
 } from "../../../shared/src";
 import type { AchievementService } from "../achievementService";
-import {
-  getOrCreateUserByDeviceToken,
-  updateDisplayName,
-} from "../userService";
+import { getOrCreateUserByDeviceToken, updateDisplayName } from "../userService";
 
 export interface TRPCContext {
   deviceToken: string | null;
 }
 
-export const createTRPCContext = (
-  opts: CreateExpressContextOptions
-): TRPCContext => {
+export const createTRPCContext = (opts: CreateExpressContextOptions): TRPCContext => {
   const header = opts.req.header("x-device-token");
   return {
     deviceToken: typeof header === "string" && header.length > 0 ? header : null,
@@ -45,22 +40,18 @@ const authedProcedure = t.procedure.use(requireDeviceToken);
 interface MultiplayerController {
   enqueueSocketById(
     socketId: string,
-    shipVariant: ShipVariant
-  ):
-    | { enqueued: false; reason: "already-matched" | "socket-not-found" }
-    | { enqueued: true };
+    shipVariant: ShipVariant,
+  ): { enqueued: false; reason: "already-matched" | "socket-not-found" } | { enqueued: true };
   getRuntimeConfig(): MultiplayerRuntimeConfig;
   leaveSocketById(
-    socketId: string
-  ):
-    | { removed: false; scope: "none" }
-    | { removed: true; scope: "match" | "queue" };
+    socketId: string,
+  ): { removed: false; scope: "none" } | { removed: true; scope: "match" | "queue" };
 }
 
 interface BattleRoyaleController {
   enqueue(
     socketId: string,
-    shipVariant: ShipVariant
+    shipVariant: ShipVariant,
   ):
     | {
         enqueued: false;
@@ -68,16 +59,14 @@ interface BattleRoyaleController {
       }
     | { enqueued: true };
   leave(
-    socketId: string
-  ):
-    | { removed: false; scope: "none" }
-    | { removed: true; scope: "lobby" | "match" };
+    socketId: string,
+  ): { removed: false; scope: "none" } | { removed: true; scope: "lobby" | "match" };
 }
 
 export const createAppRouter = (
   multiplayerService: MultiplayerController,
   battleRoyaleService: BattleRoyaleController,
-  achievementService: AchievementService
+  achievementService: AchievementService,
 ) => {
   return t.router({
     health: t.procedure.query(() => {
@@ -88,9 +77,7 @@ export const createAppRouter = (
       bootstrap: authedProcedure.mutation(async ({ ctx }) => {
         try {
           const context = await getOrCreateUserByDeviceToken(ctx.deviceToken);
-          const achievements = await achievementService.listForUser(
-            context.user.id
-          );
+          const achievements = await achievementService.listForUser(context.user.id);
           return {
             user: {
               id: context.user.id,
@@ -120,10 +107,7 @@ export const createAppRouter = (
         } catch (error) {
           // Gracefully degrade when the database is unavailable so the
           // client still boots into singleplayer.
-          console.warn(
-            "[trpc] user.bootstrap failed, returning offline view:",
-            error
-          );
+          console.warn("[trpc] user.bootstrap failed, returning offline view:", error);
           return null;
         }
       }),
@@ -166,7 +150,11 @@ export const createAppRouter = (
             z.object({ type: z.literal("run.attempted") }),
             z.object({
               type: z.literal("run.completed"),
-              durationMs: z.number().int().min(0).max(60 * 60 * 1000),
+              durationMs: z
+                .number()
+                .int()
+                .min(0)
+                .max(60 * 60 * 1000),
               noDamage: z.boolean(),
             }),
             z.object({ type: z.literal("run.goalReached") }),
@@ -177,18 +165,12 @@ export const createAppRouter = (
               type: z.literal("bullet.fired"),
               count: z.number().int().min(1).max(8),
             }),
-          ])
+          ]),
         )
         .mutation(async ({ ctx, input }) => {
           try {
-            const context = await getOrCreateUserByDeviceToken(
-              ctx.deviceToken
-            );
-            const unlocks = await dispatchClientEvent(
-              achievementService,
-              context.user.id,
-              input
-            );
+            const context = await getOrCreateUserByDeviceToken(ctx.deviceToken);
+            const unlocks = await dispatchClientEvent(achievementService, context.user.id, input);
             return {
               unlocked: unlocks.map((entry) => entry.achievementId),
             };
@@ -204,22 +186,20 @@ export const createAppRouter = (
         .input(
           z.object({
             socketId: z.string().min(1),
-            shipVariant: z.enum(
-              MULTIPLAYER_SHIP_VARIANTS as unknown as [string, ...string[]]
-            ),
-          })
+            shipVariant: z.enum(MULTIPLAYER_SHIP_VARIANTS as unknown as [string, ...string[]]),
+          }),
         )
         .mutation(({ input }) => {
           return multiplayerService.enqueueSocketById(
             input.socketId,
-            input.shipVariant as ShipVariant
+            input.shipVariant as ShipVariant,
           );
         }),
       leaveQueue: t.procedure
         .input(
           z.object({
             socketId: z.string().min(1),
-          })
+          }),
         )
         .mutation(({ input }) => {
           return multiplayerService.leaveSocketById(input.socketId);
@@ -233,22 +213,17 @@ export const createAppRouter = (
         .input(
           z.object({
             socketId: z.string().min(1),
-            shipVariant: z.enum(
-              MULTIPLAYER_SHIP_VARIANTS as unknown as [string, ...string[]]
-            ),
-          })
+            shipVariant: z.enum(MULTIPLAYER_SHIP_VARIANTS as unknown as [string, ...string[]]),
+          }),
         )
         .mutation(({ input }) => {
-          return battleRoyaleService.enqueue(
-            input.socketId,
-            input.shipVariant as ShipVariant
-          );
+          return battleRoyaleService.enqueue(input.socketId, input.shipVariant as ShipVariant);
         }),
       leaveQueue: t.procedure
         .input(
           z.object({
             socketId: z.string().min(1),
-          })
+          }),
         )
         .mutation(({ input }) => {
           return battleRoyaleService.leave(input.socketId);
@@ -275,15 +250,11 @@ const dispatchClientEvent = async (
     | { type: "asteroid.destroyed" }
     | { type: "heart.collected" }
     | { type: "ammo.collected" }
-    | { type: "bullet.fired"; count: number }
+    | { type: "bullet.fired"; count: number },
 ) => {
   switch (event.type) {
     case "run.attempted":
-      return achievementService.applyEvent(
-        userId,
-        { runAttempts: 1 },
-        { type: "run.attempted" }
-      );
+      return achievementService.applyEvent(userId, { runAttempts: 1 }, { type: "run.attempted" });
     case "run.completed":
       return achievementService.applyEvent(
         userId,
@@ -295,37 +266,33 @@ const dispatchClientEvent = async (
           type: "run.completed",
           durationMs: event.durationMs,
           noDamage: event.noDamage,
-        }
+        },
       );
     case "run.goalReached":
-      return achievementService.applyEvent(
-        userId,
-        { goalsCleared: 1 },
-        { type: "goal.reached" }
-      );
+      return achievementService.applyEvent(userId, { goalsCleared: 1 }, { type: "goal.reached" });
     case "asteroid.destroyed":
       return achievementService.applyEvent(
         userId,
         { asteroidsDestroyed: 1 },
-        { type: "asteroid.destroyed" }
+        { type: "asteroid.destroyed" },
       );
     case "heart.collected":
       return achievementService.applyEvent(
         userId,
         { heartsCollected: 1 },
-        { type: "heart.collected" }
+        { type: "heart.collected" },
       );
     case "ammo.collected":
       return achievementService.applyEvent(
         userId,
         { ammoCollected: 1 },
-        { type: "ammo.collected" }
+        { type: "ammo.collected" },
       );
     case "bullet.fired":
       return achievementService.applyEvent(
         userId,
         { bulletsFired: event.count },
-        { type: "bullet.fired", count: event.count }
+        { type: "bullet.fired", count: event.count },
       );
   }
 };

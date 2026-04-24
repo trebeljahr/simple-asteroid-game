@@ -1,10 +1,6 @@
-import { Server, Socket } from "socket.io";
+import type { Server, Socket } from "socket.io";
 
 import {
-  advanceRuntimeBulletState,
-  addAmmoToWorld,
-  addAsteroidToWorld,
-  addHeartToWorld,
   BATTLE_ROYALE_AMMO_PACKET_SPAWN_INTERVAL_MS,
   BATTLE_ROYALE_ARENA,
   BATTLE_ROYALE_ASTEROID_RESPAWN_INTERVAL_MS,
@@ -17,52 +13,55 @@ import {
   BATTLE_ROYALE_MAX_HEART_COUNT,
   BATTLE_ROYALE_MAX_PLAYERS,
   BATTLE_ROYALE_MIN_PLAYERS,
-  BattleRoyaleLobbyPayload,
-  BattleRoyaleMatchFoundPayload,
-  BattleRoyaleMatchEndedPayload,
-  BattleRoyaleSnapshotPayload,
   BULLET_DIAMETER,
+  type BattleRoyaleLobbyPayload,
+  type BattleRoyaleMatchEndedPayload,
+  type BattleRoyaleMatchFoundPayload,
+  type BattleRoyaleSnapshotPayload,
+  type ClientToServerEvents,
+  FIRE_COOLDOWN_TICKS,
+  INACTIVE_MATCH_TIMEOUT_MS,
+  type MatchPhase,
+  type MatchPlayerSnapshot,
+  type MatchWorldEventsPayload,
+  type MatchWorldRuntime,
+  PLAYER_DAMAGE_RECOVERY_TICKS,
+  PLAYER_MAX_AMMO,
+  PLAYER_MAX_HEALTH,
+  type RuntimeBulletState,
+  type RuntimePlayerState,
+  type ServerToClientEvents,
+  type ShipInputState,
+  type ShipVariant,
+  TICK_INTERVAL_MS,
+  type WorldEvent,
+  addAmmoToWorld,
+  addAsteroidToWorld,
+  addHeartToWorld,
+  advanceRuntimeBulletState,
   circleOverlapsShipCollider,
   circlesOverlap,
-  ClientToServerEvents,
+  createBattleRoyalePlayerState,
   createEmptyInputState,
   createInitialBattleRoyaleWorld,
-  createBattleRoyalePlayerState,
   createRuntimeBulletState,
   createSeededRandom,
-  FIRE_COOLDOWN_TICKS,
-  getBattleRoyaleSpawnPosition,
   getNearbyAmmoPackets,
   getNearbyAsteroids,
   getNearbyHearts,
   getShipCollider,
   getShipCollisionBoundingDiameter,
-  INACTIVE_MATCH_TIMEOUT_MS,
   isRuntimeBulletOutOfBounds,
-  MatchPhase,
-  MatchPlayerSnapshot,
-  MatchWorldEventsPayload,
-  MatchWorldRuntime,
-  PLAYER_DAMAGE_RECOVERY_TICKS,
-  PLAYER_MAX_AMMO,
-  PLAYER_MAX_HEALTH,
   removeAmmoFromWorld,
   removeAsteroidFromWorld,
   removeHeartFromWorld,
   resolvePlayerCollision,
-  RuntimeBulletState,
-  RuntimePlayerState,
-  ServerToClientEvents,
-  ShipInputState,
-  ShipVariant,
   shipCollidersOverlap,
   snapshotPlayerState,
   spawnBattleRoyaleAmmo,
   spawnBattleRoyaleAsteroid,
   spawnBattleRoyaleHeart,
   stepPlayerState,
-  TICK_INTERVAL_MS,
-  WorldEvent,
 } from "../../shared/src";
 import { achievementService } from "./achievementService";
 
@@ -177,10 +176,7 @@ export class BattleRoyaleService {
       } else {
         const elapsed = now - this.lobbyTimerStartedAt;
         const remaining = Math.max(0, this.lobbyCountdownMs - elapsed);
-        const extended = Math.min(
-          BATTLE_ROYALE_LOBBY_RESET_MAX_MS,
-          remaining + 3000
-        );
+        const extended = Math.min(BATTLE_ROYALE_LOBBY_RESET_MAX_MS, remaining + 3000);
         this.lobbyTimerStartedAt = now;
         this.lobbyCountdownMs = extended;
       }
@@ -230,9 +226,7 @@ export class BattleRoyaleService {
     }
 
     // Treat leaving as instant elimination.
-    const player = match.players.find(
-      (participant) => participant.socket.id === socketId
-    );
+    const player = match.players.find((participant) => participant.socket.id === socketId);
     if (player !== undefined && player.state.health > 0) {
       player.state.health = 0;
       this.markElimination(match, player);
@@ -336,7 +330,7 @@ export class BattleRoyaleService {
           index,
           totalPlayers,
           entry.shipVariant,
-          BATTLE_ROYALE_ARENA
+          BATTLE_ROYALE_ARENA,
         ),
       };
     });
@@ -356,18 +350,11 @@ export class BattleRoyaleService {
       roomId,
       sequence: 0,
       world: {
-        nextAmmoSpawnAt:
-          Date.now() + BATTLE_ROYALE_AMMO_PACKET_SPAWN_INTERVAL_MS,
-        nextAsteroidSpawnAt:
-          Date.now() + BATTLE_ROYALE_ASTEROID_RESPAWN_INTERVAL_MS,
-        nextHeartSpawnAt:
-          Date.now() + BATTLE_ROYALE_HEART_SPAWN_INTERVAL_MS,
+        nextAmmoSpawnAt: Date.now() + BATTLE_ROYALE_AMMO_PACKET_SPAWN_INTERVAL_MS,
+        nextAsteroidSpawnAt: Date.now() + BATTLE_ROYALE_ASTEROID_RESPAWN_INTERVAL_MS,
+        nextHeartSpawnAt: Date.now() + BATTLE_ROYALE_HEART_SPAWN_INTERVAL_MS,
         random: createSeededRandom((worldSeed ^ 0x9e3779b9) >>> 0),
-        runtime: createInitialBattleRoyaleWorld(
-          worldSeed,
-          playerPositions,
-          BATTLE_ROYALE_ARENA
-        ),
+        runtime: createInitialBattleRoyaleWorld(worldSeed, playerPositions, BATTLE_ROYALE_ARENA),
       },
       worldSeed,
       worldVersion: 0,
@@ -400,9 +387,7 @@ export class BattleRoyaleService {
     if (matchId === undefined) return;
     const match = this.matches.get(matchId);
     if (match === undefined) return;
-    const participant = match.players.find(
-      (player) => player.socket.id === socketId
-    );
+    const participant = match.players.find((player) => player.socket.id === socketId);
     if (participant === undefined) return;
     participant.inputQueue.push(payload);
     if (participant.inputQueue.length > 120) {
@@ -424,10 +409,7 @@ export class BattleRoyaleService {
     match.sequence++;
 
     const elapsed = Date.now() - match.createdAt;
-    if (
-      match.phase === "countdown" &&
-      elapsed >= BATTLE_ROYALE_MATCH_COUNTDOWN_MS
-    ) {
+    if (match.phase === "countdown" && elapsed >= BATTLE_ROYALE_MATCH_COUNTDOWN_MS) {
       match.phase = "active";
       match.lastActivityAt = Date.now();
     }
@@ -472,10 +454,7 @@ export class BattleRoyaleService {
     }
 
     this.emitWorldEvents(match, worldEvents);
-    if (
-      match.sequence % SNAPSHOT_INTERVAL_TICKS === 0 ||
-      match.phase === "countdown"
-    ) {
+    if (match.sequence % SNAPSHOT_INTERVAL_TICKS === 0 || match.phase === "countdown") {
       this.emitSnapshot(match);
     }
   }
@@ -495,10 +474,7 @@ export class BattleRoyaleService {
         participant.state.ammo > 0
       ) {
         match.bullets.push(
-          createRuntimeBulletState(
-            participant.state,
-            `br-bullet-${++this.bulletCounter}`
-          )
+          createRuntimeBulletState(participant.state, `br-bullet-${++this.bulletCounter}`),
         );
         participant.state.ammo--;
         participant.state.fireCooldownTicks = FIRE_COOLDOWN_TICKS;
@@ -506,9 +482,7 @@ export class BattleRoyaleService {
       }
       if (
         participant.state.health > 0 &&
-        (participant.input.thrust ||
-          participant.input.turnLeft ||
-          participant.input.turnRight)
+        (participant.input.thrust || participant.input.turnLeft || participant.input.turnRight)
       ) {
         match.lastActivityAt = Date.now();
       }
@@ -517,7 +491,7 @@ export class BattleRoyaleService {
 
   private handlePlayerShipCollisions(
     match: BattleRoyaleMatch,
-    playerDamageById: Map<string, number>
+    playerDamageById: Map<string, number>,
   ) {
     for (let i = 0; i < match.players.length; i++) {
       const a = match.players[i];
@@ -529,7 +503,7 @@ export class BattleRoyaleService {
         if (
           !shipCollidersOverlap(
             getShipCollider(a.state.x, a.state.y, a.state.angle, a.state.shipVariant),
-            getShipCollider(b.state.x, b.state.y, b.state.angle, b.state.shipVariant)
+            getShipCollider(b.state.x, b.state.y, b.state.angle, b.state.shipVariant),
           )
         ) {
           continue;
@@ -538,16 +512,10 @@ export class BattleRoyaleService {
         resolvePlayerCollision(a.state, b.state, BATTLE_ROYALE_ARENA);
 
         if (a.state.damageRecoveryTicks === 0) {
-          playerDamageById.set(
-            a.state.id,
-            (playerDamageById.get(a.state.id) ?? 0) + 1
-          );
+          playerDamageById.set(a.state.id, (playerDamageById.get(a.state.id) ?? 0) + 1);
         }
         if (b.state.damageRecoveryTicks === 0) {
-          playerDamageById.set(
-            b.state.id,
-            (playerDamageById.get(b.state.id) ?? 0) + 1
-          );
+          playerDamageById.set(b.state.id, (playerDamageById.get(b.state.id) ?? 0) + 1);
         }
       }
     }
@@ -556,42 +524,32 @@ export class BattleRoyaleService {
   private handlePlayerAsteroidCollisions(
     match: BattleRoyaleMatch,
     playerDamageById: Map<string, number>,
-    worldEvents: WorldEvent[]
+    worldEvents: WorldEvent[],
   ) {
     const destroyedAsteroidIds = new Set<string>();
     for (const participant of match.players) {
-      if (
-        participant.state.health <= 0 ||
-        participant.state.damageRecoveryTicks > 0
-      ) {
+      if (participant.state.health <= 0 || participant.state.damageRecoveryTicks > 0) {
         continue;
       }
       const shipCollider = getShipCollider(
         participant.state.x,
         participant.state.y,
         participant.state.angle,
-        participant.state.shipVariant
+        participant.state.shipVariant,
       );
       const nearbyAsteroids = getNearbyAsteroids(
         match.world.runtime,
         participant.state.x,
         participant.state.y,
         getShipCollisionBoundingDiameter(participant.state.shipVariant),
-        BATTLE_ROYALE_ARENA
+        BATTLE_ROYALE_ARENA,
       );
       for (const asteroid of nearbyAsteroids) {
         if (destroyedAsteroidIds.has(asteroid.id)) continue;
-        if (
-          circleOverlapsShipCollider(
-            asteroid.x,
-            asteroid.y,
-            asteroid.size,
-            shipCollider
-          )
-        ) {
+        if (circleOverlapsShipCollider(asteroid.x, asteroid.y, asteroid.size, shipCollider)) {
           playerDamageById.set(
             participant.state.id,
-            (playerDamageById.get(participant.state.id) ?? 0) + 1
+            (playerDamageById.get(participant.state.id) ?? 0) + 1,
           );
           destroyedAsteroidIds.add(asteroid.id);
           break;
@@ -599,9 +557,7 @@ export class BattleRoyaleService {
       }
     }
     destroyedAsteroidIds.forEach((asteroidId) => {
-      if (
-        removeAsteroidFromWorld(match.world.runtime, asteroidId, BATTLE_ROYALE_ARENA)
-      ) {
+      if (removeAsteroidFromWorld(match.world.runtime, asteroidId, BATTLE_ROYALE_ARENA)) {
         worldEvents.push({ asteroidId, type: "asteroid-removed" });
       }
     });
@@ -610,7 +566,7 @@ export class BattleRoyaleService {
   private handleBulletCollisions(
     match: BattleRoyaleMatch,
     playerDamageById: Map<string, number>,
-    asteroidDamageById: Map<string, number>
+    asteroidDamageById: Map<string, number>,
   ) {
     for (let bulletIndex = match.bullets.length - 1; bulletIndex >= 0; bulletIndex--) {
       const bullet = match.bullets[bulletIndex];
@@ -625,23 +581,13 @@ export class BattleRoyaleService {
         bullet.x,
         bullet.y,
         BULLET_DIAMETER,
-        BATTLE_ROYALE_ARENA
+        BATTLE_ROYALE_ARENA,
       );
       for (const asteroid of nearbyAsteroids) {
         if (
-          circlesOverlap(
-            bullet.x,
-            bullet.y,
-            BULLET_DIAMETER,
-            asteroid.x,
-            asteroid.y,
-            asteroid.size
-          )
+          circlesOverlap(bullet.x, bullet.y, BULLET_DIAMETER, asteroid.x, asteroid.y, asteroid.size)
         ) {
-          asteroidDamageById.set(
-            asteroid.id,
-            (asteroidDamageById.get(asteroid.id) ?? 0) + 1
-          );
+          asteroidDamageById.set(asteroid.id, (asteroidDamageById.get(asteroid.id) ?? 0) + 1);
           consumedBullet = true;
           break;
         }
@@ -667,13 +613,13 @@ export class BattleRoyaleService {
               participant.state.x,
               participant.state.y,
               participant.state.angle,
-              participant.state.shipVariant
-            )
+              participant.state.shipVariant,
+            ),
           )
         ) {
           playerDamageById.set(
             participant.state.id,
-            (playerDamageById.get(participant.state.id) ?? 0) + 1
+            (playerDamageById.get(participant.state.id) ?? 0) + 1,
           );
           consumedBullet = true;
           break;
@@ -688,16 +634,14 @@ export class BattleRoyaleService {
   private applyAsteroidDamage(
     match: BattleRoyaleMatch,
     asteroidDamageById: Map<string, number>,
-    worldEvents: WorldEvent[]
+    worldEvents: WorldEvent[],
   ) {
     for (const [asteroidId, damage] of asteroidDamageById.entries()) {
       const asteroid = match.world.runtime.asteroids.get(asteroidId);
       if (asteroid === undefined) continue;
       asteroid.hitPoints -= damage;
       if (asteroid.hitPoints > 0) continue;
-      if (
-        removeAsteroidFromWorld(match.world.runtime, asteroidId, BATTLE_ROYALE_ARENA)
-      ) {
+      if (removeAsteroidFromWorld(match.world.runtime, asteroidId, BATTLE_ROYALE_ARENA)) {
         worldEvents.push({ asteroidId, type: "asteroid-removed" });
       }
     }
@@ -706,7 +650,7 @@ export class BattleRoyaleService {
   private applyHeartCollections(
     match: BattleRoyaleMatch,
     healingByPlayerId: Map<string, number>,
-    worldEvents: WorldEvent[]
+    worldEvents: WorldEvent[],
   ) {
     const collected = new Set<string>();
     for (const participant of match.players) {
@@ -715,14 +659,14 @@ export class BattleRoyaleService {
         participant.state.x,
         participant.state.y,
         participant.state.angle,
-        participant.state.shipVariant
+        participant.state.shipVariant,
       );
       const nearby = getNearbyHearts(
         match.world.runtime,
         participant.state.x,
         participant.state.y,
         getShipCollisionBoundingDiameter(participant.state.shipVariant),
-        BATTLE_ROYALE_ARENA
+        BATTLE_ROYALE_ARENA,
       );
       for (const heart of nearby) {
         if (collected.has(heart.id)) continue;
@@ -731,7 +675,7 @@ export class BattleRoyaleService {
           if (participant.state.health < PLAYER_MAX_HEALTH) {
             healingByPlayerId.set(
               participant.state.id,
-              (healingByPlayerId.get(participant.state.id) ?? 0) + 1
+              (healingByPlayerId.get(participant.state.id) ?? 0) + 1,
             );
           }
           break;
@@ -753,14 +697,14 @@ export class BattleRoyaleService {
         participant.state.x,
         participant.state.y,
         participant.state.angle,
-        participant.state.shipVariant
+        participant.state.shipVariant,
       );
       const nearby = getNearbyAmmoPackets(
         match.world.runtime,
         participant.state.x,
         participant.state.y,
         getShipCollisionBoundingDiameter(participant.state.shipVariant),
-        BATTLE_ROYALE_ARENA
+        BATTLE_ROYALE_ARENA,
       );
       for (const packet of nearby) {
         if (collected.has(packet.id)) continue;
@@ -768,7 +712,7 @@ export class BattleRoyaleService {
           collected.add(packet.id);
           participant.state.ammo = Math.min(
             PLAYER_MAX_AMMO,
-            participant.state.ammo + packet.amount
+            participant.state.ammo + packet.amount,
           );
           break;
         }
@@ -784,7 +728,7 @@ export class BattleRoyaleService {
   private applyPlayerDamageAndHealing(
     match: BattleRoyaleMatch,
     playerDamageById: Map<string, number>,
-    healingByPlayerId: Map<string, number>
+    healingByPlayerId: Map<string, number>,
   ) {
     for (const participant of match.players) {
       const damage = playerDamageById.get(participant.state.id) ?? 0;
@@ -794,33 +738,22 @@ export class BattleRoyaleService {
         participant.state.damageRecoveryTicks = PLAYER_DAMAGE_RECOVERY_TICKS;
       }
       if (participant.state.health > 0 && healing > 0) {
-        participant.state.health = Math.min(
-          PLAYER_MAX_HEALTH,
-          participant.state.health + healing
-        );
+        participant.state.health = Math.min(PLAYER_MAX_HEALTH, participant.state.health + healing);
       }
     }
   }
 
   private handleNewEliminations(match: BattleRoyaleMatch) {
     for (const participant of match.players) {
-      if (
-        participant.state.health <= 0 &&
-        participant.eliminatedAt === null
-      ) {
+      if (participant.state.health <= 0 && participant.eliminatedAt === null) {
         this.markElimination(match, participant);
       }
     }
   }
 
-  private markElimination(
-    match: BattleRoyaleMatch,
-    participant: BattleRoyalePlayer
-  ) {
+  private markElimination(match: BattleRoyaleMatch, participant: BattleRoyalePlayer) {
     participant.eliminatedAt = Date.now();
-    const survivors = match.players.filter(
-      (player) => player.state.health > 0
-    ).length;
+    const survivors = match.players.filter((player) => player.state.health > 0).length;
     // Placement is based on reverse elimination order — the last
     // player alive is 1st, the previous to die is 2nd, and so on.
     const placement = match.players.length - match.eliminationsSoFar;
@@ -834,10 +767,7 @@ export class BattleRoyaleService {
     });
   }
 
-  private dispatchMatchEndAchievements(
-    match: BattleRoyaleMatch,
-    winnerId: string | null
-  ) {
+  private dispatchMatchEndAchievements(match: BattleRoyaleMatch, winnerId: string | null) {
     const total = match.players.length;
     for (const participant of match.players) {
       const userId = (participant.socket.data as { userId?: string }).userId;
@@ -846,9 +776,7 @@ export class BattleRoyaleService {
       const won = winnerId !== null && winnerId === participant.socket.id;
       // Winner's placement is 1 (survived to the end). Others use their
       // elimination placement (set in markElimination).
-      const placement = won
-        ? 1
-        : participant.eliminationPlacement ?? total;
+      const placement = won ? 1 : (participant.eliminationPlacement ?? total);
 
       const delta: Parameters<typeof achievementService.applyEvent>[1] = {
         brMatches: 1,
@@ -869,9 +797,7 @@ export class BattleRoyaleService {
   }
 
   private finishIfMatchOver(match: BattleRoyaleMatch): boolean {
-    const survivors = match.players.filter(
-      (player) => player.state.health > 0
-    );
+    const survivors = match.players.filter((player) => player.state.health > 0);
     if (survivors.length > 1) {
       return false;
     }
@@ -883,7 +809,7 @@ export class BattleRoyaleService {
 
   private finishMatch(
     match: BattleRoyaleMatch,
-    options: { reason: BattleRoyaleMatchEndedPayload["reason"]; winnerId: string | null }
+    options: { reason: BattleRoyaleMatchEndedPayload["reason"]; winnerId: string | null },
   ) {
     this.matches.delete(match.id);
 
@@ -897,9 +823,7 @@ export class BattleRoyaleService {
         matchId: match.id,
         reason: options.reason,
         winnerId: options.winnerId,
-        youWon:
-          options.winnerId !== null &&
-          options.winnerId === participant.socket.id,
+        youWon: options.winnerId !== null && options.winnerId === participant.socket.id,
       };
       participant.socket.emit("br:match-ended", payload);
     }
@@ -912,10 +836,7 @@ export class BattleRoyaleService {
   private emitSnapshot(match: BattleRoyaleMatch) {
     const countdownMs =
       match.phase === "countdown"
-        ? Math.max(
-            0,
-            BATTLE_ROYALE_MATCH_COUNTDOWN_MS - (Date.now() - match.createdAt)
-          )
+        ? Math.max(0, BATTLE_ROYALE_MATCH_COUNTDOWN_MS - (Date.now() - match.createdAt))
         : 0;
 
     const payload: BattleRoyaleSnapshotPayload = {
@@ -931,12 +852,11 @@ export class BattleRoyaleService {
       matchId: match.id,
       phase: match.phase,
       players: match.players.map(
-        (participant): MatchPlayerSnapshot => snapshotPlayerState(participant.state)
+        (participant): MatchPlayerSnapshot => snapshotPlayerState(participant.state),
       ),
       sequence: match.sequence,
-      survivorsRemaining: match.players.filter(
-        (participant) => participant.state.health > 0
-      ).length,
+      survivorsRemaining: match.players.filter((participant) => participant.state.health > 0)
+        .length,
     };
     this.io.to(match.roomId).emit("br:snapshot", payload);
   }
@@ -952,10 +872,7 @@ export class BattleRoyaleService {
     this.io.to(match.roomId).emit("br:world-events", payload);
   }
 
-  private updateWorldSpawns(
-    match: BattleRoyaleMatch,
-    worldEvents: WorldEvent[]
-  ) {
+  private updateWorldSpawns(match: BattleRoyaleMatch, worldEvents: WorldEvent[]) {
     const now = Date.now();
     const playerPositions = match.players.map((player) => ({
       x: player.state.x,
@@ -971,14 +888,13 @@ export class BattleRoyaleService {
         playerPositions,
         match.world.random,
         `br-asteroid:spawn:${++this.asteroidCounter}`,
-        BATTLE_ROYALE_ARENA
+        BATTLE_ROYALE_ARENA,
       );
       if (asteroid !== null) {
         addAsteroidToWorld(match.world.runtime, asteroid, BATTLE_ROYALE_ARENA);
         worldEvents.push({ asteroid, type: "asteroid-spawned" });
       }
-      match.world.nextAsteroidSpawnAt =
-        now + BATTLE_ROYALE_ASTEROID_RESPAWN_INTERVAL_MS;
+      match.world.nextAsteroidSpawnAt = now + BATTLE_ROYALE_ASTEROID_RESPAWN_INTERVAL_MS;
     }
 
     if (
@@ -990,7 +906,7 @@ export class BattleRoyaleService {
         playerPositions,
         match.world.random,
         `br-heart:spawn:${++this.heartCounter}`,
-        BATTLE_ROYALE_ARENA
+        BATTLE_ROYALE_ARENA,
       );
       if (heart !== null) {
         addHeartToWorld(match.world.runtime, heart, BATTLE_ROYALE_ARENA);
@@ -1008,14 +924,13 @@ export class BattleRoyaleService {
         playerPositions,
         match.world.random,
         `br-ammo:spawn:${++this.ammoCounter}`,
-        BATTLE_ROYALE_ARENA
+        BATTLE_ROYALE_ARENA,
       );
       if (ammo !== null) {
         addAmmoToWorld(match.world.runtime, ammo, BATTLE_ROYALE_ARENA);
         worldEvents.push({ ammo, type: "ammo-spawned" });
       }
-      match.world.nextAmmoSpawnAt =
-        now + BATTLE_ROYALE_AMMO_PACKET_SPAWN_INTERVAL_MS;
+      match.world.nextAmmoSpawnAt = now + BATTLE_ROYALE_AMMO_PACKET_SPAWN_INTERVAL_MS;
     }
   }
 }

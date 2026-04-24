@@ -1,7 +1,7 @@
-import p5 from "p5";
-import { player, Player } from "./player";
+import type p5 from "p5";
 import { circleOverlapsShipCollider } from "../../shared/src";
 import { isMobileDevice } from "./input";
+import { type Player, player } from "./player";
 
 const MOBILE_VIEW_SCALE = 1 / 1.5;
 
@@ -11,8 +11,8 @@ export const REFERENCE_VIEWPORT_HEIGHT = 900;
 export const REFERENCE_PLAYER_SPAWN_SAFE_RADIUS = REFERENCE_VIEWPORT_WIDTH / 2;
 export let width = window.innerWidth;
 export let height = window.innerHeight;
-export let boardSizeX = REFERENCE_VIEWPORT_WIDTH * 2;
-export let boardSizeY = REFERENCE_VIEWPORT_HEIGHT * 2;
+export const boardSizeX = REFERENCE_VIEWPORT_WIDTH * 2;
+export const boardSizeY = REFERENCE_VIEWPORT_HEIGHT * 2;
 export const SPACE_KEYCODE = 32;
 export const S_KEYCODE = 83;
 export const W_KEYCODE = 87;
@@ -38,11 +38,7 @@ export const getViewScale = () => {
   return isMobileDevice() ? MOBILE_VIEW_SCALE : 1;
 };
 
-export const createCameraBounds = (
-  centerX: number,
-  centerY: number,
-  padding = 0
-): CameraBounds => {
+export const createCameraBounds = (centerX: number, centerY: number, padding = 0): CameraBounds => {
   const scale = getViewScale();
   const halfWidth = width / (2 * scale);
   const halfHeight = height / (2 * scale);
@@ -58,7 +54,7 @@ export const circleIntersectsBounds = (
   x: number,
   y: number,
   diameter: number,
-  bounds: CameraBounds
+  bounds: CameraBounds,
 ) => {
   const radius = diameter / 2;
   return (
@@ -70,10 +66,7 @@ export const circleIntersectsBounds = (
 };
 
 export const randomPosition = (p: p5) => {
-  return p.createVector(
-    p.random(-boardSizeX, boardSizeX),
-    p.random(-boardSizeY, boardSizeY)
-  );
+  return p.createVector(p.random(-boardSizeX, boardSizeX), p.random(-boardSizeY, boardSizeY));
 };
 
 export const distSquare = (x1: number, y1: number, x2: number, y2: number) => {
@@ -90,7 +83,7 @@ export const distanceToSegmentSquare = (
   startX: number,
   startY: number,
   endX: number,
-  endY: number
+  endY: number,
 ) => {
   const segmentLengthSquare = distSquare(startX, startY, endX, endY);
   if (segmentLengthSquare === 0) {
@@ -113,7 +106,7 @@ export const circlesOverlap = (
   diameter1: number,
   x2: number,
   y2: number,
-  diameter2: number
+  diameter2: number,
 ) => {
   const radiusSum = diameter1 / 2 + diameter2 / 2;
   return distSquare(x1, y1, x2, y2) <= radiusSum * radiusSum;
@@ -123,12 +116,7 @@ export const playerHitsCircularTarget = (target: any, player: Player) => {
   if (player.life <= 0) {
     return false;
   }
-  return circleOverlapsShipCollider(
-    target.pos.x,
-    target.pos.y,
-    target.size,
-    player.getCollider()
-  );
+  return circleOverlapsShipCollider(target.pos.x, target.pos.y, target.size, player.getCollider());
 };
 
 export const randomPositionNotHittingPlayer = (p: p5, size: number) => {
@@ -144,12 +132,7 @@ export const randomPositionNotHittingPlayer = (p: p5, size: number) => {
 export const randomSpawnPoint = (p: p5) => {
   let pos = randomPosition(p);
   while (
-    distSquare(
-      pos.x,
-      pos.y,
-      player.enginePlayer.position.x,
-      player.enginePlayer.position.y
-    ) <
+    distSquare(pos.x, pos.y, player.enginePlayer.position.x, player.enginePlayer.position.y) <
     REFERENCE_PLAYER_SPAWN_SAFE_RADIUS * REFERENCE_PLAYER_SPAWN_SAFE_RADIUS
   ) {
     pos = randomPosition(p);

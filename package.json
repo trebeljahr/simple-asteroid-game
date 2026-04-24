@@ -3,11 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "description": "This is a small asteroid game for multiplayer using typescript, sockets and p5 canvas.",
-  "workspaces": [
-    "client",
-    "server",
-    "shared"
-  ],
+  "workspaces": ["client", "server", "shared"],
   "scripts": {
     "setup": "node ./scripts/setup.mjs",
     "dev": "node scripts/dev.mjs",
@@ -22,7 +18,10 @@
     "build:client": "npm run build --workspace @simple-asteroid-game/client",
     "build:server": "npm run build --workspace @simple-asteroid-game/server",
     "check": "npm run check --workspace @simple-asteroid-game/shared && npm run check --workspace @simple-asteroid-game/client && npm run check --workspace @simple-asteroid-game/server",
-    "tools:extract-shapes": "tsx scripts/extract-ship-shapes.ts"
+    "tools:extract-shapes": "tsx scripts/extract-ship-shapes.ts",
+    "format": "biome format --write .",
+    "lint": "biome lint .",
+    "prepare": "husky"
   },
   "repository": {
     "type": "git"
@@ -35,7 +34,13 @@
   "license": "ISC",
   "devDependencies": {
     "concurrently": "^5.1.0",
-    "tsx": "^4.19.3"
+    "tsx": "^4.19.3",
+    "@biomejs/biome": "^1.9.4",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.4.0"
   },
-  "dependencies": {}
+  "dependencies": {},
+  "lint-staged": {
+    "*.{js,jsx,ts,tsx,json,jsonc,css}": ["biome check --write --no-errors-on-unmatched"]
+  }
 }

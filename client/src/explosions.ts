@@ -1,6 +1,6 @@
-import p5, { Vector } from "p5";
+import p5, { type Vector } from "p5";
 import { Mover } from "./mover";
-import { CameraBounds, circleIntersectsBounds, rgba } from "./utils";
+import { type CameraBounds, circleIntersectsBounds, rgba } from "./utils";
 
 export let explosions = {} as ExplosionSystem;
 
@@ -23,8 +23,8 @@ export class ExplosionSystem {
           this.p,
           pos,
           this.p.random(-2 * this.p.PI, 2 * this.p.PI),
-          this.p.random(0, 10)
-        )
+          this.p.random(0, 10),
+        ),
       );
     }
   }
@@ -73,9 +73,7 @@ class ExplosionParticle extends Mover {
       cameraBounds === undefined ||
       circleIntersectsBounds(this.pos.x, this.pos.y, this.size * 2, cameraBounds)
     ) {
-      this.p.fill(
-        rgba(this.redValue, this.greenValue, this.blueValue, this.lifespan)
-      );
+      this.p.fill(rgba(this.redValue, this.greenValue, this.blueValue, this.lifespan));
       this.show();
     }
     this.decay();

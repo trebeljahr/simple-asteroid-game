@@ -18,8 +18,8 @@
 // themselves, dep bootstrapping is skipped — the server degrades
 // gracefully when persistence is missing.
 
-import { createServer } from "net";
 import { execSync, spawnSync } from "child_process";
+import { createServer } from "net";
 
 const fixedMode = process.argv.includes("--fixed");
 const lanMode = process.argv.includes("--lan");
@@ -70,7 +70,7 @@ async function findRandomFreePort(min, max, maxAttempts = 20) {
     }
   }
   throw new Error(
-    `Could not find a free port in range ${min}-${max} after ${maxAttempts} attempts`
+    `Could not find a free port in range ${min}-${max} after ${maxAttempts} attempts`,
   );
 }
 
@@ -120,9 +120,7 @@ async function startDependencies() {
   // If the user explicitly wired their own postgres, respect that and
   // don't touch docker at all.
   if (process.env.DATABASE_URL) {
-    console.log(
-      `  Deps:   using DATABASE_URL from env (${redact(process.env.DATABASE_URL)})`
-    );
+    console.log(`  Deps:   using DATABASE_URL from env (${redact(process.env.DATABASE_URL)})`);
     return {
       DATABASE_URL: process.env.DATABASE_URL,
       REDIS_URL: process.env.REDIS_URL ?? "",
@@ -133,7 +131,7 @@ async function startDependencies() {
     console.log(
       "  Deps:   docker not available — running without postgres/redis.\n" +
         "          Achievements & accounts will be disabled. Install Docker\n" +
-        "          Desktop or set DATABASE_URL to enable them."
+        "          Desktop or set DATABASE_URL to enable them.",
     );
     return null;
   }
@@ -142,7 +140,7 @@ async function startDependencies() {
   if (compose === null) {
     console.log(
       "  Deps:   docker compose not found (neither the plugin nor the\n" +
-        "          legacy docker-compose binary). Skipping dep bootstrap."
+        "          legacy docker-compose binary). Skipping dep bootstrap.",
     );
     return null;
   }
@@ -157,12 +155,8 @@ async function startDependencies() {
   // redis / a user's own postgres). If the port is busy we assume the
   // service on it is compatible enough and reuse it; the server degrades
   // gracefully if it isn't.
-  const postgresPortFree = await isPortBindableForDocker(
-    parseInt(postgresPort, 10)
-  );
-  const redisPortFree = await isPortBindableForDocker(
-    parseInt(redisPort, 10)
-  );
+  const postgresPortFree = await isPortBindableForDocker(Number.parseInt(postgresPort, 10));
+  const redisPortFree = await isPortBindableForDocker(Number.parseInt(redisPort, 10));
 
   const servicesToStart = [];
   if (postgresPortFree) {
@@ -171,32 +165,20 @@ async function startDependencies() {
     console.log(
       `  Deps:   port ${postgresPort} already in use — reusing existing postgres.\n` +
         "          If migrations fail, stop the other instance or set\n" +
-        "          POSTGRES_PORT to a free port before `npm run dev`."
+        "          POSTGRES_PORT to a free port before `npm run dev`.",
     );
   }
   if (redisPortFree) {
     servicesToStart.push("redis");
   } else {
-    console.log(
-      `  Deps:   port ${redisPort} already in use — reusing existing redis.`
-    );
+    console.log(`  Deps:   port ${redisPort} already in use — reusing existing redis.`);
   }
 
   if (servicesToStart.length > 0) {
-    console.log(
-      `  Deps:   starting ${servicesToStart.join(" + ")} via docker compose...`
-    );
+    console.log(`  Deps:   starting ${servicesToStart.join(" + ")} via docker compose...`);
     const started = spawnSync(
       compose.command,
-      [
-        ...compose.prefix,
-        "-f",
-        "docker-compose.yaml",
-        "up",
-        "-d",
-        "--wait",
-        ...servicesToStart,
-      ],
+      [...compose.prefix, "-f", "docker-compose.yaml", "up", "-d", "--wait", ...servicesToStart],
       {
         stdio: "inherit",
         env: {
@@ -207,13 +189,13 @@ async function startDependencies() {
           POSTGRES_PORT: postgresPort,
           REDIS_PORT: redisPort,
         },
-      }
+      },
     );
 
     if (started.status !== 0) {
       console.log(
         "  Deps:   failed to start docker deps — continuing without them.\n" +
-          "          Check `docker compose ps` or run `npm run dev:down` and retry."
+          "          Check `docker compose ps` or run `npm run dev:down` and retry.",
       );
       return null;
     }
@@ -233,7 +215,7 @@ let clientPort;
 let serverPort;
 
 if (process.env.CLIENT_PORT) {
-  clientPort = parseInt(process.env.CLIENT_PORT, 10);
+  clientPort = Number.parseInt(process.env.CLIENT_PORT, 10);
 } else if (fixedMode) {
   clientPort = 5173;
 } else {
@@ -241,7 +223,7 @@ if (process.env.CLIENT_PORT) {
 }
 
 if (process.env.SERVER_PORT) {
-  serverPort = parseInt(process.env.SERVER_PORT, 10);
+  serverPort = Number.parseInt(process.env.SERVER_PORT, 10);
 } else if (fixedMode) {
   serverPort = 9777;
 } else {
@@ -250,9 +232,7 @@ if (process.env.SERVER_PORT) {
 
 const host = lanMode ? "0.0.0.0" : "127.0.0.1";
 
-console.log(
-  `\n  Mode:   ${fixedMode ? "fixed" : "random"}${lanMode ? " (LAN)" : ""}`
-);
+console.log(`\n  Mode:   ${fixedMode ? "fixed" : "random"}${lanMode ? " (LAN)" : ""}`);
 console.log(`  Client: http://localhost:${clientPort}`);
 console.log(`  Server: http://localhost:${serverPort}`);
 
@@ -265,9 +245,7 @@ if (lanMode) {
     }).trim();
     console.log(`  LAN:    http://${lanIp}:${clientPort}`);
   } catch {
-    console.log(
-      `  LAN:    (could not detect LAN IP — check ipconfig getifaddr en0)`
-    );
+    console.log(`  LAN:    (could not detect LAN IP — check ipconfig getifaddr en0)`);
   }
 }
 console.log();
@@ -292,10 +270,9 @@ const processes = [
 ];
 
 try {
-  execSync(
-    `npx concurrently -k -n client,server -c cyan,green ${processes.join(" ")}`,
-    { stdio: "inherit" }
-  );
+  execSync(`npx concurrently -k -n client,server -c cyan,green ${processes.join(" ")}`, {
+    stdio: "inherit",
+  });
 } catch {
   process.exit(1);
 }

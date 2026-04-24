@@ -38,17 +38,18 @@ const crossProduct = (first: Point2D, second: Point2D) => {
 const pointInLoop = (x: number, y: number, loop: readonly Point2D[]) => {
   let inside = false;
 
-  for (let index = 0, previousIndex = loop.length - 1; index < loop.length; previousIndex = index++) {
+  for (
+    let index = 0, previousIndex = loop.length - 1;
+    index < loop.length;
+    previousIndex = index++
+  ) {
     const current = loop[index];
     const previous = loop[previousIndex];
-    const crossesY = (current.y > y) !== (previous.y > y);
+    const crossesY = current.y > y !== previous.y > y;
 
     if (
       crossesY &&
-      x <
-        ((previous.x - current.x) * (y - current.y)) /
-          (previous.y - current.y) +
-          current.x
+      x < ((previous.x - current.x) * (y - current.y)) / (previous.y - current.y) + current.x
     ) {
       inside = !inside;
     }
@@ -57,11 +58,7 @@ const pointInLoop = (x: number, y: number, loop: readonly Point2D[]) => {
   return inside;
 };
 
-const pointInShape = (
-  x: number,
-  y: number,
-  shape: TransformedCollisionShape
-) => {
+const pointInShape = (x: number, y: number, shape: TransformedCollisionShape) => {
   let inside = false;
 
   for (let loopIndex = 0; loopIndex < shape.loops.length; loopIndex++) {
@@ -73,12 +70,7 @@ const pointInShape = (
   return inside;
 };
 
-const distanceToSegmentSquare = (
-  pointX: number,
-  pointY: number,
-  start: Point2D,
-  end: Point2D
-) => {
+const distanceToSegmentSquare = (pointX: number, pointY: number, start: Point2D, end: Point2D) => {
   const dx = end.x - start.x;
   const dy = end.y - start.y;
   const lengthSquare = dx * dx + dy * dy;
@@ -91,10 +83,7 @@ const distanceToSegmentSquare = (
 
   const projection = Math.max(
     0,
-    Math.min(
-      1,
-      ((pointX - start.x) * dx + (pointY - start.y) * dy) / lengthSquare
-    )
+    Math.min(1, ((pointX - start.x) * dx + (pointY - start.y) * dy) / lengthSquare),
   );
   const nearestX = start.x + dx * projection;
   const nearestY = start.y + dy * projection;
@@ -107,7 +96,7 @@ const segmentBoundingBoxesOverlap = (
   firstStart: Point2D,
   firstEnd: Point2D,
   secondStart: Point2D,
-  secondEnd: Point2D
+  secondEnd: Point2D,
 ) => {
   return !(
     Math.max(firstStart.x, firstEnd.x) < Math.min(secondStart.x, secondEnd.x) - EPSILON ||
@@ -135,11 +124,9 @@ const segmentsIntersect = (
   firstStart: Point2D,
   firstEnd: Point2D,
   secondStart: Point2D,
-  secondEnd: Point2D
+  secondEnd: Point2D,
 ) => {
-  if (
-    !segmentBoundingBoxesOverlap(firstStart, firstEnd, secondStart, secondEnd)
-  ) {
+  if (!segmentBoundingBoxesOverlap(firstStart, firstEnd, secondStart, secondEnd)) {
     return false;
   }
 
@@ -148,34 +135,21 @@ const segmentsIntersect = (
   const thirdOrientation = orientation(secondStart, secondEnd, firstStart);
   const fourthOrientation = orientation(secondStart, secondEnd, firstEnd);
 
-  if (
-    Math.abs(firstOrientation) <= EPSILON &&
-    pointOnSegment(secondStart, firstStart, firstEnd)
-  ) {
+  if (Math.abs(firstOrientation) <= EPSILON && pointOnSegment(secondStart, firstStart, firstEnd)) {
     return true;
   }
-  if (
-    Math.abs(secondOrientation) <= EPSILON &&
-    pointOnSegment(secondEnd, firstStart, firstEnd)
-  ) {
+  if (Math.abs(secondOrientation) <= EPSILON && pointOnSegment(secondEnd, firstStart, firstEnd)) {
     return true;
   }
-  if (
-    Math.abs(thirdOrientation) <= EPSILON &&
-    pointOnSegment(firstStart, secondStart, secondEnd)
-  ) {
+  if (Math.abs(thirdOrientation) <= EPSILON && pointOnSegment(firstStart, secondStart, secondEnd)) {
     return true;
   }
-  if (
-    Math.abs(fourthOrientation) <= EPSILON &&
-    pointOnSegment(firstEnd, secondStart, secondEnd)
-  ) {
+  if (Math.abs(fourthOrientation) <= EPSILON && pointOnSegment(firstEnd, secondStart, secondEnd)) {
     return true;
   }
 
   return (
-    (firstOrientation > 0) !== (secondOrientation > 0) &&
-    (thirdOrientation > 0) !== (fourthOrientation > 0)
+    firstOrientation > 0 !== secondOrientation > 0 && thirdOrientation > 0 !== fourthOrientation > 0
   );
 };
 
@@ -192,7 +166,7 @@ export const circleIntersectsAabb = (
   x: number,
   y: number,
   diameter: number,
-  aabb: CollisionAabb
+  aabb: CollisionAabb,
 ) => {
   const radius = diameter / 2;
   const nearestX = Math.max(aabb.minX, Math.min(x, aabb.maxX));
@@ -206,7 +180,7 @@ export const circleIntersectsAabb = (
 export const getCollisionShapeBoundingDiameter = (
   shape: NormalizedCollisionShape,
   width: number,
-  height: number
+  height: number,
 ) => {
   let maxDistanceSquare = 0;
 
@@ -229,7 +203,7 @@ export const transformCollisionShape = (
   centerY: number,
   angle: number,
   width: number,
-  height: number
+  height: number,
 ) => {
   const cosine = Math.cos(angle);
   const sine = Math.sin(angle);
@@ -270,7 +244,7 @@ export const circleOverlapsCollisionShape = (
   x: number,
   y: number,
   diameter: number,
-  shape: TransformedCollisionShape
+  shape: TransformedCollisionShape,
 ) => {
   if (!circleIntersectsAabb(x, y, diameter, shape.aabb)) {
     return false;
@@ -298,7 +272,7 @@ export const circleOverlapsCollisionShape = (
 
 export const collisionShapesOverlap = (
   first: TransformedCollisionShape,
-  second: TransformedCollisionShape
+  second: TransformedCollisionShape,
 ) => {
   if (!aabbsOverlap(first.aabb, second.aabb)) {
     return false;
@@ -314,18 +288,11 @@ export const collisionShapesOverlap = (
       for (let secondLoopIndex = 0; secondLoopIndex < second.loops.length; secondLoopIndex++) {
         const secondLoop = second.loops[secondLoopIndex];
 
-        for (
-          let secondPointIndex = 0;
-          secondPointIndex < secondLoop.length;
-          secondPointIndex++
-        ) {
+        for (let secondPointIndex = 0; secondPointIndex < secondLoop.length; secondPointIndex++) {
           const secondStart = secondLoop[secondPointIndex];
-          const secondEnd =
-            secondLoop[(secondPointIndex + 1) % secondLoop.length];
+          const secondEnd = secondLoop[(secondPointIndex + 1) % secondLoop.length];
 
-          if (
-            segmentsIntersect(firstStart, firstEnd, secondStart, secondEnd)
-          ) {
+          if (segmentsIntersect(firstStart, firstEnd, secondStart, secondEnd)) {
             return true;
           }
         }

@@ -1,6 +1,6 @@
-import p5, { Vector } from "p5";
+import p5, { type Vector } from "p5";
 import { Mover } from "./mover";
-import { CameraBounds, circleIntersectsBounds } from "./utils";
+import { type CameraBounds, circleIntersectsBounds } from "./utils";
 
 export let bullets = {} as BulletSystem;
 export const resetbullets = (p: p5) => {
@@ -41,12 +41,9 @@ class BulletSystem {
       new Bullet(
         this.p,
         pos,
-        p5.Vector.fromAngle(
-          rotation + this.p.random(-this.p.PI / 20, this.p.PI / 20),
-          20
-        ),
-        10
-      )
+        p5.Vector.fromAngle(rotation + this.p.random(-this.p.PI / 20, this.p.PI / 20), 20),
+        10,
+      ),
     );
   }
 }

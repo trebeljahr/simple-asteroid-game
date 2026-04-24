@@ -1,5 +1,5 @@
-import p5 from "p5";
-import { GameMode, getGameState, gameStateMachine } from "./gameState";
+import type p5 from "p5";
+import { type GameMode, gameStateMachine, getGameState } from "./gameState";
 import { requestLandscapeOrientationLock } from "./input";
 import { resetRunMode } from "./runMode";
 
@@ -10,11 +10,7 @@ export const configureGameModeActions = (p: p5) => {
 };
 
 export const activateGameMode = (mode: GameMode) => {
-  if (
-    mode === "singleplayer" ||
-    mode === "multiplayer" ||
-    mode === "battle-royale"
-  ) {
+  if (mode === "singleplayer" || mode === "multiplayer" || mode === "battle-royale") {
     requestLandscapeOrientationLock();
   }
 

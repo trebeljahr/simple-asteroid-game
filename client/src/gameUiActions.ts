@@ -1,12 +1,12 @@
-import { GameMode, gameStateMachine, getGameState } from "./gameState";
+import { reportAchievementEvent } from "./achievementEvents";
+import { playSound } from "./audio";
+import { type GameMode, gameStateMachine, getGameState } from "./gameState";
 import {
   didTakeDamageInCurrentRun,
   formatRunDuration,
   getRunDurationMilliseconds,
 } from "./runSession";
-import { playSound } from "./audio";
 import { recordRunCompletion } from "./stats";
-import { reportAchievementEvent } from "./achievementEvents";
 
 export const openPauseMenu = () => {
   return gameStateMachine.send({ type: "OPEN_PAUSE" });
@@ -48,11 +48,7 @@ export const toggleNetcodeDebug = () => {
   return gameStateMachine.send({ type: "TOGGLE_NETCODE_DEBUG" });
 };
 
-export const showModeResult = (
-  mode: GameMode,
-  title: string,
-  subtitle: string
-) => {
+export const showModeResult = (mode: GameMode, title: string, subtitle: string) => {
   return gameStateMachine.send({
     type: "SHOW_RESULT",
     mode,
@@ -83,11 +79,7 @@ export const showSingleplayerVictory = () => {
     const bestTime = formatRunDuration(completion.newBestMs, 2);
     subtitle = `Personal best still ${bestTime}. Try to beat it.`;
   }
-  return showModeResult(
-    "singleplayer",
-    `Singleplayer complete in ${totalTime}`,
-    subtitle
-  );
+  return showModeResult("singleplayer", `Singleplayer complete in ${totalTime}`, subtitle);
 };
 
 export const showSingleplayerDefeat = () => {
@@ -95,7 +87,7 @@ export const showSingleplayerDefeat = () => {
   return showModeResult(
     "singleplayer",
     "Ship destroyed",
-    "Take another run at the course or head back to the hangar."
+    "Take another run at the course or head back to the hangar.",
   );
 };
 

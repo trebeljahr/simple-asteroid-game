@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
-import { MULTIPLAYER_SHIP_VARIANTS, ShipVariant } from "../shared/src/multiplayerCore";
+import { MULTIPLAYER_SHIP_VARIANTS } from "../shared/src/multiplayerCore";
 
 interface Point {
   x: number;
@@ -134,9 +134,11 @@ function parsePath(d: string): Point[] {
 function extractPointsFromSvg(filePath: string): Point[] {
   const svg = fs.readFileSync(filePath, "utf8");
   const pathRegex = /<path[^>]+d="([^"]+)"/g;
-  const ellipseRegex = /<ellipse[^>]+cx="([^"]+)"[^>]+cy="([^"]+)"[^>]+rx="([^"]+)"[^>]+ry="([^"]+)"/g;
+  const ellipseRegex =
+    /<ellipse[^>]+cx="([^"]+)"[^>]+cy="([^"]+)"[^>]+rx="([^"]+)"[^>]+ry="([^"]+)"/g;
   const circleRegex = /<circle[^>]+cx="([^"]+)"[^>]+cy="([^"]+)"[^>]+r="([^"]+)"/g;
-  const rectRegex = /<rect[^>]+x="([^"]+)"[^>]+y="([^"]+)"[^>]+width="([^"]+)"[^>]+height="([^"]+)"/g;
+  const rectRegex =
+    /<rect[^>]+x="([^"]+)"[^>]+y="([^"]+)"[^>]+width="([^"]+)"[^>]+height="([^"]+)"/g;
 
   let allPoints: Point[] = [];
   let match;
@@ -224,7 +226,7 @@ function main() {
       "public",
       "assets",
       "alternatives",
-      `ship-alt-${ship}.svg`
+      `ship-alt-${ship}.svg`,
     );
     if (!fs.existsSync(filePath)) {
       console.warn(`Warning: File not found ${filePath}`);
