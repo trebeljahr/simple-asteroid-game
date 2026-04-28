@@ -4,6 +4,9 @@
   "private": true,
   "description": "This is the server for the asteroid game",
   "main": "dist/server.js",
+  "engines": {
+    "node": ">=24"
+  },
   "scripts": {
     "dev": "nodemon --watch src --ext ts --exec \"node --import tsx ./src/server.ts\"",
     "build": "tsc -p tsconfig.json && node -e \"const fs=require('fs');const path=require('path');const src=path.join('src','db','migrations');const dst=path.join('dist','server','src','db','migrations');fs.mkdirSync(dst,{recursive:true});for(const e of fs.readdirSync(src,{withFileTypes:true})){const s=path.join(src,e.name);const d=path.join(dst,e.name);if(e.isDirectory()){fs.cpSync(s,d,{recursive:true})}else{fs.copyFileSync(s,d)}}\"",
