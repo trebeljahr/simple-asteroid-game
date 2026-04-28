@@ -9,11 +9,11 @@
  *   BACKEND_URL=http://server:9777 node server.mjs
  */
 
-import { createReadStream, existsSync, statSync } from "fs";
-import { createServer, request as httpRequest } from "http";
-import { request as httpsRequest } from "https";
-import { extname, join, resolve } from "path";
-import { parse } from "url";
+import { createReadStream, existsSync, statSync } from "node:fs";
+import { createServer, request as httpRequest } from "node:http";
+import { request as httpsRequest } from "node:https";
+import { extname, join, resolve } from "node:path";
+import { parse } from "node:url";
 
 const MIME_TYPES = {
   ".html": "text/html",

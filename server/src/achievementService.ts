@@ -1,4 +1,4 @@
-import { EventEmitter } from "events";
+import { EventEmitter } from "node:events";
 import { eq, sql } from "drizzle-orm";
 
 import {
@@ -8,7 +8,7 @@ import {
   type PublicAchievement,
   toPublicAchievement,
 } from "../../shared/src";
-import { type UserStats, getDatabase, userAchievements, userStats } from "./db";
+import { getDatabase, type UserStats, userAchievements, userStats } from "./db";
 
 const toAchievementStats = (row: UserStats): AchievementStats => {
   return {

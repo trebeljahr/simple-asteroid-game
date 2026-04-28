@@ -1,13 +1,13 @@
 import { type GameMode, gameStateMachine, getGameState } from "./gameState";
 import { handleEscapeKey } from "./gameUiActions";
 import {
-  type ShipAction,
   clearShipInput,
   dispatchActionCause,
   isMobileDevice,
   isMobilePortrait,
   registerActionCause,
   requestLandscapeOrientationLock,
+  type ShipAction,
 } from "./input";
 
 interface MobileButtonConfig {

@@ -4,9 +4,9 @@ import { playSound } from "./audio";
 import { showSingleplayerVictory } from "./gameUiActions";
 import { player, playerHitsCollectible } from "./player";
 import {
-  type CameraBounds,
   boardSizeX,
   boardSizeY,
+  type CameraBounds,
   circleIntersectsBounds,
   clamp,
   distSquare,

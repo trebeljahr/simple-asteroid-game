@@ -1,11 +1,11 @@
 import { Bodies, Body, Vector, World } from "matter-js";
 import p5 from "p5";
 import {
-  type ShipCollider,
-  type ShipVariant,
   getShipCollider,
   getShipColliderSpec,
   getShipCollisionBoundingDiameter,
+  type ShipCollider,
+  type ShipVariant,
 } from "../../shared/src";
 import { reportAchievementEvent } from "./achievementEvents";
 import { playSound } from "./audio";
@@ -15,7 +15,7 @@ import { explosions } from "./explosions";
 import { getGameState } from "./gameState";
 import { showSingleplayerDefeat } from "./gameUiActions";
 import { goals } from "./goals";
-import { MAX_PLAYER_HEALTH, getHudHeartSize, getHudHeartTopLeft } from "./healthHud";
+import { getHudHeartSize, getHudHeartTopLeft, MAX_PLAYER_HEALTH } from "./healthHud";
 import { hearts } from "./hearts";
 import { isShipActionActive } from "./input";
 import { markRunDamageTaken } from "./runSession";
@@ -23,13 +23,13 @@ import { shipDebris } from "./shipDebris";
 import { assets } from "./sketch";
 import { ThrusterExhaustSystem } from "./thruster";
 import {
-  REFERENCE_VIEWPORT_HEIGHT,
-  REFERENCE_VIEWPORT_WIDTH,
   boardSizeX,
   boardSizeY,
   clamp,
   height,
   playerHitsCircularTarget,
+  REFERENCE_VIEWPORT_HEIGHT,
+  REFERENCE_VIEWPORT_WIDTH,
   width,
 } from "./utils";
 
@@ -38,14 +38,14 @@ export const maxSpeed = 10;
 const PLAYER_DAMAGE_RECOVERY_FRAMES = 24;
 
 export const resetPlayer = (p: p5) => {
-  if (player && player.enginePlayer) {
+  if (player?.enginePlayer) {
     World.remove(engine.world, player.enginePlayer);
   }
   player = new Player(p, p.random(REFERENCE_VIEWPORT_WIDTH), p.random(REFERENCE_VIEWPORT_HEIGHT));
 };
 
 export const clampPlayerToWorldBounds = () => {
-  if (!player || !player.enginePlayer) {
+  if (!player?.enginePlayer) {
     return;
   }
 

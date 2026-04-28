@@ -1,7 +1,7 @@
 import type p5 from "p5";
 import type { Vector } from "p5";
 
-const collidePointPoly = (px: number, py: number, vertices: Vector[], p: p5) => {
+const collidePointPoly = (px: number, py: number, vertices: Vector[], _p: p5) => {
   let collision = false;
 
   // go through each of the vertices, plus the next vertex in the list
@@ -9,7 +9,7 @@ const collidePointPoly = (px: number, py: number, vertices: Vector[], p: p5) => 
   for (let current = 0; current < vertices.length; current++) {
     // get next vertex in list if we've hit the end, wrap around to 0
     next = current + 1;
-    if (next == vertices.length) next = 0;
+    if (next === vertices.length) next = 0;
 
     // get the PVectors at our current position this makes our if statement a little cleaner
     const vc = vertices[current]; // c for "current"
@@ -77,7 +77,7 @@ const collideLineCircle = (
   }
   return false;
 };
-const collideCirclePoly = (
+const _collideCirclePoly = (
   cx: number,
   cy: number,
   diameter: number,
@@ -85,7 +85,7 @@ const collideCirclePoly = (
   interior: boolean,
   p: p5,
 ) => {
-  if (interior == undefined) {
+  if (interior === undefined) {
     interior = false;
   }
 
@@ -94,7 +94,7 @@ const collideCirclePoly = (
   for (let current = 0; current < vertices.length; current++) {
     // get next vertex in list if we've hit the end, wrap around to 0
     next = current + 1;
-    if (next == vertices.length) next = 0;
+    if (next === vertices.length) next = 0;
 
     // get the PVectors at our current position this makes our if statement a little cleaner
     const vc = vertices[current]; // c for "current"
@@ -106,7 +106,7 @@ const collideCirclePoly = (
   }
 
   // test if the center of the circle is inside the polygon
-  if (interior == true) {
+  if (interior === true) {
     const centerInside = collidePointPoly(cx, cy, vertices, p);
     if (centerInside) return true;
   }

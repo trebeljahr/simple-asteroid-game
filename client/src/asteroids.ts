@@ -12,14 +12,14 @@ import { Mover } from "./mover";
 import { player } from "./player";
 import { assets } from "./sketch";
 import {
-  type CameraBounds,
   boardSizeX,
   boardSizeY,
+  type CameraBounds,
   circleIntersectsBounds,
   circlesOverlap,
   clamp,
-  distSquare,
   distanceToSegmentSquare,
+  distSquare,
 } from "./utils";
 
 interface SpawnPoint {

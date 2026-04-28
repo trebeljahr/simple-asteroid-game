@@ -25,7 +25,7 @@ import {
   toggleSoundEnabled,
 } from "./gameUiActions";
 import { formatRunDuration } from "./runSession";
-import { type PersistentStats, getStats, subscribeToStats } from "./stats";
+import { getStats, type PersistentStats, subscribeToStats } from "./stats";
 
 const capitalizeWords = (str: string) => {
   return str
@@ -408,7 +408,7 @@ const MenuRock: React.FC<{ config: any }> = ({ config }) => (
     alt=""
     aria-hidden="true"
     style={{
-      // @ts-ignore
+      // @ts-expect-error
       "--rock-left": config.left,
       "--rock-top": config.top,
       "--rock-size": config.size,

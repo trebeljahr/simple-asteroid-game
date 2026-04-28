@@ -13,7 +13,7 @@ import { initializeMobileControls } from "./mobileControls";
 import { initializeMultiplayerSession } from "./multiplayerSession";
 import { refreshRunViewport } from "./runMode";
 import { trpcClient } from "./trpcClient";
-import { ESC_KEYCODE, boardSizeX, boardSizeY, height, updateWindowSize, width } from "./utils";
+import { boardSizeX, boardSizeY, ESC_KEYCODE, height, updateWindowSize, width } from "./utils";
 
 const MIN_SPLASH_DURATION_MS = 1000;
 const ASTEROID_TEXTURE_SIZE = 512;

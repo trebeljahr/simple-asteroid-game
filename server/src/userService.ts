@@ -1,7 +1,7 @@
-import { randomBytes } from "crypto";
+import { randomBytes } from "node:crypto";
 import { eq } from "drizzle-orm";
 
-import { type User, type UserStats, getDatabase, userAchievements, userStats, users } from "./db";
+import { getDatabase, type User, type UserStats, userAchievements, userStats, users } from "./db";
 
 export interface UserContext {
   user: User;

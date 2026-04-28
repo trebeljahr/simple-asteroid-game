@@ -115,10 +115,10 @@ export class QuadTree<T> {
     }
 
     return (
-      (this.northeast !== null && this.northeast.insert(item)) ||
-      (this.northwest !== null && this.northwest.insert(item)) ||
-      (this.southeast !== null && this.southeast.insert(item)) ||
-      (this.southwest !== null && this.southwest.insert(item))
+      this.northeast?.insert(item) ||
+      this.northwest?.insert(item) ||
+      this.southeast?.insert(item) ||
+      this.southwest?.insert(item)
     );
   }
 
@@ -140,10 +140,10 @@ export class QuadTree<T> {
     }
 
     if (this.divided) {
-      this.northwest && this.northwest.query(range, found);
-      this.northeast && this.northeast.query(range, found);
-      this.southwest && this.southwest.query(range, found);
-      this.southeast && this.southeast.query(range, found);
+      this.northwest?.query(range, found);
+      this.northeast?.query(range, found);
+      this.southwest?.query(range, found);
+      this.southeast?.query(range, found);
     }
 
     return found;

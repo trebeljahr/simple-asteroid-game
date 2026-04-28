@@ -1,5 +1,3 @@
-import { existsSync } from "fs";
-import path from "path";
 /**
  * Standalone migration runner. Invoked via `npm run db:migrate`
  * manually or by the server at startup before accepting connections.
@@ -8,6 +6,9 @@ import path from "path";
  * development. The build pipeline copies them into `dist/db/migrations`
  * so the compiled server can find them too.
  */
+
+import { existsSync } from "node:fs";
+import path from "node:path";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { migrate } from "drizzle-orm/node-postgres/migrator";
 import { Pool } from "pg";

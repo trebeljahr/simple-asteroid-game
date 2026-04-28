@@ -1,11 +1,11 @@
 import type p5 from "p5";
 import {
   type CollisionAabb,
+  getShipColliderBroadPhaseAabb,
+  getShipColliderLoops,
   type Point2D,
   type ShipCollider,
   type TransformedCollisionShape,
-  getShipColliderBroadPhaseAabb,
-  getShipColliderLoops,
 } from "../../shared/src";
 
 const LOCAL_DEBUG_HOSTNAMES = new Set(["127.0.0.1", "::1", "localhost"]);

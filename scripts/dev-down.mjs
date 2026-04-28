@@ -9,7 +9,7 @@
 //   npm run dev:down
 //   npm run dev:down -- --volumes
 
-import { spawnSync } from "child_process";
+import { spawnSync } from "node:child_process";
 
 const dropVolumes = process.argv.includes("--volumes");
 

@@ -8,10 +8,18 @@
 
 import {
   AMMO_PACKET_AMOUNTS,
+  type ArenaConfig,
   ASTEROID_MAX_SIZE,
   ASTEROID_MIN_SIZE,
-  type ArenaConfig,
+  addAmmoToWorld,
+  addAsteroidToWorld,
+  addHeartToWorld,
+  createEmptyMatchWorld,
+  createSeededRandom,
   DEFAULT_SHIP_VARIANT,
+  isAmmoSpawnValid,
+  isAsteroidSpawnValid,
+  isHeartSpawnValid,
   type MatchBulletSnapshot,
   type MatchPhase,
   type MatchPlayerSnapshot,
@@ -19,17 +27,9 @@ import {
   PLAYER_MAX_HEALTH,
   PLAYER_STARTING_AMMO,
   type RuntimePlayerState,
+  randomBetween,
   type ShipVariant,
   WORLD_MARGIN,
-  addAmmoToWorld,
-  addAsteroidToWorld,
-  addHeartToWorld,
-  createEmptyMatchWorld,
-  createSeededRandom,
-  isAmmoSpawnValid,
-  isAsteroidSpawnValid,
-  isHeartSpawnValid,
-  randomBetween,
 } from "./multiplayerCore";
 
 export const BATTLE_ROYALE_ARENA: ArenaConfig = {

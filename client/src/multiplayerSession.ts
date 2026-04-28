@@ -1,38 +1,15 @@
 import p5 from "p5";
-import { type Socket, io } from "socket.io-client";
+import { io, type Socket } from "socket.io-client";
 
 import {
-  BULLET_DIAMETER,
+  applyWorldEvents,
   type BattleRoyaleEliminatedPayload,
   type BattleRoyaleLobbyPayload,
   type BattleRoyaleMatchEndedPayload,
   type BattleRoyaleMatchFoundPayload,
   type BattleRoyaleSnapshotPayload,
+  BULLET_DIAMETER,
   type ClientToServerEvents,
-  LOCAL_INPUT_PUSH_INTERVAL_MS,
-  MATCH_COUNTDOWN_MS,
-  type MatchEndReason,
-  type MatchEndedPayload,
-  type MatchFoundPayload,
-  type MatchOutcome,
-  type MatchPlayerSnapshot,
-  type MatchSnapshotPayload,
-  type MatchWorldEventsPayload,
-  type MatchWorldRuntime,
-  type MatchmakingStatusPayload,
-  type MultiplayerRuntimeConfig,
-  PLAYER_DAMAGE_RECOVERY_TICKS,
-  PLAYER_MAX_AMMO,
-  PLAYER_MAX_HEALTH,
-  type PlayerSlot,
-  type RuntimePlayerState,
-  type ServerToClientEvents,
-  type ShipCollider,
-  type ShipInputState,
-  type ShipVariant,
-  TICK_INTERVAL_MS,
-  type WorldEvent,
-  applyWorldEvents,
   circleIntersectsBounds,
   circleOverlapsShipCollider,
   createInitialBattleRoyaleWorld,
@@ -45,12 +22,35 @@ import {
   getNearbyHearts,
   getShipCollider,
   getShipCollisionBoundingDiameter,
+  LOCAL_INPUT_PUSH_INTERVAL_MS,
+  MATCH_COUNTDOWN_MS,
+  type MatchEndedPayload,
+  type MatchEndReason,
+  type MatchFoundPayload,
+  type MatchmakingStatusPayload,
+  type MatchOutcome,
+  type MatchPlayerSnapshot,
+  type MatchSnapshotPayload,
+  type MatchWorldEventsPayload,
+  type MatchWorldRuntime,
+  type MultiplayerRuntimeConfig,
+  PLAYER_DAMAGE_RECOVERY_TICKS,
+  PLAYER_MAX_AMMO,
+  PLAYER_MAX_HEALTH,
+  type PlayerSlot,
   projectBulletSnapshot,
   projectPlayerSnapshot,
+  type RuntimePlayerState,
   removeAmmoFromWorld,
   removeAsteroidFromWorld,
   removeHeartFromWorld,
+  type ServerToClientEvents,
+  type ShipCollider,
+  type ShipInputState,
+  type ShipVariant,
   stepPlayerState,
+  TICK_INTERVAL_MS,
+  type WorldEvent,
 } from "../../shared/src";
 import { getOrCreateDeviceToken, recordLocalUnlock } from "./account";
 import { playSound } from "./audio";
@@ -218,7 +218,7 @@ const formatPlacement = (placement: number): string => {
   }
 };
 
-const sameInputState = (left: ShipInputState, right: ShipInputState) => {
+const _sameInputState = (left: ShipInputState, right: ShipInputState) => {
   return (
     left.fire === right.fire &&
     left.thrust === right.thrust &&
@@ -264,14 +264,6 @@ class MultiplayerClientSession {
   private initialized = false;
   private inputPushIntervalMs = LOCAL_INPUT_PUSH_INTERVAL_MS;
   private isLeavingMode = false;
-  private lastSentAt = 0;
-  private lastSentInput: ShipInputState = {
-    fire: false,
-    inputSeq: 0,
-    thrust: false,
-    turnLeft: false,
-    turnRight: false,
-  };
   private inputBuffer: Array<{ seq: number; input: ShipInputState }> = [];
   private inputSeqCounter = 0;
   private pendingResult: PendingResultState | null = null;
@@ -1375,7 +1367,7 @@ class MultiplayerClientSession {
     }
   }
 
-  private drawNetcodeDebugOverlay(p: p5, match: ActiveMatchState) {
+  private drawNetcodeDebugOverlay(p: p5, _match: ActiveMatchState) {
     const history = this.debugHistory;
     if (history.length === 0) {
       return;
@@ -1617,7 +1609,7 @@ class MultiplayerClientSession {
         ? baseRecoveryAlpha
         : p.lerp(baseRecoveryAlpha, 0, destructionProgress);
     const arrivalProgress = this.getPlayerArrivalProgress(player.id);
-    const arrivalReveal = arrivalProgress === null ? 1 : 1 - Math.pow(1 - arrivalProgress, 3);
+    const arrivalReveal = arrivalProgress === null ? 1 : 1 - (1 - arrivalProgress) ** 3;
     const arrivalAlpha = arrivalProgress === null ? 255 : p.lerp(0, 255, arrivalReveal);
     const shipScale = destructionProgress === null ? 1 : p.lerp(1, 0.32, destructionProgress);
     const arrivalScale = arrivalProgress === null ? 1 : p.lerp(0.56, 1.04, arrivalReveal);
@@ -1675,7 +1667,7 @@ class MultiplayerClientSession {
         continue;
       }
 
-      const easedProgress = 1 - Math.pow(1 - arrivalProgress, 2);
+      const easedProgress = 1 - (1 - arrivalProgress) ** 2;
       const portalSize = p.lerp(108, 42, easedProgress);
       const portalAlpha = p.lerp(210, 0, easedProgress);
 
@@ -2089,7 +2081,7 @@ class MultiplayerClientSession {
     // one-per-tick from its input queue.  This 1-to-1 mapping between
     // client ticks and server physics steps is what makes reconciliation
     // produce the same result as local prediction, eliminating jitter.
-    if (this.socket !== null && this.socket.connected) {
+    if (this.socket?.connected) {
       if (match.mode === "battle-royale") {
         this.socket.emit("br:input", currentInput);
       } else {

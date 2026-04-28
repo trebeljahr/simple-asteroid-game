@@ -18,8 +18,8 @@
 // themselves, dep bootstrapping is skipped — the server degrades
 // gracefully when persistence is missing.
 
-import { execSync, spawnSync } from "child_process";
-import { createServer } from "net";
+import { execSync, spawnSync } from "node:child_process";
+import { createServer } from "node:net";
 
 const fixedMode = process.argv.includes("--fixed");
 const lanMode = process.argv.includes("--lan");
