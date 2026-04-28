@@ -115,6 +115,7 @@ const ImpressumSection: React.FC = () => {
   return (
     <div className="creditsSection">
       <button
+        type="button"
         className="creditsLine"
         onClick={() => setOpen(!open)}
         style={{
