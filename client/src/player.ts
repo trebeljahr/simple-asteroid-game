@@ -344,6 +344,9 @@ export class Player {
   }
 }
 
-export const playerHitsCollectible = (ammo: any, player: Player) => {
+export const playerHitsCollectible = (
+  ammo: { pos: { x: number; y: number }; size: number },
+  player: Player,
+) => {
   return playerHitsCircularTarget(ammo, player);
 };

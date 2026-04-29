@@ -112,7 +112,9 @@ export const circlesOverlap = (
   return distSquare(x1, y1, x2, y2) <= radiusSum * radiusSum;
 };
 
-export const playerHitsCircularTarget = (target: any, player: Player) => {
+export type CircularTarget = { pos: { x: number; y: number }; size: number };
+
+export const playerHitsCircularTarget = (target: CircularTarget, player: Player) => {
   if (player.life <= 0) {
     return false;
   }

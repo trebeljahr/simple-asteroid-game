@@ -402,7 +402,19 @@ const ResultPanel: React.FC<{ state: GameState; title: string; subtitle: string 
   </section>
 );
 
-const MenuRock: React.FC<{ config: any }> = ({ config }) => (
+type MenuRockConfig = {
+  src: string;
+  left: string;
+  top: string;
+  size: string;
+  opacity: string;
+  duration: string;
+  delay: string;
+  driftX: string;
+  driftY: string;
+};
+
+const MenuRock: React.FC<{ config: MenuRockConfig }> = ({ config }) => (
   <img
     className="menuRock"
     src={config.src}
