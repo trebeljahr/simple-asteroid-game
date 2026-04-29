@@ -141,7 +141,7 @@ function extractPointsFromSvg(filePath: string): Point[] {
     /<rect[^>]+x="([^"]+)"[^>]+y="([^"]+)"[^>]+width="([^"]+)"[^>]+height="([^"]+)"/g;
 
   let allPoints: Point[] = [];
-  let match;
+  let match: RegExpExecArray | null;
   while ((match = pathRegex.exec(svg)) !== null) {
     allPoints = allPoints.concat(parsePath(match[1]));
   }

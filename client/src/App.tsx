@@ -386,7 +386,7 @@ const PausePanel: React.FC<{ state: GameState }> = ({ state }) => {
 };
 
 const ResultPanel: React.FC<{ state: GameState; title: string; subtitle: string }> = ({
-  state,
+  _state,
   title,
   subtitle,
 }) => (
