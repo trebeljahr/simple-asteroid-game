@@ -25,9 +25,7 @@ const rasterizeImageAsset = (p: p5, source: Image, size: number) => {
   graphics.clear();
   graphics.imageMode(graphics.CENTER);
   graphics.image(source, size / 2, size / 2, size, size);
-  const rasterized = graphics.get();
-  graphics.remove();
-  return rasterized;
+  return graphics.get();
 };
 
 const sketch = (p: p5) => {
