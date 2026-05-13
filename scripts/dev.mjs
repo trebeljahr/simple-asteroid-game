@@ -30,6 +30,8 @@ const DEFAULT_POSTGRES_PASSWORD = "asteroids_dev_password";
 const DEFAULT_POSTGRES_DB = "asteroids";
 const DEFAULT_POSTGRES_PORT = "5432";
 const DEFAULT_REDIS_PORT = "6379";
+const DYNAMIC_DEP_PORT_MIN = 49152;
+const DYNAMIC_DEP_PORT_MAX = 65535;
 
 function randomInt(min, max) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
@@ -74,6 +76,18 @@ async function findRandomFreePort(min, max, maxAttempts = 20) {
   );
 }
 
+async function findRandomDockerBindablePort(reservedPorts = new Set(), maxAttempts = 40) {
+  for (let i = 0; i < maxAttempts; i++) {
+    const port = randomInt(DYNAMIC_DEP_PORT_MIN, DYNAMIC_DEP_PORT_MAX);
+    if (!reservedPorts.has(port) && (await isPortBindableForDocker(port))) {
+      return port;
+    }
+  }
+  throw new Error(
+    `Could not find a docker-bindable port in range ${DYNAMIC_DEP_PORT_MIN}-${DYNAMIC_DEP_PORT_MAX} after ${maxAttempts} attempts`,
+  );
+}
+
 function hasDocker() {
   const probe = spawnSync("docker", ["info"], {
     stdio: "ignore",
@@ -101,6 +115,80 @@ function resolveComposeCommand() {
     return { command: "docker-compose", prefix: [] };
   }
   return null;
+}
+
+function hasComposeContainer(compose, service) {
+  const result = spawnSync(
+    compose.command,
+    [...compose.prefix, "-f", "docker-compose.yaml", "ps", "-q", service],
+    {
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"],
+    },
+  );
+  return result.status === 0 && result.stdout.trim().length > 0;
+}
+
+function runServerProbe(source, env) {
+  const result = spawnSync(process.execPath, ["-e", source], {
+    cwd: "server",
+    env: { ...process.env, ...env },
+    stdio: "ignore",
+  });
+  return result.status === 0;
+}
+
+function canConnectToPostgres(databaseUrl) {
+  return runServerProbe(
+    `
+const { Pool } = require("pg");
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  connectionTimeoutMillis: 1000,
+  max: 1,
+});
+(async () => {
+  let client;
+  try {
+    client = await pool.connect();
+    await client.query("select 1");
+    process.exitCode = 0;
+  } catch {
+    process.exitCode = 1;
+  } finally {
+    if (client) client.release();
+    await pool.end().catch(() => {});
+  }
+})();
+`,
+    { DATABASE_URL: databaseUrl },
+  );
+}
+
+function canConnectToRedis(redisUrl) {
+  return runServerProbe(
+    `
+const { Redis } = require("ioredis");
+const redis = new Redis(process.env.REDIS_URL, {
+  lazyConnect: true,
+  connectTimeout: 1000,
+  maxRetriesPerRequest: 1,
+  retryStrategy: null,
+});
+(async () => {
+  try {
+    await redis.connect();
+    await redis.ping();
+    process.exitCode = 0;
+  } catch {
+    process.exitCode = 1;
+  } finally {
+    redis.disconnect();
+  }
+})();
+`,
+    { REDIS_URL: redisUrl },
+  );
 }
 
 /**
@@ -148,30 +236,61 @@ async function startDependencies() {
   const user = process.env.POSTGRES_USER ?? DEFAULT_POSTGRES_USER;
   const password = process.env.POSTGRES_PASSWORD ?? DEFAULT_POSTGRES_PASSWORD;
   const db = process.env.POSTGRES_DB ?? DEFAULT_POSTGRES_DB;
-  const postgresPort = process.env.POSTGRES_PORT ?? DEFAULT_POSTGRES_PORT;
-  const redisPort = process.env.REDIS_PORT ?? DEFAULT_REDIS_PORT;
+  const postgresPortWasExplicit = process.env.POSTGRES_PORT !== undefined;
+  const redisPortWasExplicit = process.env.REDIS_PORT !== undefined;
+  let postgresPort = process.env.POSTGRES_PORT ?? DEFAULT_POSTGRES_PORT;
+  let redisPort = process.env.REDIS_PORT ?? DEFAULT_REDIS_PORT;
+  let databaseUrl = `postgres://${user}:${password}@127.0.0.1:${postgresPort}/${db}`;
+  let redisUrl = `redis://127.0.0.1:${redisPort}`;
 
   // Detect existing services on the default ports (common: brew-installed
-  // redis / a user's own postgres). If the port is busy we assume the
-  // service on it is compatible enough and reuse it; the server degrades
-  // gracefully if it isn't.
+  // redis / a user's own postgres). Busy is not enough: probe auth before
+  // we pass the URL to the server, otherwise migrations fail noisily.
   const postgresPortFree = await isPortBindableForDocker(Number.parseInt(postgresPort, 10));
   const redisPortFree = await isPortBindableForDocker(Number.parseInt(redisPort, 10));
 
   const servicesToStart = [];
+  const reservedDepPorts = new Set();
   if (postgresPortFree) {
+    servicesToStart.push("postgres");
+  } else if (canConnectToPostgres(databaseUrl)) {
+    console.log(`  Deps:   port ${postgresPort} already in use — reusing compatible postgres.`);
+  } else if (!postgresPortWasExplicit && !hasComposeContainer(compose, "postgres")) {
+    const fallbackPort = await findRandomDockerBindablePort(reservedDepPorts);
+    console.log(
+      `  Deps:   port ${postgresPort} has postgres, but dev credentials failed.\n` +
+        `          Starting docker postgres on :${fallbackPort} instead.`,
+    );
+    postgresPort = String(fallbackPort);
+    reservedDepPorts.add(fallbackPort);
+    databaseUrl = `postgres://${user}:${password}@127.0.0.1:${postgresPort}/${db}`;
     servicesToStart.push("postgres");
   } else {
     console.log(
-      `  Deps:   port ${postgresPort} already in use — reusing existing postgres.\n` +
-        "          If migrations fail, stop the other instance or set\n" +
-        "          POSTGRES_PORT to a free port before `pnpm dev`.",
+      `  Deps:   postgres on :${postgresPort} did not accept dev credentials.\n` +
+        "          Running without postgres. If this is the repo docker DB,\n" +
+        "          run `pnpm dev:down -- --volumes` to reset its data.",
     );
+    databaseUrl = "";
   }
   if (redisPortFree) {
     servicesToStart.push("redis");
+  } else if (canConnectToRedis(redisUrl)) {
+    console.log(`  Deps:   port ${redisPort} already in use — reusing compatible redis.`);
+  } else if (!redisPortWasExplicit && !hasComposeContainer(compose, "redis")) {
+    const fallbackPort = await findRandomDockerBindablePort(reservedDepPorts);
+    console.log(
+      `  Deps:   port ${redisPort} has redis, but ping failed.\n` +
+        `          Starting docker redis on :${fallbackPort} instead.`,
+    );
+    redisPort = String(fallbackPort);
+    redisUrl = `redis://127.0.0.1:${redisPort}`;
+    servicesToStart.push("redis");
   } else {
-    console.log(`  Deps:   port ${redisPort} already in use — reusing existing redis.`);
+    console.log(
+      `  Deps:   redis on :${redisPort} did not respond to ping — running without redis.`,
+    );
+    redisUrl = "";
   }
 
   if (servicesToStart.length > 0) {
@@ -201,9 +320,26 @@ async function startDependencies() {
     }
   }
 
-  const databaseUrl = `postgres://${user}:${password}@127.0.0.1:${postgresPort}/${db}`;
-  const redisUrl = `redis://127.0.0.1:${redisPort}`;
-  console.log(`  Deps:   postgres on :${postgresPort}, redis on :${redisPort}`);
+  if (databaseUrl && !canConnectToPostgres(databaseUrl)) {
+    console.log(
+      `  Deps:   postgres on :${postgresPort} did not accept dev credentials.\n` +
+        "          Running without postgres. If this is the repo docker DB,\n" +
+        "          run `pnpm dev:down -- --volumes` to reset its data.",
+    );
+    databaseUrl = "";
+  }
+  if (redisUrl && !canConnectToRedis(redisUrl)) {
+    console.log(
+      `  Deps:   redis on :${redisPort} did not respond to ping — running without redis.`,
+    );
+    redisUrl = "";
+  }
+
+  const depStatuses = [
+    databaseUrl ? `postgres on :${postgresPort}` : "postgres disabled",
+    redisUrl ? `redis on :${redisPort}` : "redis disabled",
+  ];
+  console.log(`  Deps:   ${depStatuses.join(", ")}`);
   return { DATABASE_URL: databaseUrl, REDIS_URL: redisUrl };
 }
 
