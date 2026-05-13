@@ -20,7 +20,7 @@ interface ShipDebrisPalette {
   trim: [number, number, number];
 }
 
-const SHIP_DEBRIS_PALETTES: Record<ShipVariant, ShipDebrisPalette> = {
+const SHIP_DEBRIS_PALETTES: Partial<Record<ShipVariant, ShipDebrisPalette>> = {
   "comet-lance": {
     core: [84, 198, 176],
     stroke: [7, 17, 29],
@@ -33,7 +33,7 @@ const SHIP_DEBRIS_PALETTES: Record<ShipVariant, ShipDebrisPalette> = {
   },
 };
 
-const SHIP_DEBRIS_TEMPLATES: Record<ShipVariant, ShipDebrisPieceTemplate[]> = {
+const SHIP_DEBRIS_TEMPLATES: Partial<Record<ShipVariant, ShipDebrisPieceTemplate[]>> = {
   "comet-lance": [
     {
       fill: "trim",
@@ -162,8 +162,8 @@ export class ShipDebrisSystem {
   }
 
   createShipBreakup(x: number, y: number, angle: number, shipVariant: ShipVariant) {
-    const palette = SHIP_DEBRIS_PALETTES[shipVariant];
-    const templates = SHIP_DEBRIS_TEMPLATES[shipVariant];
+    const palette = SHIP_DEBRIS_PALETTES[shipVariant] ?? SHIP_DEBRIS_PALETTES["orbit-dart"]!;
+    const templates = SHIP_DEBRIS_TEMPLATES[shipVariant] ?? SHIP_DEBRIS_TEMPLATES["orbit-dart"]!;
     const forwardX = Math.cos(angle);
     const forwardY = Math.sin(angle);
     const rightX = -Math.sin(angle);

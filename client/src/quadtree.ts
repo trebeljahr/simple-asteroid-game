@@ -114,11 +114,11 @@ export class QuadTree<T> {
       this.subdivide();
     }
 
-    return (
+    return Boolean(
       this.northeast?.insert(item) ||
-      this.northwest?.insert(item) ||
-      this.southeast?.insert(item) ||
-      this.southwest?.insert(item)
+        this.northwest?.insert(item) ||
+        this.southeast?.insert(item) ||
+        this.southwest?.insert(item),
     );
   }
 

@@ -266,6 +266,14 @@ class MultiplayerClientSession {
   private isLeavingMode = false;
   private inputBuffer: Array<{ seq: number; input: ShipInputState }> = [];
   private inputSeqCounter = 0;
+  private lastSentAt = 0;
+  private lastSentInput: ShipInputState = {
+    fire: false,
+    inputSeq: 0,
+    thrust: false,
+    turnLeft: false,
+    turnRight: false,
+  };
   private pendingResult: PendingResultState | null = null;
   private predictedSelf: RuntimePlayerState | null = null;
   private predictionTickTimer: ReturnType<typeof setInterval> | null = null;

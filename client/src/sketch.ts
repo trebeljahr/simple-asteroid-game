@@ -26,7 +26,7 @@ const rasterizeImageAsset = (p: p5, source: Image, size: number) => {
   graphics.imageMode(graphics.CENTER);
   graphics.image(source, size / 2, size / 2, size, size);
   const rasterized = graphics.get();
-  graphics.canvas.remove();
+  graphics.remove();
   return rasterized;
 };
 
