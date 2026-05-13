@@ -68,11 +68,14 @@ const ShipSelection: React.FC<{ currentVariant: ShipVariant }> = ({ currentVaria
           className={`shipItem ${variant === currentVariant ? "is-selected" : ""}`}
           onClick={() => gameStateMachine.send({ type: "SELECT_SHIP", shipVariant: variant })}
         >
-          <img
-            className="shipImage"
-            src={`/assets/alternatives/ship-alt-${variant}.svg`}
-            alt={capitalizeWords(variant)}
-          />
+          <picture>
+            <source srcSet={`/assets/alternatives/ship-alt-${variant}.svg`} type="image/svg+xml" />
+            <img
+              className="shipImage"
+              src={`/assets/alternatives/ship-alt-${variant}.png`}
+              alt={capitalizeWords(variant)}
+            />
+          </picture>
           <span className="shipName">{capitalizeWords(variant)}</span>
         </button>
       ))}
@@ -403,7 +406,8 @@ const ResultPanel: React.FC<{ state: GameState; title: string; subtitle: string 
 );
 
 type MenuRockConfig = {
-  src: string;
+  svgSrc: string;
+  pngSrc: string;
   left: string;
   top: string;
   size: string;
@@ -415,29 +419,32 @@ type MenuRockConfig = {
 };
 
 const MenuRock: React.FC<{ config: MenuRockConfig }> = ({ config }) => (
-  <img
-    className="menuRock"
-    src={config.src}
-    alt=""
-    aria-hidden="true"
-    style={{
-      // @ts-expect-error
-      "--rock-left": config.left,
-      "--rock-top": config.top,
-      "--rock-size": config.size,
-      "--rock-opacity": config.opacity,
-      "--rock-duration": config.duration,
-      "--rock-delay": config.delay,
-      "--rock-drift-x": config.driftX,
-      "--rock-drift-y": config.driftY,
-    }}
-  />
+  <picture>
+    <source srcSet={config.svgSrc} type="image/svg+xml" />
+    <img
+      className="menuRock"
+      src={config.pngSrc}
+      alt=""
+      style={{
+        // @ts-expect-error
+        "--rock-left": config.left,
+        "--rock-top": config.top,
+        "--rock-size": config.size,
+        "--rock-opacity": config.opacity,
+        "--rock-duration": config.duration,
+        "--rock-delay": config.delay,
+        "--rock-drift-x": config.driftX,
+        "--rock-drift-y": config.driftY,
+      }}
+    />
+  </picture>
 );
 
 const MenuScene: React.FC = () => {
   const menuRocks = [
     {
-      src: "/assets/asteroid1.svg",
+      svgSrc: "/assets/asteroid1.svg",
+      pngSrc: "/assets/asteroid1.png",
       left: "8%",
       top: "10%",
       size: "11rem",
@@ -448,7 +455,8 @@ const MenuScene: React.FC = () => {
       driftY: "1.75rem",
     },
     {
-      src: "/assets/asteroid2.svg",
+      svgSrc: "/assets/asteroid2.svg",
+      pngSrc: "/assets/asteroid2.png",
       left: "78%",
       top: "14%",
       size: "9rem",
@@ -459,7 +467,8 @@ const MenuScene: React.FC = () => {
       driftY: "2rem",
     },
     {
-      src: "/assets/asteroid3.svg",
+      svgSrc: "/assets/asteroid3.svg",
+      pngSrc: "/assets/asteroid3.png",
       left: "15%",
       top: "68%",
       size: "13rem",
@@ -470,7 +479,8 @@ const MenuScene: React.FC = () => {
       driftY: "-2.5rem",
     },
     {
-      src: "/assets/asteroid2.svg",
+      svgSrc: "/assets/asteroid2.svg",
+      pngSrc: "/assets/asteroid2.png",
       left: "70%",
       top: "62%",
       size: "15rem",
@@ -481,7 +491,8 @@ const MenuScene: React.FC = () => {
       driftY: "-1.5rem",
     },
     {
-      src: "/assets/asteroid1.svg",
+      svgSrc: "/assets/asteroid1.svg",
+      pngSrc: "/assets/asteroid1.png",
       left: "47%",
       top: "6%",
       size: "7rem",
@@ -497,8 +508,8 @@ const MenuScene: React.FC = () => {
     <div className="menuScene">
       <div className="menuBackdrop" aria-hidden="true" />
       <div className="menuGlow" />
-      {menuRocks.map((rock, i) => (
-        <MenuRock key={i} config={rock} />
+      {menuRocks.map((rock) => (
+        <MenuRock key={`${rock.svgSrc}-${rock.left}-${rock.top}`} config={rock} />
       ))}
       <div className="menuScenePane" />
     </div>

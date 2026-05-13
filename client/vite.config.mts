@@ -10,12 +10,19 @@ export default defineConfig({
       registerType: "autoUpdate",
       includeAssets: [
         "assets/null-vector-thumbnail.svg",
+        "assets/null-vector-thumbnail.png",
         "assets/background.jpg",
         "assets/asteroid1.svg",
+        "assets/asteroid1.png",
         "assets/asteroid2.svg",
+        "assets/asteroid2.png",
         "assets/asteroid3.svg",
+        "assets/asteroid3.png",
         "assets/heart.svg",
+        "assets/heart.png",
         "assets/bullets.svg",
+        "assets/bullets.png",
+        "assets/favicon.png",
       ],
       manifest: {
         name: "Asteroids",
@@ -34,11 +41,29 @@ export default defineConfig({
             type: "image/svg+xml",
             purpose: "any maskable",
           },
+          {
+            src: "/assets/null-vector-thumbnail.png",
+            sizes: "512x512",
+            type: "image/png",
+            purpose: "any maskable",
+          },
+          {
+            src: "/assets/icon-192.png",
+            sizes: "192x192",
+            type: "image/png",
+            purpose: "any maskable",
+          },
+          {
+            src: "/assets/icon-512.png",
+            sizes: "512x512",
+            type: "image/png",
+            purpose: "any maskable",
+          },
         ],
       },
       workbox: {
         // Don't precache the large background image; lazy-load via runtime caching.
-        globPatterns: ["**/*.{js,css,html,svg,ico,woff2}"],
+        globPatterns: ["**/*.{js,css,html,svg,png,ico,woff2}"],
         globIgnores: ["**/background*.jpg"],
         navigateFallback: "/index.html",
         // Never serve a cached HTML for API or websocket routes.

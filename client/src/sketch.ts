@@ -26,7 +26,7 @@ const rasterizeImageAsset = (p: p5, source: Image, size: number) => {
   graphics.imageMode(graphics.CENTER);
   graphics.image(source, size / 2, size / 2, size, size);
   const rasterized = graphics.get();
-  graphics.remove();
+  graphics.canvas.remove();
   return rasterized;
 };
 
@@ -86,18 +86,18 @@ const sketch = (p: p5) => {
   };
 
   p.preload = () => {
-    const asteroid1 = p.loadImage("/assets/asteroid1.svg");
-    const asteroid2 = p.loadImage("/assets/asteroid2.svg");
-    const asteroid3 = p.loadImage("/assets/asteroid3.svg");
-    const heart = p.loadImage("/assets/heart.svg");
+    const asteroid1 = p.loadImage("/assets/asteroid1.png");
+    const asteroid2 = p.loadImage("/assets/asteroid2.png");
+    const asteroid3 = p.loadImage("/assets/asteroid3.png");
+    const heart = p.loadImage("/assets/heart.png");
     const space = p.loadImage("/assets/background.jpg");
 
     const multiplayerShips: Partial<Record<ShipVariant, Image>> = {};
     for (const variant of MULTIPLAYER_SHIP_VARIANTS) {
-      multiplayerShips[variant] = p.loadImage(`/assets/alternatives/ship-alt-${variant}.svg`);
+      multiplayerShips[variant] = p.loadImage(`/assets/alternatives/ship-alt-${variant}.png`);
     }
 
-    const ammoAsset = p.loadImage("/assets/bullets.svg");
+    const ammoAsset = p.loadImage("/assets/bullets.png");
 
     const initialState = getGameState();
 
