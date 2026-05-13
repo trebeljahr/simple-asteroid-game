@@ -6,14 +6,14 @@
 //   node scripts/dev.mjs --fixed        Fixed ports (client 5173, server 9777)
 //   node scripts/dev.mjs --fixed --lan  Fixed ports, accessible from LAN (for mobile testing)
 //   node scripts/dev.mjs --no-deps      Skip docker postgres/redis (use env vars you set yourself)
-//   npm run dev                         Random ports
-//   npm run dev:fixed                   Fixed ports
-//   npm run dev:lan                     Fixed ports, accessible from LAN
-//   npm run dev:down                    Stop the docker dev dependencies
+//   pnpm dev                            Random ports
+//   pnpm dev:fixed                      Fixed ports
+//   pnpm dev:lan                        Fixed ports, accessible from LAN
+//   pnpm dev:down                       Stop the docker dev dependencies
 //
 // The script auto-starts postgres and redis via docker compose so a
-// fresh checkout + `npm run dev` is all you need. Containers are left
-// running between sessions for fast reboots; use `npm run dev:down` to
+// fresh checkout + `pnpm dev` is all you need. Containers are left
+// running between sessions for fast reboots; use `pnpm dev:down` to
 // stop them. If docker isn't available or the user sets DATABASE_URL
 // themselves, dep bootstrapping is skipped — the server degrades
 // gracefully when persistence is missing.
@@ -165,7 +165,7 @@ async function startDependencies() {
     console.log(
       `  Deps:   port ${postgresPort} already in use — reusing existing postgres.\n` +
         "          If migrations fail, stop the other instance or set\n" +
-        "          POSTGRES_PORT to a free port before `npm run dev`.",
+        "          POSTGRES_PORT to a free port before `pnpm dev`.",
     );
   }
   if (redisPortFree) {
@@ -195,7 +195,7 @@ async function startDependencies() {
     if (started.status !== 0) {
       console.log(
         "  Deps:   failed to start docker deps — continuing without them.\n" +
-          "          Check `docker compose ps` or run `npm run dev:down` and retry.",
+          "          Check `docker compose ps` or run `pnpm dev:down` and retry.",
       );
       return null;
     }
@@ -265,12 +265,12 @@ const serverEnvPrefix = [
   .join(" ");
 
 const processes = [
-  `"API_PORT=${serverPort} npx --workspace @simple-asteroid-game/client vite --port ${clientPort} ${viteHostFlag}"`,
-  `"${serverEnvPrefix} npm run dev --workspace @simple-asteroid-game/server"`,
+  `"API_PORT=${serverPort} pnpm --filter @simple-asteroid-game/client exec vite --port ${clientPort} ${viteHostFlag}"`,
+  `"${serverEnvPrefix} pnpm --filter @simple-asteroid-game/server dev"`,
 ];
 
 try {
-  execSync(`npx concurrently -k -n client,server -c cyan,green ${processes.join(" ")}`, {
+  execSync(`pnpm exec concurrently -k -n client,server -c cyan,green ${processes.join(" ")}`, {
     stdio: "inherit",
   });
 } catch {

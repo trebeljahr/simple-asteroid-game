@@ -11,7 +11,7 @@
     "dev:lan": "node scripts/dev.mjs --fixed --lan",
     "dev:no-deps": "node scripts/dev.mjs --no-deps",
     "dev:down": "node scripts/dev-down.mjs",
-    "start": "pnpm run dev",
+    "start": "pnpm dev",
     "dev:client": "pnpm --filter @simple-asteroid-game/client dev",
     "dev:server": "pnpm --filter @simple-asteroid-game/server dev",
     "build": "pnpm --filter @simple-asteroid-game/client build && pnpm --filter @simple-asteroid-game/server build",

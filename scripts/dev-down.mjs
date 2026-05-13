@@ -1,13 +1,13 @@
 #!/usr/bin/env node
 // Stop the local dev dependencies (postgres + redis) started by
-// `npm run dev`. Containers and their volumes are left on disk so
+// `pnpm dev`. Containers and their volumes are left on disk so
 // data persists across restarts — add `--volumes` to wipe them.
 //
 // Usage:
 //   node scripts/dev-down.mjs             Stop containers, keep data
 //   node scripts/dev-down.mjs --volumes   Stop containers, drop data volumes
-//   npm run dev:down
-//   npm run dev:down -- --volumes
+//   pnpm dev:down
+//   pnpm dev:down -- --volumes
 
 import { spawnSync } from "node:child_process";
 

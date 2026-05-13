@@ -66,7 +66,7 @@ if (existsSync(clientDistPath)) {
   app.get("/", (_request, response) => {
     response
       .status(200)
-      .send("Client build not found. Run `npm run dev` or `npm run build` from the repo root.");
+      .send("Client build not found. Run `pnpm dev` or `pnpm build` from the repo root.");
   });
 }
 

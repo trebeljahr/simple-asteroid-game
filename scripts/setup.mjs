@@ -1,10 +1,10 @@
 import { spawnSync } from "node:child_process";
 
-const npmExecutable = process.platform === "win32" ? "npm.cmd" : "npm";
+const pnpmExecutable = process.platform === "win32" ? "pnpm.cmd" : "pnpm";
 
 console.log("Installing root and workspace dependencies...");
 
-const result = spawnSync(npmExecutable, ["install", "--workspaces", "--include-workspace-root"], {
+const result = spawnSync(pnpmExecutable, ["install"], {
   stdio: "inherit",
 });
 
@@ -14,4 +14,4 @@ if (result.status !== 0) {
 
 console.log("");
 console.log("Setup complete.");
-console.log("Run `npm run dev` to start the Vite client and the server together.");
+console.log("Run `pnpm dev` to start the Vite client and the server together.");

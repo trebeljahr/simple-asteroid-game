@@ -20,10 +20,10 @@ A real-time multiplayer asteroid game built with TypeScript, Socket.io, and p5.j
 ## Development
 
 ```bash
-npm install
-npm run dev          # Random ports
-npm run dev:fixed    # Client on 5173, server on 9777
-npm run dev:lan      # Fixed ports, accessible from LAN (mobile testing)
+pnpm install
+pnpm dev          # Random ports
+pnpm dev:fixed    # Client on 5173, server on 9777
+pnpm dev:lan      # Fixed ports, accessible from LAN (mobile testing)
 ```
 
 ## Deployment

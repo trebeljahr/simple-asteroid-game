@@ -1,5 +1,5 @@
 /**
- * Standalone migration runner. Invoked via `npm run db:migrate`
+ * Standalone migration runner. Invoked via `pnpm db:migrate`
  * manually or by the server at startup before accepting connections.
  *
  * Migrations live alongside the source at `src/db/migrations` during
