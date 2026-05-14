@@ -19,7 +19,9 @@
 // gracefully when persistence is missing.
 
 import { execSync, spawnSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import { createServer } from "node:net";
+import path from "node:path";
 
 const fixedMode = process.argv.includes("--fixed");
 const lanMode = process.argv.includes("--lan");
@@ -117,10 +119,30 @@ function resolveComposeCommand() {
   return null;
 }
 
-function hasComposeContainer(compose, service) {
+function getComposeProjectName() {
+  if (process.env.COMPOSE_PROJECT_NAME) {
+    return process.env.COMPOSE_PROJECT_NAME;
+  }
+
+  const baseName =
+    path
+      .basename(process.cwd())
+      .toLowerCase()
+      .replace(/[^a-z0-9_-]+/g, "-")
+      .replace(/^[^a-z0-9]+/, "")
+      .replace(/[^a-z0-9]+$/, "") || "asteroid-game";
+  const worktreeHash = createHash("sha1").update(process.cwd()).digest("hex").slice(0, 8);
+  return `${baseName}-${worktreeHash}`;
+}
+
+function buildComposeArgs(compose, projectName, args) {
+  return [...compose.prefix, "-p", projectName, "-f", "docker-compose.yaml", ...args];
+}
+
+function hasComposeContainer(compose, projectName, service) {
   const result = spawnSync(
     compose.command,
-    [...compose.prefix, "-f", "docker-compose.yaml", "ps", "-q", service],
+    buildComposeArgs(compose, projectName, ["ps", "-q", service]),
     {
       encoding: "utf8",
       stdio: ["ignore", "pipe", "ignore"],
@@ -232,6 +254,7 @@ async function startDependencies() {
     );
     return null;
   }
+  const composeProjectName = getComposeProjectName();
 
   const user = process.env.POSTGRES_USER ?? DEFAULT_POSTGRES_USER;
   const password = process.env.POSTGRES_PASSWORD ?? DEFAULT_POSTGRES_PASSWORD;
@@ -255,7 +278,10 @@ async function startDependencies() {
     servicesToStart.push("postgres");
   } else if (canConnectToPostgres(databaseUrl)) {
     console.log(`  Deps:   port ${postgresPort} already in use — reusing compatible postgres.`);
-  } else if (!postgresPortWasExplicit && !hasComposeContainer(compose, "postgres")) {
+  } else if (
+    !postgresPortWasExplicit &&
+    !hasComposeContainer(compose, composeProjectName, "postgres")
+  ) {
     const fallbackPort = await findRandomDockerBindablePort(reservedDepPorts);
     console.log(
       `  Deps:   port ${postgresPort} has postgres, but dev credentials failed.\n` +
@@ -277,7 +303,7 @@ async function startDependencies() {
     servicesToStart.push("redis");
   } else if (canConnectToRedis(redisUrl)) {
     console.log(`  Deps:   port ${redisPort} already in use — reusing compatible redis.`);
-  } else if (!redisPortWasExplicit && !hasComposeContainer(compose, "redis")) {
+  } else if (!redisPortWasExplicit && !hasComposeContainer(compose, composeProjectName, "redis")) {
     const fallbackPort = await findRandomDockerBindablePort(reservedDepPorts);
     console.log(
       `  Deps:   port ${redisPort} has redis, but ping failed.\n` +
@@ -297,11 +323,12 @@ async function startDependencies() {
     console.log(`  Deps:   starting ${servicesToStart.join(" + ")} via docker compose...`);
     const started = spawnSync(
       compose.command,
-      [...compose.prefix, "-f", "docker-compose.yaml", "up", "-d", "--wait", ...servicesToStart],
+      buildComposeArgs(compose, composeProjectName, ["up", "-d", "--wait", ...servicesToStart]),
       {
         stdio: "inherit",
         env: {
           ...process.env,
+          COMPOSE_PROJECT_NAME: composeProjectName,
           POSTGRES_USER: user,
           POSTGRES_PASSWORD: password,
           POSTGRES_DB: db,

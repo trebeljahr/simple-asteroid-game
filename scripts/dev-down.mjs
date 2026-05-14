@@ -10,6 +10,8 @@
 //   pnpm dev:down -- --volumes
 
 import { spawnSync } from "node:child_process";
+import { createHash } from "node:crypto";
+import path from "node:path";
 
 const dropVolumes = process.argv.includes("--volumes");
 
@@ -44,30 +46,42 @@ if (compose === null) {
   process.exit(0);
 }
 
+function getComposeProjectName() {
+  if (process.env.COMPOSE_PROJECT_NAME) {
+    return process.env.COMPOSE_PROJECT_NAME;
+  }
+
+  const baseName =
+    path
+      .basename(process.cwd())
+      .toLowerCase()
+      .replace(/[^a-z0-9_-]+/g, "-")
+      .replace(/^[^a-z0-9]+/, "")
+      .replace(/[^a-z0-9]+$/, "") || "asteroid-game";
+  const worktreeHash = createHash("sha1").update(process.cwd()).digest("hex").slice(0, 8);
+  return `${baseName}-${worktreeHash}`;
+}
+
+function buildComposeArgs(args) {
+  return [...compose.prefix, "-p", composeProjectName, "-f", "docker-compose.yaml", ...args];
+}
+
+const composeProjectName = getComposeProjectName();
+
 // Only bring down postgres/redis so we don't accidentally tear down
 // other services if the user has extended the compose file. Use stop
 // + rm rather than a blanket `down` for targeted removal.
-const stop = spawnSync(
-  compose.command,
-  [...compose.prefix, "-f", "docker-compose.yaml", "stop", "postgres", "redis"],
-  { stdio: "inherit" },
-);
+const stop = spawnSync(compose.command, buildComposeArgs(["stop", "postgres", "redis"]), {
+  stdio: "inherit",
+  env: { ...process.env, COMPOSE_PROJECT_NAME: composeProjectName },
+});
 if (stop.status !== 0) {
   process.exit(stop.status ?? 1);
 }
 const rm = spawnSync(
   compose.command,
-  [
-    ...compose.prefix,
-    "-f",
-    "docker-compose.yaml",
-    "rm",
-    "-f",
-    ...(dropVolumes ? ["-v"] : []),
-    "postgres",
-    "redis",
-  ],
-  { stdio: "inherit" },
+  buildComposeArgs(["rm", "-f", ...(dropVolumes ? ["-v"] : []), "postgres", "redis"]),
+  { stdio: "inherit", env: { ...process.env, COMPOSE_PROJECT_NAME: composeProjectName } },
 );
 if (rm.status !== 0) {
   process.exit(rm.status ?? 1);
@@ -75,11 +89,10 @@ if (rm.status !== 0) {
 
 if (dropVolumes) {
   // rm -v only removes anonymous volumes attached to the containers.
-  // Our named volume `postgres-data` must be dropped explicitly. The
-  // project name defaults to the repo directory (`asteroid-game`), so
-  // the full volume name is `asteroid-game_postgres-data`. If you've
-  // set COMPOSE_PROJECT_NAME you'll need to drop the volume manually.
-  spawnSync("docker", ["volume", "rm", "asteroid-game_postgres-data"], { stdio: "inherit" });
+  // Our named volume `postgres-data` must be dropped explicitly.
+  spawnSync("docker", ["volume", "rm", `${composeProjectName}_postgres-data`], {
+    stdio: "inherit",
+  });
 }
 
 console.log("Dev dependencies stopped.");
